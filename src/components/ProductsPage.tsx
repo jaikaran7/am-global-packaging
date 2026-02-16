@@ -1,0 +1,540 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import Link from "next/link";
+import {
+  Package,
+  ChevronRight,
+  ArrowRight,
+  Filter,
+  Grid3X3,
+  LayoutList,
+  Box,
+  Ruler,
+  Layers,
+  X,
+} from "lucide-react";
+import { products, categories } from "@/data/products";
+
+function PizzaBox3D({
+  size,
+  hovered,
+}: {
+  size: { length: number; width: number; height: number };
+  hovered: boolean;
+}) {
+  const scale = size.length / 400;
+  const w = 140 * scale + 60;
+  const h = 120 * scale + 50;
+  const depth = size.height * 1.2 + 20;
+
+  return (
+    <div
+      className="relative flex items-center justify-center"
+      style={{ perspective: "600px" }}
+    >
+      <motion.div
+        animate={{
+          rotateX: hovered ? -12 : -8,
+          rotateY: hovered ? -20 : -15,
+          scale: hovered ? 1.05 : 1,
+        }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {/* Front face */}
+        <div
+          className="rounded-md relative"
+          style={{
+            width: `${w}px`,
+            height: `${h}px`,
+            background:
+              "linear-gradient(145deg, #C4973B 0%, #A67B1E 50%, #8B6914 100%)",
+            transform: `translateZ(${depth / 2}px)`,
+            boxShadow:
+              "0 15px 40px rgba(139, 105, 20, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
+          }}
+        >
+          <div
+            className="absolute inset-0 opacity-15"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 6px)",
+            }}
+          />
+          <div className="absolute inset-3 border border-white/10 rounded flex flex-col items-center justify-center gap-1.5">
+            <div className="text-white/50 text-[8px] tracking-[0.25em] uppercase font-medium">
+              AM Global
+            </div>
+            <div className="w-8 h-px bg-white/15" />
+            <div className="text-white/35 text-[7px] tracking-widest uppercase">
+              Pizza Box
+            </div>
+          </div>
+        </div>
+
+        {/* Top face / lid */}
+        <motion.div
+          className="absolute origin-bottom"
+          style={{
+            width: `${w}px`,
+            height: `${depth}px`,
+            background:
+              "linear-gradient(180deg, #DDB84D 0%, #C4973B 100%)",
+            top: `-${depth}px`,
+            left: 0,
+            transform: "rotateX(90deg)",
+            boxShadow: "inset 0 -1px 6px rgba(0,0,0,0.08)",
+          }}
+          animate={{ rotateX: hovered ? 75 : 90 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, transparent, transparent 6px, rgba(0,0,0,0.08) 6px, rgba(0,0,0,0.08) 7px)",
+            }}
+          />
+        </motion.div>
+
+        {/* Right face */}
+        <div
+          className="absolute top-0 origin-left"
+          style={{
+            width: `${depth}px`,
+            height: `${h}px`,
+            background:
+              "linear-gradient(90deg, #A67B1E 0%, #8B6914 100%)",
+            left: `${w}px`,
+            transform: `rotateY(90deg)`,
+            boxShadow: "inset 1px 0 6px rgba(0,0,0,0.1)",
+          }}
+        >
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, transparent, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 6px)",
+            }}
+          />
+        </div>
+
+        {/* Shadow */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 bg-black/8 blur-lg rounded-[50%]"
+          style={{
+            width: `${w * 0.8}px`,
+            height: "10px",
+            bottom: `-16px`,
+            transform: `translateX(-50%) translateZ(-${depth}px)`,
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+export default function ProductsPage() {
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerInView = useInView(headerRef, { once: true, margin: "-80px" });
+
+  const filtered =
+    activeCategory === "all"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
+
+  const sizeFilters = [
+    { label: "Small (200mm)", slug: "small-pizza-box" },
+    { label: "Medium (250mm)", slug: "medium-pizza-box" },
+    { label: "Large (300mm)", slug: "large-pizza-box" },
+    { label: "Extra-Large (330mm)", slug: "extra-large-pizza-box" },
+    { label: "Family/Party (400mm)", slug: "family-party-pizza-box" },
+  ];
+
+  const plyFilters = ["3-Ply", "5-Ply", "7-Ply"];
+
+  return (
+    <div className="min-h-screen bg-offwhite">
+      {/* Hero banner */}
+      <section className="relative pt-28 pb-16 md:pt-32 md:pb-20 overflow-hidden bg-forest">
+        <div className="absolute inset-0 opacity-[0.04]">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)",
+            }}
+          />
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-offwhite to-transparent" />
+
+        <div
+          ref={headerRef}
+          className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={headerInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="flex items-center gap-2 text-kraft-light/80 text-sm mb-4">
+              <Link href="/" className="hover:text-kraft-light transition-colors">
+                Home
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-offwhite">Products</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-offwhite tracking-tight leading-[1.08]">
+              Pizza Box
+              <br />
+              <span className="text-kraft-light">Collection</span>
+            </h1>
+            <p className="mt-5 text-offwhite/60 text-base md:text-lg max-w-xl leading-relaxed">
+              Australian-standard pizza boxes engineered for performance.
+              From personal-size to family party — every box built for your brand.
+            </p>
+            <div className="flex items-center gap-6 mt-8">
+              <div className="flex items-center gap-2 text-offwhite/40 text-sm">
+                <Package className="w-4 h-4" />
+                <span>{products.length} Products</span>
+              </div>
+              <div className="w-px h-4 bg-offwhite/15" />
+              <div className="flex items-center gap-2 text-offwhite/40 text-sm">
+                <Layers className="w-4 h-4" />
+                <span>3, 5, 7 Ply Options</span>
+              </div>
+              <div className="w-px h-4 bg-offwhite/15" />
+              <div className="flex items-center gap-2 text-offwhite/40 text-sm">
+                <Ruler className="w-4 h-4" />
+                <span>200–400mm Range</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Main content */}
+      <section className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 py-12 md:py-16">
+        <div className="grid lg:grid-cols-[260px_1fr] gap-10 lg:gap-14">
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setMobileFilterOpen(true)}
+            className="lg:hidden flex items-center gap-2 px-5 py-3 bg-white border border-kraft/10 rounded-xl text-sm font-medium text-charcoal shadow-sm w-fit"
+          >
+            <Filter className="w-4 h-4" />
+            Filters & Options
+          </button>
+
+          {/* Left sidebar — desktop */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 space-y-8">
+              {/* Categories */}
+              <div>
+                <h3 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-4">
+                  Category
+                </h3>
+                <div className="space-y-1">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeCategory === cat.id
+                          ? "bg-forest text-offwhite shadow-md shadow-forest/15"
+                          : "text-charcoal/70 hover:bg-cream/60 hover:text-charcoal"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size quick-links */}
+              <div>
+                <h3 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-4">
+                  By Size
+                </h3>
+                <div className="space-y-1">
+                  {sizeFilters.map((s) => (
+                    <Link
+                      key={s.slug}
+                      href={`/products/${s.slug}`}
+                      className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm text-charcoal/70 hover:bg-cream/60 hover:text-charcoal transition-all group"
+                    >
+                      <span>{s.label}</span>
+                      <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ply options */}
+              <div>
+                <h3 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-4">
+                  Ply Options
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {plyFilters.map((ply) => (
+                    <span
+                      key={ply}
+                      className="px-3 py-1.5 bg-kraft-pale/60 text-kraft text-xs font-semibold rounded-full border border-kraft/10"
+                    >
+                      {ply}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bulk order CTA */}
+              <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-6 text-offwhite">
+                <Box className="w-6 h-6 text-kraft-light mb-3" />
+                <h4 className="font-bold text-sm mb-2">Need Bulk Orders?</h4>
+                <p className="text-offwhite/60 text-xs leading-relaxed mb-4">
+                  Get volume pricing for orders above 5,000 units.
+                </p>
+                <Link
+                  href="/#contact"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-kraft-light hover:text-kraft-lighter transition-colors"
+                >
+                  Request Quote
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          </aside>
+
+          {/* Mobile filter drawer */}
+          {mobileFilterOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <div
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setMobileFilterOpen(false)}
+              />
+              <motion.div
+                initial={{ x: -300 }}
+                animate={{ x: 0 }}
+                exit={{ x: -300 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute left-0 top-0 bottom-0 w-[300px] bg-offwhite p-6 overflow-y-auto"
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="font-bold text-charcoal">Filters</h3>
+                  <button onClick={() => setMobileFilterOpen(false)}>
+                    <X className="w-5 h-5 text-charcoal" />
+                  </button>
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-3">
+                      Category
+                    </h4>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setActiveCategory(cat.id);
+                          setMobileFilterOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${
+                          activeCategory === cat.id
+                            ? "bg-forest text-offwhite"
+                            : "text-charcoal/70"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-3">
+                      By Size
+                    </h4>
+                    {sizeFilters.map((s) => (
+                      <Link
+                        key={s.slug}
+                        href={`/products/${s.slug}`}
+                        onClick={() => setMobileFilterOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-charcoal/70 hover:text-charcoal"
+                      >
+                        {s.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Right: product grid */}
+          <div>
+            {/* Toolbar */}
+            <div className="flex items-center justify-between mb-8">
+              <p className="text-sm text-warm-gray">
+                Showing{" "}
+                <span className="font-semibold text-charcoal">
+                  {filtered.length}
+                </span>{" "}
+                products
+              </p>
+              <div className="hidden sm:flex items-center gap-1 bg-white border border-kraft/10 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-forest text-offwhite"
+                      : "text-warm-gray hover:text-charcoal"
+                  }`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === "list"
+                      ? "bg-forest text-offwhite"
+                      : "text-warm-gray hover:text-charcoal"
+                  }`}
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Product Grid */}
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                  : "flex flex-col gap-5"
+              }
+            >
+              {filtered.map((product, i) => (
+                <motion.div
+                  key={product.slug}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                >
+                  <Link href={`/products/${product.slug}`}>
+                    <div
+                      className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
+                        viewMode === "list"
+                          ? "flex flex-row items-center"
+                          : ""
+                      }`}
+                      onMouseEnter={() => setHoveredProduct(product.slug)}
+                      onMouseLeave={() => setHoveredProduct(null)}
+                    >
+                      {/* Product visual */}
+                      <div
+                        className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
+                          viewMode === "list"
+                            ? "w-[200px] h-[160px] flex-shrink-0"
+                            : "h-[220px] md:h-[240px]"
+                        }`}
+                      >
+                        <div className="absolute inset-0 corrugated-pattern opacity-20" />
+                        <PizzaBox3D
+                          size={product.dimensionDetail}
+                          hovered={hoveredProduct === product.slug}
+                        />
+
+                        {/* Badges */}
+                        {product.slug === "large-pizza-box" && (
+                          <div className="absolute top-3 left-3 px-2.5 py-1 bg-forest text-offwhite text-[10px] font-bold tracking-wide rounded-full uppercase">
+                            Most Popular
+                          </div>
+                        )}
+                        <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10">
+                          {product.dimensions.split("×")[0].trim()}mm
+                        </div>
+                      </div>
+
+                      {/* Product info */}
+                      <div
+                        className={`p-5 ${
+                          viewMode === "list" ? "flex-1" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] font-semibold tracking-[0.15em] text-kraft uppercase">
+                            {product.categoryLabel}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-charcoal tracking-tight group-hover:text-forest transition-colors">
+                          {product.shortName}
+                        </h3>
+                        <p className="text-xs text-warm-gray mt-1.5 leading-relaxed line-clamp-2">
+                          {product.tagline}
+                        </p>
+
+                        {/* Quick specs */}
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          <span className="px-2 py-0.5 bg-cream/70 text-charcoal/70 text-[10px] font-medium rounded">
+                            {product.dimensions}
+                          </span>
+                          {product.plyOptions.slice(0, 2).map((ply) => (
+                            <span
+                              key={ply}
+                              className="px-2 py-0.5 bg-forest/5 text-forest text-[10px] font-medium rounded"
+                            >
+                              {ply}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* CTA */}
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-kraft/8">
+                          <span className="text-xs text-warm-gray">
+                            MOQ: {product.moq}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
+                            View Details
+                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Bottom CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-16 bg-gradient-to-r from-forest via-forest-light to-forest rounded-2xl p-8 md:p-12 text-center relative overflow-hidden"
+            >
+              <div className="absolute inset-0 corrugated-pattern opacity-10" />
+              <div className="relative">
+                <h3 className="text-2xl md:text-3xl font-bold text-offwhite mb-3">
+                  Need a custom size or specification?
+                </h3>
+                <p className="text-offwhite/60 mb-6 max-w-lg mx-auto text-sm">
+                  We manufacture custom dimensions, special ply configurations, and
+                  branded packaging tailored to your exact requirements.
+                </p>
+                <Link
+                  href="/#contact"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm"
+                >
+                  Request Custom Quote
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
