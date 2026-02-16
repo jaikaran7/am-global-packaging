@@ -6,7 +6,7 @@ export interface Product {
   description: string;
   dimensions: string;
   dimensionDetail: { length: number; width: number; height: number };
-  category: "pizza-boxes";
+  category: "pizza-boxes" | "specialty" | "books" | "ecommerce" | "general-purpose";
   categoryLabel: string;
   useCases: string[];
   plyOptions: string[];
@@ -18,6 +18,8 @@ export interface Product {
   features: string[];
   specs: { label: string; value: string }[];
   relatedSlugs: string[];
+  priceAud?: number;
+  pricingTiers?: { label: string; priceAud: number }[];
 }
 
 export const products: Product[] = [
@@ -226,6 +228,220 @@ export const products: Product[] = [
     ],
     relatedSlugs: ["extra-large-pizza-box", "large-pizza-box"],
   },
+  // ──────────────── NEW PRODUCTS ────────────────
+  {
+    slug: "tea-chest-box",
+    name: "Tea Chest Box — 431 × 406 × 596 mm",
+    shortName: "Tea Chest Box",
+    tagline: "Heavy-duty chest for bulk storage and export",
+    description:
+      "A premium heavy-duty tea chest box built with 5-Ply (3BC) corrugated board for maximum structural integrity. Designed for bulk storage, export cartons, and heavy goods transportation. The tall chest profile and reinforced walls make it ideal for warehouse logistics, international shipping, and industrial packing applications.",
+    dimensions: "431 × 406 × 596 mm",
+    dimensionDetail: { length: 431, width: 406, height: 596 },
+    category: "specialty",
+    categoryLabel: "Specialty / Heavy-Duty",
+    priceAud: 3.70,
+    useCases: [
+      "Bulk storage",
+      "Export cartons",
+      "Heavy goods",
+      "Warehouse logistics",
+    ],
+    plyOptions: ["5-Ply (3BC)"],
+    gsmRange: "250 – 350 GSM",
+    material: "Heavy-duty virgin kraft corrugated board",
+    printOptions: "Up to 2-color flexo printing",
+    moq: "200 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "5-Ply (3BC) heavy-duty construction",
+      "Tall chest profile for maximum capacity",
+      "Reinforced double-wall structure",
+      "Export-grade durability",
+      "Stackable design for warehousing",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "431 × 406 × 596 mm" },
+      { label: "Ply", value: "5-Ply (3BC)" },
+      { label: "Price", value: "$3.70 AUD / unit" },
+      { label: "Material", value: "Heavy-duty kraft" },
+      { label: "Print", value: "Up to 2-color flexo" },
+      { label: "MOQ", value: "200 units" },
+    ],
+    relatedSlugs: ["book-box", "a4-box-type-2"],
+  },
+  {
+    slug: "book-box",
+    name: "Book Box — 390 × 330 × 330 mm",
+    shortName: "Book Box",
+    tagline: "Purpose-built for books, catalogs, and printed materials",
+    description:
+      "A sturdy 5-Ply (1BC) corrugated book box engineered for the weight and density of printed materials. The compact square profile provides excellent stacking stability and protects contents from crushing during transit. Ideal for publishers, bookstores, retail shipping, and boxed set packaging.",
+    dimensions: "390 × 330 × 330 mm",
+    dimensionDetail: { length: 390, width: 330, height: 330 },
+    category: "books",
+    categoryLabel: "Books / Printed Materials",
+    priceAud: 2.95,
+    useCases: [
+      "Books",
+      "Catalogs",
+      "Boxed sets",
+      "Retail shipping",
+    ],
+    plyOptions: ["5-Ply (1BC)"],
+    gsmRange: "200 – 280 GSM",
+    material: "Virgin kraft corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "300 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "5-Ply (1BC) construction for heavy loads",
+      "Compact square profile",
+      "Superior stacking stability",
+      "Crush-resistant structure",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "390 × 330 × 330 mm" },
+      { label: "Ply", value: "5-Ply (1BC)" },
+      { label: "Price", value: "$2.95 AUD / unit" },
+      { label: "Material", value: "Virgin kraft board" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "300 units" },
+    ],
+    relatedSlugs: ["tea-chest-box", "a4-box-type-1"],
+  },
+  {
+    slug: "amazon-fba-carton",
+    name: "Amazon FBA Carton — 350 × 250 × 200 mm",
+    shortName: "Amazon FBA Carton",
+    tagline: "Optimized for ecommerce fulfillment and FBA compliance",
+    description:
+      "A compact, rigid carton specifically sized for Amazon FBA requirements and direct-to-consumer shipping. Features tuck flaps for secure closure and a pre-printed shipping label area. Designed for high-volume warehouse fulfillment operations with excellent palletization efficiency.",
+    dimensions: "350 × 250 × 200 mm",
+    dimensionDetail: { length: 350, width: 250, height: 200 },
+    category: "ecommerce",
+    categoryLabel: "Ecommerce / FBA",
+    priceAud: 1.05,
+    useCases: [
+      "Amazon FBA",
+      "D2C shipping",
+      "Warehouse fulfillment",
+      "Ecommerce logistics",
+    ],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "150 – 220 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 2-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 2–3 business days",
+    features: [
+      "Amazon FBA compliant dimensions",
+      "Tuck flap secure closure",
+      "Pre-printed shipping label area",
+      "Excellent palletization efficiency",
+      "Lightweight yet rigid structure",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "350 × 250 × 200 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Price", value: "$1.05 AUD / unit" },
+      { label: "Material", value: "Kraft / Recycled board" },
+      { label: "Print", value: "Up to 2-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-1", "a4-box-type-2"],
+  },
+  {
+    slug: "a4-box-type-2",
+    name: "A4 Box Type 2 — 440 × 330 × 300 mm",
+    shortName: "A4 Box Type 2",
+    tagline: "Generous A4 box for documents, office storage, and bulk packing",
+    description:
+      "A larger-format A4 box designed for files, documents, office storage, and general-purpose bulk packing. The generous depth accommodates thick document stacks, binders, and mixed office supplies. Available in both 3-Ply and 5-Ply configurations for varying weight requirements.",
+    dimensions: "440 × 330 × 300 mm",
+    dimensionDetail: { length: 440, width: 330, height: 300 },
+    category: "general-purpose",
+    categoryLabel: "A4 / General Purpose",
+    priceAud: 3.50,
+    useCases: [
+      "Documents & files",
+      "Office storage",
+      "Bulk packing",
+      "General-purpose shipping",
+    ],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "150 – 250 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Generous depth for thick document stacks",
+      "Available in 3-Ply and 5-Ply",
+      "Suitable for binders and office supplies",
+      "Strong base for heavy contents",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "440 × 330 × 300 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Price", value: "$3.50 AUD / unit" },
+      { label: "Material", value: "Kraft / Recycled board" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-1", "tea-chest-box"],
+  },
+  {
+    slug: "a4-box-type-1",
+    name: "A4 Box Type 1 — 320 × 220 × 240 mm",
+    shortName: "A4 Box Type 1",
+    tagline: "Compact A4 box for documents, small goods, and office shipping",
+    description:
+      "A compact A4-format box ideal for documents, small goods, and everyday office shipping. Features tiered pricing for bulk orders — from $0.80 per unit at 500 units to $1.05 at 1,500+ units. The slim profile makes it perfect for lightweight shipments and cost-effective fulfillment.",
+    dimensions: "320 × 220 × 240 mm",
+    dimensionDetail: { length: 320, width: 220, height: 240 },
+    category: "general-purpose",
+    categoryLabel: "A4 / General Purpose",
+    pricingTiers: [
+      { label: "500 units", priceAud: 0.80 },
+      { label: "1,500+ units", priceAud: 1.05 },
+    ],
+    useCases: [
+      "Documents",
+      "Small goods",
+      "Office shipping",
+      "Lightweight fulfillment",
+    ],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "120 – 200 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 2–3 business days",
+    features: [
+      "Tiered volume pricing",
+      "Compact & lightweight design",
+      "Available in 3-Ply and 5-Ply",
+      "Cost-effective for high-volume orders",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "320 × 220 × 240 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "500 units", value: "$0.80 AUD / unit" },
+      { label: "1,500+ units", value: "$1.05 AUD / unit" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-2", "amazon-fba-carton"],
+  },
 ];
 
 export function getProductBySlug(slug: string): Product | undefined {
@@ -239,4 +455,8 @@ export function getRelatedProducts(slugs: string[]): Product[] {
 export const categories = [
   { id: "all", label: "All Products" },
   { id: "pizza-boxes", label: "Pizza Boxes" },
+  { id: "specialty", label: "Specialty / Heavy-Duty" },
+  { id: "books", label: "Books / Printed Materials" },
+  { id: "ecommerce", label: "Ecommerce / FBA" },
+  { id: "general-purpose", label: "A4 / General Purpose" },
 ] as const;
