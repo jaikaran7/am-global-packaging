@@ -295,7 +295,6 @@ export default function ProductDetailPage({ product: initialProduct }: { product
 
   const [activeView, setActiveView] = useState(0);
   const [quantity, setQuantity] = useState(product.moq.replace(/\D/g, ""));
-  const [specsOpen, setSpecsOpen] = useState(false);
   const relatedProducts = getRelatedProducts(product.relatedSlugs);
   const viewOptions = ["Closed", "Open", "Ply Layers"];
 
