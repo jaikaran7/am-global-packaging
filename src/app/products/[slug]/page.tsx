@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -34,7 +35,9 @@ export default async function ProductDetailRoute({
   return (
     <main>
       <Navbar />
-      <ProductDetailPage product={product} />
+      <Suspense fallback={null}>
+        <ProductDetailPage product={product} />
+      </Suspense>
       <Footer />
     </main>
   );
