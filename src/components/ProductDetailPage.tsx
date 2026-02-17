@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -16,10 +17,12 @@ import {
   CheckCircle2,
   Phone,
   Mail,
+  ChevronDown,
 } from "lucide-react";
 import type { Product } from "@/data/products";
-import { getRelatedProducts } from "@/data/products";
+import { getRelatedProducts, getCategoryProducts } from "@/data/products";
 
+// ─── 3-D box render ──────────────────────────────────────────────────────────
 function DetailBox3D({
   size,
   activeView,
@@ -137,7 +140,7 @@ function DetailBox3D({
           />
         </div>
 
-        {/* Ply layer lines — shown in exploded view */}
+        {/* Ply layer lines — exploded view */}
         {isExploded && (
           <>
             {[0, 1, 2].map((layer) => (
@@ -176,7 +179,7 @@ function DetailBox3D({
         />
       </motion.div>
 
-      {/* View labels */}
+      {/* Exploded labels */}
       {isExploded && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -197,12 +200,110 @@ function DetailBox3D({
   );
 }
 
-export default function ProductDetailPage({ product }: { product: Product }) {
+// ─── Product-type selector card (used when from=all) ─────────────────────────
+function ProductTypeCard({
+  product,
+  isActive,
+  onClick,
+}: {
+  product: Product;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-center transition-all duration-300 ${
+        isActive
+          ? "border-forest bg-forest/5 shadow-md"
+          : "border-kraft/15 bg-white hover:border-kraft/30 hover:bg-kraft-pale/20"
+      }`}
+    >
+      <span
+        className={`text-[11px] font-bold leading-tight ${
+          isActive ? "text-forest" : "text-charcoal/70"
+        }`}
+      >
+        {product.shortName
+          .replace(/A4 Box /i, "")
+          .replace(/Pizza Box/i, "")
+          .replace(/Carton/i, "")
+          .replace(/Box/i, "")
+          .trim() || product.shortName}
+      </span>
+      <span className="text-[9px] text-warm-gray leading-tight">
+        {product.dimensionDetail.length}×{product.dimensionDetail.width} mm
+      </span>
+    </button>
+  );
+}
+
+// ─── Accordion specs ──────────────────────────────────────────────────────────
+function AccordionSpecs({ specs }: { specs: { label: string; value: string }[] }) {
+  const [open, setOpen] = useState(false);
+  const PREVIEW = 3;
+  const visible = open ? specs : specs.slice(0, PREVIEW);
+  const hasMore = specs.length > PREVIEW;
+
+  return (
+    <div className="bg-white rounded-2xl border border-kraft/10 p-6 mb-8">
+      <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-5">
+        Technical Specifications
+      </h3>
+      <div className="space-y-0">
+        {visible.map((spec, i) => (
+          <div
+            key={spec.label}
+            className={`flex items-center justify-between py-3.5 ${
+              i < visible.length - 1 ? "border-b border-kraft/8" : ""
+            }`}
+          >
+            <span className="text-sm text-warm-gray">{spec.label}</span>
+            <span className="text-sm font-semibold text-charcoal">{spec.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setOpen(!open)}
+          className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-forest hover:text-kraft transition-colors w-full justify-center py-2 border-t border-kraft/8"
+        >
+          {open ? "Show less" : `Show ${specs.length - PREVIEW} more`}
+          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3 }}>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </motion.span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function ProductDetailPage({ product: initialProduct }: { product: Product }) {
+  const searchParams = useSearchParams();
+  const fromAll = searchParams.get("from") === "all";
+
+  // When coming from All Products, allow switching between products in the same category
+  const categoryProducts = getCategoryProducts(initialProduct.category);
+  const [activeProductSlug, setActiveProductSlug] = useState(initialProduct.slug);
+
+  // Active product — either the initial one (direct nav) or the selected one (from=all)
+  const product = fromAll
+    ? (categoryProducts.find((p) => p.slug === activeProductSlug) ?? initialProduct)
+    : initialProduct;
+
   const [activeView, setActiveView] = useState(0);
   const [quantity, setQuantity] = useState(product.moq.replace(/\D/g, ""));
+  const [specsOpen, setSpecsOpen] = useState(false);
   const relatedProducts = getRelatedProducts(product.relatedSlugs);
-
   const viewOptions = ["Closed", "Open", "Ply Layers"];
+
+  // Reset view when product changes in "from=all" mode
+  const handleProductSwitch = (slug: string) => {
+    setActiveProductSlug(slug);
+    setActiveView(0);
+  };
 
   return (
     <div className="min-h-screen bg-offwhite">
@@ -221,9 +322,7 @@ export default function ProductDetailPage({ product }: { product: Product }) {
               Products
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-charcoal font-medium">
-              {product.shortName}
-            </span>
+            <span className="text-charcoal font-medium">{product.shortName}</span>
           </div>
         </div>
       </div>
@@ -231,16 +330,28 @@ export default function ProductDetailPage({ product }: { product: Product }) {
       {/* Main product section */}
       <section className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-10 pb-20">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-start">
-          {/* Left: Product gallery */}
+          {/* ── Left: Product gallery ── */}
           <div className="sticky top-28">
             <div className="bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 rounded-3xl overflow-hidden relative min-h-[400px] md:min-h-[500px] flex items-center justify-center">
               <div className="absolute inset-0 corrugated-pattern opacity-20" />
-              <DetailBox3D
-                size={product.dimensionDetail}
-                activeView={activeView}
-              />
 
-              {/* View toggle */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={product.slug + activeView}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.4 }}
+                  className="w-full h-full flex items-center justify-center min-h-[400px]"
+                >
+                  <DetailBox3D
+                    size={product.dimensionDetail}
+                    activeView={activeView}
+                  />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Small Closed / Open / Ply Layers toggle — always present */}
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center bg-white/90 backdrop-blur-md rounded-full p-1 border border-kraft/10 shadow-md">
                 {viewOptions.map((label, i) => (
                   <button
@@ -265,160 +376,156 @@ export default function ProductDetailPage({ product }: { product: Product }) {
               </div>
             </div>
 
-            {/* Thumbnails */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              {viewOptions.map((label, i) => (
-                <button
-                  key={label}
-                  onClick={() => setActiveView(i)}
-                  className={`relative bg-gradient-to-br from-kraft-pale/40 to-cream/30 rounded-xl h-20 flex items-center justify-center border-2 transition-all ${
-                    activeView === i
-                      ? "border-forest shadow-md"
-                      : "border-transparent hover:border-kraft/20"
+            {/* ── Thumbnails / Product-type selector ── */}
+            {fromAll && categoryProducts.length > 1 ? (
+              /* Product-type cards — only shown when navigated from All Products */
+              <div className="mt-4">
+                <p className="text-[10px] font-bold text-warm-gray uppercase tracking-[0.15em] mb-3">
+                  {product.categoryLabel} — Select Type
+                </p>
+                <div
+                  className={`grid gap-2 ${
+                    categoryProducts.length <= 3
+                      ? "grid-cols-3"
+                      : "grid-cols-4"
                   }`}
                 >
-                  <span className="text-[10px] font-semibold text-charcoal/60">
-                    {label}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  {categoryProducts.map((p) => (
+                    <ProductTypeCard
+                      key={p.slug}
+                      product={p}
+                      isActive={p.slug === activeProductSlug}
+                      onClick={() => handleProductSwitch(p.slug)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Standard Closed / Open / Ply Layers thumbnail cards */
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                {viewOptions.map((label, i) => (
+                  <button
+                    key={label}
+                    onClick={() => setActiveView(i)}
+                    className={`relative bg-gradient-to-br from-kraft-pale/40 to-cream/30 rounded-xl h-20 flex items-center justify-center border-2 transition-all ${
+                      activeView === i
+                        ? "border-forest shadow-md"
+                        : "border-transparent hover:border-kraft/20"
+                    }`}
+                  >
+                    <span className="text-[10px] font-semibold text-charcoal/60">
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right: Product details */}
+          {/* ── Right: Product details ── */}
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              {/* Category & availability */}
-              <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-kraft-pale/60 text-kraft text-[10px] font-bold tracking-[0.15em] rounded-full uppercase">
-                  {product.categoryLabel}
-                </span>
-                <span className="flex items-center gap-1.5 text-[11px] text-forest font-medium">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  {product.availability.split("—")[0]}
-                </span>
-              </div>
-
-              <h1 className="text-3xl md:text-4xl font-bold text-charcoal tracking-tight leading-[1.12]">
-                {product.name}
-              </h1>
-              <p className="text-base text-warm-gray mt-3 leading-relaxed">
-                {product.tagline}
-              </p>
-
-              {/* Quick specs row */}
-              <div className="flex flex-wrap gap-3 mt-6">
-                <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
-                  <Ruler className="w-3.5 h-3.5 text-kraft" />
-                  <span className="text-xs font-medium text-charcoal">
-                    {product.dimensions}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={product.slug}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35 }}
+              >
+                {/* Category & availability */}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="px-3 py-1 bg-kraft-pale/60 text-kraft text-[10px] font-bold tracking-[0.15em] rounded-full uppercase">
+                    {product.categoryLabel}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] text-forest font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    {product.availability.split("—")[0]}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
-                  <Layers className="w-3.5 h-3.5 text-forest" />
-                  <span className="text-xs font-medium text-charcoal">
-                    {product.plyOptions.join(", ")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
-                  <Printer className="w-3.5 h-3.5 text-kraft" />
-                  <span className="text-xs font-medium text-charcoal">
-                    {product.printOptions.split(",")[0]}
-                  </span>
-                </div>
-              </div>
 
-              {/* Divider */}
-              <div className="h-px bg-kraft/10 my-8" />
-
-              {/* Description */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-3">
-                  About this product
-                </h3>
-                <p className="text-sm text-warm-gray leading-[1.8]">
-                  {product.description}
+                <h1 className="text-3xl md:text-4xl font-bold text-charcoal tracking-tight leading-[1.12]">
+                  {product.name}
+                </h1>
+                <p className="text-base text-warm-gray mt-3 leading-relaxed">
+                  {product.tagline}
                 </p>
-              </div>
 
-              {/* Features grid */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
-                  Key Features
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-2.5">
-                  {product.features.map((f) => (
-                    <div
-                      key={f}
-                      className="flex items-start gap-2.5 py-2"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-forest flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-charcoal/80">{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Technical specifications */}
-              <div className="bg-white rounded-2xl border border-kraft/10 p-6 mb-8">
-                <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-5">
-                  Technical Specifications
-                </h3>
-                <div className="space-y-0">
-                  {product.specs.map((spec, i) => (
-                    <div
-                      key={spec.label}
-                      className={`flex items-center justify-between py-3.5 ${
-                        i < product.specs.length - 1
-                          ? "border-b border-kraft/8"
-                          : ""
-                      }`}
-                    >
-                      <span className="text-sm text-warm-gray">
-                        {spec.label}
-                      </span>
-                      <span className="text-sm font-semibold text-charcoal">
-                        {spec.value}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between py-3.5 border-t border-kraft/8">
-                    <span className="text-sm text-warm-gray">Material</span>
-                    <span className="text-sm font-semibold text-charcoal">
-                      {product.material}
+                {/* Quick specs row */}
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
+                    <Ruler className="w-3.5 h-3.5 text-kraft" />
+                    <span className="text-xs font-medium text-charcoal">
+                      {product.dimensions}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-3.5 border-t border-kraft/8">
-                    <span className="text-sm text-warm-gray">GSM Range</span>
-                    <span className="text-sm font-semibold text-charcoal">
-                      {product.gsmRange}
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
+                    <Layers className="w-3.5 h-3.5 text-forest" />
+                    <span className="text-xs font-medium text-charcoal">
+                      {product.plyOptions.join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-kraft/8">
+                    <Printer className="w-3.5 h-3.5 text-kraft" />
+                    <span className="text-xs font-medium text-charcoal">
+                      {product.printOptions.split(",")[0]}
                     </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Use cases */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
-                  Ideal For
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.useCases.map((uc) => (
-                    <span
-                      key={uc}
-                      className="px-3.5 py-2 bg-forest/5 text-forest text-xs font-medium rounded-full border border-forest/10"
-                    >
-                      {uc}
-                    </span>
-                  ))}
+                <div className="h-px bg-kraft/10 my-8" />
+
+                {/* Description */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-3">
+                    About this product
+                  </h3>
+                  <p className="text-sm text-warm-gray leading-[1.8]">
+                    {product.description}
+                  </p>
                 </div>
-              </div>
 
-                {/* Pricing (if available) */}
+                {/* Features grid */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
+                    Key Features
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-2.5">
+                    {product.features.map((f) => (
+                      <div key={f} className="flex items-start gap-2.5 py-2">
+                        <CheckCircle2 className="w-4 h-4 text-forest flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-charcoal/80">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Technical specifications — accordion */}
+                <AccordionSpecs
+                  specs={[
+                    ...product.specs,
+                    { label: "Material", value: product.material },
+                    { label: "GSM Range", value: product.gsmRange },
+                  ]}
+                />
+
+                {/* Use cases */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
+                    Ideal For
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.useCases.map((uc) => (
+                      <span
+                        key={uc}
+                        className="px-3.5 py-2 bg-forest/5 text-forest text-xs font-medium rounded-full border border-forest/10"
+                      >
+                        {uc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pricing */}
                 {(product.priceAud || product.pricingTiers) && (
                   <div className="mb-8 bg-kraft-pale/30 rounded-2xl border border-kraft/10 p-6">
                     <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
@@ -442,7 +549,9 @@ export default function ProductDetailPage({ product }: { product: Product }) {
                             <span className="text-sm text-warm-gray">{tier.label}</span>
                             <span className="text-lg font-bold text-forest">
                               ${tier.priceAud.toFixed(2)}
-                              <span className="text-xs font-normal text-warm-gray ml-1">/ unit</span>
+                              <span className="text-xs font-normal text-warm-gray ml-1">
+                                / unit
+                              </span>
                             </span>
                           </div>
                         ))}
@@ -451,77 +560,79 @@ export default function ProductDetailPage({ product }: { product: Product }) {
                   </div>
                 )}
 
-                {/* Divider */}
                 <div className="h-px bg-kraft/10 my-8" />
 
-                {/* Sticky CTA Panel */}
-              <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-6 md:p-8 text-offwhite">
-                <h3 className="text-lg font-bold mb-4">
-                  Request a Quote for {product.shortName}
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="text-offwhite/50 text-xs mb-1.5 block">
-                      Quantity (units)
-                    </label>
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      min={parseInt(product.moq)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm placeholder:text-offwhite/30 focus:outline-none focus:border-kraft-light/50"
-                      placeholder={`Min. ${product.moq}`}
-                    />
+                {/* Quote CTA */}
+                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-6 md:p-8 text-offwhite">
+                  <h3 className="text-lg font-bold mb-4">
+                    Request a Quote for {product.shortName}
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="text-offwhite/50 text-xs mb-1.5 block">
+                        Quantity (units)
+                      </label>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        min={parseInt(product.moq)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm placeholder:text-offwhite/30 focus:outline-none focus:border-kraft-light/50"
+                        placeholder={`Min. ${product.moq}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-offwhite/50 text-xs mb-1.5 block">
+                        Preferred Ply
+                      </label>
+                      <select className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm focus:outline-none focus:border-kraft-light/50 appearance-none">
+                        {product.plyOptions.map((ply) => (
+                          <option key={ply} value={ply} className="text-charcoal">
+                            {ply}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-offwhite/50 text-xs mb-1.5 block">
-                      Preferred Ply
-                    </label>
-                    <select className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm focus:outline-none focus:border-kraft-light/50 appearance-none">
-                      {product.plyOptions.map((ply) => (
-                        <option key={ply} value={ply} className="text-charcoal">
-                          {ply}
-                        </option>
-                      ))}
-                    </select>
+
+                  <button className="w-full py-3.5 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-4">
+                    Request Quote
+                  </button>
+
+                  <div className="flex items-center justify-center gap-6 text-offwhite/40 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>
+                        {product.availability.split("—")[1]?.trim() || "Fast shipping"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Food-grade certified</span>
+                    </div>
                   </div>
                 </div>
 
-                <button className="w-full py-3.5 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-4">
-                  Request Quote
-                </button>
-
-                <div className="flex items-center justify-center gap-6 text-offwhite/40 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>{product.availability.split("—")[1]?.trim() || "Fast shipping"}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Food-grade certified</span>
-                  </div>
+                {/* Direct contact */}
+                <div className="flex items-center gap-6 mt-6 text-sm text-warm-gray">
+                  <span>Need help?</span>
+                  <a
+                    href="tel:+611234567890"
+                    className="inline-flex items-center gap-1.5 text-forest font-medium hover:text-kraft transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Call Sales
+                  </a>
+                  <a
+                    href="mailto:sales@amglobal.com.au"
+                    className="inline-flex items-center gap-1.5 text-forest font-medium hover:text-kraft transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    Email Us
+                  </a>
                 </div>
-              </div>
-
-              {/* Direct contact */}
-              <div className="flex items-center gap-6 mt-6 text-sm text-warm-gray">
-                <span>Need help?</span>
-                <a
-                  href="tel:+611234567890"
-                  className="inline-flex items-center gap-1.5 text-forest font-medium hover:text-kraft transition-colors"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  Call Sales
-                </a>
-                <a
-                  href="mailto:sales@amglobal.com.au"
-                  className="inline-flex items-center gap-1.5 text-forest font-medium hover:text-kraft transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  Email Us
-                </a>
-              </div>
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
@@ -570,9 +681,7 @@ export default function ProductDetailPage({ product }: { product: Product }) {
                         <h3 className="text-base font-bold text-charcoal mt-1.5 group-hover:text-forest transition-colors">
                           {rp.shortName}
                         </h3>
-                        <p className="text-xs text-warm-gray mt-1">
-                          {rp.dimensions}
-                        </p>
+                        <p className="text-xs text-warm-gray mt-1">{rp.dimensions}</p>
                         <div className="flex items-center gap-1 mt-3 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
                           View Details
                           <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
