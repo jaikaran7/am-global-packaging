@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Package,
   ChevronRight,
@@ -18,7 +19,9 @@ import {
 import {
   products,
   categories,
-  getDefaultSlugForCategory,
+  productCategories,
+  categoryRouteSlugs,
+  getCategoryProducts,
   type Product,
 } from "@/data/products";
 
@@ -173,30 +176,24 @@ function PriceTag({ product }: { product: Product }) {
 }
 
 export default function ProductsPage() {
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const pathname = usePathname();
+  const isAllProductsPage = pathname === "/products";
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const headerInView = useInView(headerRef, { once: true, margin: "-80px" });
 
-  const filtered =
-    activeCategory === "all"
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+  /** Category-level cards only (one per category) for All Products landing page */
+  const categoryCards = productCategories.map((cat) => {
+    const firstProduct = getCategoryProducts(cat.id)[0];
+    return { ...cat, firstProduct };
+  });
 
   const plyFilters = ["3-Ply", "5-Ply", "7-Ply"];
 
-  /** Build the href for a product card — append ?from=all so the detail
-   *  page knows it was opened from the All Products listing. */
-  const productHref = (slug: string) => `/products/${slug}?from=all`;
-
-  /** When clicking a category in the sidebar from "All Products" view,
-   *  navigate directly to the first product of that category. */
-  const handleCategoryClick = (catId: string) => {
-    setActiveCategory(catId);
-    setMobileFilterOpen(false);
-  };
+  /** Category card links to category landing (first product opens with switcher) */
+  const categoryHref = (routeSlug: string) => `/products/${routeSlug}`;
 
   return (
     <div className="min-h-screen bg-offwhite">
@@ -241,7 +238,7 @@ export default function ProductsPage() {
             <div className="flex items-center gap-6 mt-8">
               <div className="flex items-center gap-2 text-offwhite/40 text-sm">
                 <Package className="w-4 h-4" />
-                <span>{products.length} Products</span>
+                <span>{productCategories.length} Categories</span>
               </div>
               <div className="w-px h-4 bg-offwhite/15" />
               <div className="flex items-center gap-2 text-offwhite/40 text-sm">
@@ -251,7 +248,7 @@ export default function ProductsPage() {
               <div className="w-px h-4 bg-offwhite/15" />
               <div className="flex items-center gap-2 text-offwhite/40 text-sm">
                 <Ruler className="w-4 h-4" />
-                <span>{categories.length - 1} Categories</span>
+                <span>{products.length} Products</span>
               </div>
             </div>
           </motion.div>
@@ -279,19 +276,25 @@ export default function ProductsPage() {
                   Category
                 </h3>
                 <div className="space-y-1">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => handleCategoryClick(cat.id)}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        activeCategory === cat.id
-                          ? "bg-forest text-offwhite shadow-md shadow-forest/15"
-                          : "text-charcoal/70 hover:bg-cream/60 hover:text-charcoal"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+                  {categories.map((cat) => {
+                    const isAll = cat.id === "all";
+                    const isActive = isAll && isAllProductsPage;
+                    const href = isAll ? "/products" : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
+                    return (
+                      <Link
+                        key={cat.id}
+                        href={href}
+                        onClick={() => setMobileFilterOpen(false)}
+                        className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? "bg-forest text-offwhite shadow-md shadow-forest/15"
+                            : "text-charcoal/70 hover:bg-cream/60 hover:text-charcoal"
+                        }`}
+                      >
+                        {cat.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -355,19 +358,23 @@ export default function ProductsPage() {
                     <h4 className="text-[11px] font-bold tracking-[0.2em] text-warm-gray uppercase mb-3">
                       Category
                     </h4>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategoryClick(cat.id)}
-                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${
-                          activeCategory === cat.id
-                            ? "bg-forest text-offwhite"
-                            : "text-charcoal/70"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
+                    {categories.map((cat) => {
+                      const isAll = cat.id === "all";
+                      const href = isAll ? "/products" : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
+                      const isActive = isAll && isAllProductsPage;
+                      return (
+                        <Link
+                          key={cat.id}
+                          href={href}
+                          onClick={() => setMobileFilterOpen(false)}
+                          className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${
+                            isActive ? "bg-forest text-offwhite" : "text-charcoal/70"
+                          }`}
+                        >
+                          {cat.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>
@@ -381,9 +388,9 @@ export default function ProductsPage() {
               <p className="text-sm text-warm-gray">
                 Showing{" "}
                 <span className="font-semibold text-charcoal">
-                  {filtered.length}
+                  {categoryCards.length}
                 </span>{" "}
-                products
+                categories
               </p>
               <div className="hidden sm:flex items-center gap-1 bg-white border border-kraft/10 rounded-lg p-1">
                 <button
@@ -409,7 +416,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Product Grid */}
+            {/* Category cards — one per category (category landing page) */}
             <div
               className={
                 viewMode === "grid"
@@ -417,24 +424,24 @@ export default function ProductsPage() {
                   : "flex flex-col gap-5"
               }
             >
-              {filtered.map((product, i) => (
+              {categoryCards.map((cat, i) => (
                 <motion.div
-                  key={product.slug}
+                  key={cat.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.06 }}
                 >
-                  <Link href={productHref(product.slug)}>
+                  <Link href={categoryHref(cat.routeSlug)}>
                     <div
                       className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
                         viewMode === "list"
                           ? "flex flex-row items-center"
                           : ""
                       }`}
-                      onMouseEnter={() => setHoveredProduct(product.slug)}
-                      onMouseLeave={() => setHoveredProduct(null)}
+                      onMouseEnter={() => setHoveredCategoryId(cat.id)}
+                      onMouseLeave={() => setHoveredCategoryId(null)}
                     >
-                      {/* Product visual */}
+                      {/* Category visual — use first product in category for 3D box */}
                       <div
                         className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
                           viewMode === "list"
@@ -443,70 +450,34 @@ export default function ProductsPage() {
                         }`}
                       >
                         <div className="absolute inset-0 corrugated-pattern opacity-20" />
-                        <Box3D
-                          product={product}
-                          hovered={hoveredProduct === product.slug}
-                        />
-
-                        {/* Badges */}
-                        {product.slug === "large-pizza-box" && (
-                          <div className="absolute top-3 left-3 px-2.5 py-1 bg-forest text-offwhite text-[10px] font-bold tracking-wide rounded-full uppercase">
-                            Most Popular
-                          </div>
-                        )}
-                        {product.slug === "amazon-fba-carton" && (
-                          <div className="absolute top-3 left-3 px-2.5 py-1 bg-kraft text-white text-[10px] font-bold tracking-wide rounded-full uppercase">
-                            Best Value
-                          </div>
+                        {cat.firstProduct && (
+                          <Box3D
+                            product={cat.firstProduct}
+                            hovered={hoveredCategoryId === cat.id}
+                          />
                         )}
                         <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10">
-                          {product.dimensions.split("×")[0].trim()}mm
+                          {getCategoryProducts(cat.id).length} type{getCategoryProducts(cat.id).length !== 1 ? "s" : ""}
                         </div>
                       </div>
 
-                      {/* Product info */}
+                      {/* Category info */}
                       <div
                         className={`p-5 ${
                           viewMode === "list" ? "flex-1" : ""
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[10px] font-semibold tracking-[0.15em] text-kraft uppercase">
-                            {product.categoryLabel}
-                          </span>
-                        </div>
                         <h3 className="text-base font-bold text-charcoal tracking-tight group-hover:text-forest transition-colors">
-                          {product.shortName}
+                          {cat.label}
                         </h3>
                         <p className="text-xs text-warm-gray mt-1.5 leading-relaxed line-clamp-2">
-                          {product.tagline}
+                          View sizes and options
                         </p>
 
-                        {/* Quick specs */}
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          <span className="px-2 py-0.5 bg-cream/70 text-charcoal/70 text-[10px] font-medium rounded">
-                            {product.dimensions}
-                          </span>
-                          {product.plyOptions.slice(0, 2).map((ply) => (
-                            <span
-                              key={ply}
-                              className="px-2 py-0.5 bg-forest/5 text-forest text-[10px] font-medium rounded"
-                            >
-                              {ply}
-                            </span>
-                          ))}
-                        </div>
-
                         {/* CTA */}
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-kraft/8">
-                          <PriceTag product={product} />
-                          {!product.priceAud && !product.pricingTiers && (
-                            <span className="text-xs text-warm-gray">
-                              MOQ: {product.moq}
-                            </span>
-                          )}
+                        <div className="flex items-center justify-end mt-4 pt-4 border-t border-kraft/8">
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
-                            View Details
+                            View Category
                             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                           </span>
                         </div>

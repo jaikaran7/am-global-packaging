@@ -1,12 +1,27 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductDetailPage from "@/components/ProductDetailPage";
-import { products, getProductBySlug } from "@/data/products";
+import {
+  products,
+  getProductBySlug,
+  isCategoryRouteSlug,
+  getCategoryIdByRouteSlug,
+  getDefaultSlugForCategory,
+} from "@/data/products";
 
 export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  const productSlugs = products.map((p) => ({ slug: p.slug }));
+  const categorySlugs = [
+    "pizza-boxes",
+    "a4-boxes",
+    "specialty-heavy-duty",
+    "e-commerce",
+    "vegetable-boxes",
+    "poultry-boxes",
+  ];
+  return [...productSlugs, ...categorySlugs.map((slug) => ({ slug }))];
 }
 
 export async function generateMetadata({
@@ -29,6 +44,15 @@ export default async function ProductDetailRoute({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  if (isCategoryRouteSlug(slug)) {
+    const categoryId = getCategoryIdByRouteSlug(slug);
+    if (categoryId) {
+      const defaultProductSlug = getDefaultSlugForCategory(categoryId);
+      redirect(`/products/${defaultProductSlug}?from=all`);
+    }
+  }
+
   const product = getProductBySlug(slug);
   if (!product) notFound();
 

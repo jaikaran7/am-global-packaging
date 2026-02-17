@@ -608,6 +608,39 @@ export const categories = [
   { id: "poultry-boxes", label: "Poultry Boxes" },
 ] as const;
 
+/** URL slug for each category (used in /products/[slug] for category landing) */
+export const categoryRouteSlugs: Record<string, string> = {
+  "pizza-boxes": "pizza-boxes",
+  "general-purpose": "a4-boxes",
+  specialty: "specialty-heavy-duty",
+  ecommerce: "e-commerce",
+  "vegetable-boxes": "vegetable-boxes",
+  "poultry-boxes": "poultry-boxes",
+};
+
+/** Category IDs that are category-landing routes (not product slugs) */
+const CATEGORY_ROUTE_SLUGS = new Set(Object.values(categoryRouteSlugs));
+
+/** True if slug is a category route (e.g. pizza-boxes, a4-boxes), not a product slug */
+export function isCategoryRouteSlug(slug: string): boolean {
+  return CATEGORY_ROUTE_SLUGS.has(slug);
+}
+
+/** Get category id from a category route slug (e.g. a4-boxes → general-purpose) */
+export function getCategoryIdByRouteSlug(routeSlug: string): string | undefined {
+  for (const [id, rs] of Object.entries(categoryRouteSlugs)) {
+    if (rs === routeSlug) return id;
+  }
+  return undefined;
+}
+
+/** Categories only (no "all") for All Products page cards; includes routeSlug and label */
+export const productCategories = categories.filter((c) => c.id !== "all").map((cat) => ({
+  id: cat.id,
+  label: cat.label,
+  routeSlug: categoryRouteSlugs[cat.id] ?? cat.id,
+}));
+
 /** Returns the first (default) product slug for a given category */
 export function getDefaultSlugForCategory(categoryId: string): string {
   const map: Record<string, string> = {

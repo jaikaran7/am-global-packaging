@@ -3,50 +3,43 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import {
-  Zap,
+  Factory,
+  Layers,
+  Package,
+  Leaf,
   Clock,
-  BadgeCheck,
-  Truck,
-  Ruler,
-  HeadphonesIcon,
 } from "lucide-react";
 
 const reasons = [
   {
-    icon: Zap,
-    title: "Advanced Manufacturing",
-    desc: "Fully automated corrugation lines, precision die-cutting, and flexographic printing ensure consistent quality at scale.",
-    highlight: "200K+ sqft facility",
+    icon: Factory,
+    title: "Factory-Grade Materials",
+    desc: "Suitable for warehouse and industrial use",
+    highlight: "Industrial grade",
+  },
+  {
+    icon: Layers,
+    title: "Wide Range of Options",
+    desc: "Multiple GSM, sizes, and ply configurations available",
+    highlight: "Multiple configurations",
+  },
+  {
+    icon: Package,
+    title: "Bulk & Custom Supply",
+    desc: "Capable of handling large-scale and customized orders",
+    highlight: "Bulk & custom",
+  },
+  {
+    icon: Leaf,
+    title: "Eco-Friendly Packaging",
+    desc: "Environmentally responsible and recyclable materials",
+    highlight: "Recyclable",
   },
   {
     icon: Clock,
-    title: "Fast Turnaround",
-    desc: "Streamlined production workflows and strategic inventory management deliver standard orders in 5-7 business days.",
-    highlight: "5-7 day lead time",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Certified Quality",
-    desc: "ISO 9001 certified processes with rigorous quality control at every stage from raw material to finished product.",
-    highlight: "ISO 9001 certified",
-  },
-  {
-    icon: Ruler,
-    title: "Full Customization",
-    desc: "Custom dimensions, ply configurations, printing, coatings, and structural designs tailored to your exact specifications.",
-    highlight: "Unlimited configurations",
-  },
-  {
-    icon: Truck,
-    title: "Global Logistics",
-    desc: "Integrated supply chain management with pan-India and international shipping capabilities for seamless delivery.",
-    highlight: "30+ countries served",
-  },
-  {
-    icon: HeadphonesIcon,
-    title: "Dedicated Support",
-    desc: "Assigned account managers, packaging engineers, and round-the-clock support for enterprise clients.",
-    highlight: "24/7 availability",
+    title: "Reliable Service",
+    desc: "Competitive pricing with dependable delivery timelines",
+    highlight: "Dependable delivery",
   },
 ];
 
