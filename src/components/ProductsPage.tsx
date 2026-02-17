@@ -15,7 +15,12 @@ import {
   Layers,
   X,
 } from "lucide-react";
-import { products, categories, type Product } from "@/data/products";
+import {
+  products,
+  categories,
+  getDefaultSlugForCategory,
+  type Product,
+} from "@/data/products";
 
 function Box3D({
   product,
@@ -26,22 +31,22 @@ function Box3D({
 }) {
   const { length, width, height } = product.dimensionDetail;
 
-  // Normalize dimensions for display — scale to fit within card
   const maxDim = Math.max(length, width, height);
   const s = 130 / maxDim;
   const w = Math.max(80, length * s);
   const h = Math.max(60, height * s);
   const depth = Math.max(20, width * s * 0.5);
 
-  // Color palette per category
-  const palette = {
-    "pizza-boxes": { front: "#C4973B", mid: "#A67B1E", dark: "#8B6914", top: "#DDB84D" },
-    specialty: { front: "#8B7355", mid: "#6B5A42", dark: "#5A4A35", top: "#A68B6B" },
-    books: { front: "#B8935A", mid: "#9A7A48", dark: "#7D6338", top: "#D4AE6E" },
-    ecommerce: { front: "#A68558", mid: "#8B6E45", dark: "#735B38", top: "#C4A06A" },
+  const palette: Record<string, { front: string; mid: string; dark: string; top: string }> = {
+    "pizza-boxes":     { front: "#C4973B", mid: "#A67B1E", dark: "#8B6914", top: "#DDB84D" },
+    specialty:         { front: "#8B7355", mid: "#6B5A42", dark: "#5A4A35", top: "#A68B6B" },
+    books:             { front: "#B8935A", mid: "#9A7A48", dark: "#7D6338", top: "#D4AE6E" },
+    ecommerce:         { front: "#A68558", mid: "#8B6E45", dark: "#735B38", top: "#C4A06A" },
     "general-purpose": { front: "#B09060", mid: "#957850", dark: "#7C6342", top: "#CBA878" },
+    "vegetable-boxes": { front: "#5A8A4A", mid: "#4A7A3A", dark: "#3A6A2A", top: "#7AAA62" },
+    "poultry-boxes":   { front: "#C4784A", mid: "#A46038", dark: "#8A4E2C", top: "#E4986A" },
   };
-  const c = palette[product.category] || palette["general-purpose"];
+  const c = palette[product.category] ?? palette["general-purpose"];
 
   return (
     <div
@@ -182,6 +187,17 @@ export default function ProductsPage() {
 
   const plyFilters = ["3-Ply", "5-Ply", "7-Ply"];
 
+  /** Build the href for a product card — append ?from=all so the detail
+   *  page knows it was opened from the All Products listing. */
+  const productHref = (slug: string) => `/products/${slug}?from=all`;
+
+  /** When clicking a category in the sidebar from "All Products" view,
+   *  navigate directly to the first product of that category. */
+  const handleCategoryClick = (catId: string) => {
+    setActiveCategory(catId);
+    setMobileFilterOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-offwhite">
       {/* Hero banner */}
@@ -266,7 +282,7 @@ export default function ProductsPage() {
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
+                      onClick={() => handleCategoryClick(cat.id)}
                       className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                         activeCategory === cat.id
                           ? "bg-forest text-offwhite shadow-md shadow-forest/15"
@@ -342,10 +358,7 @@ export default function ProductsPage() {
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        onClick={() => {
-                          setActiveCategory(cat.id);
-                          setMobileFilterOpen(false);
-                        }}
+                        onClick={() => handleCategoryClick(cat.id)}
                         className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${
                           activeCategory === cat.id
                             ? "bg-forest text-offwhite"
@@ -411,7 +424,7 @@ export default function ProductsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: i * 0.06 }}
                 >
-                  <Link href={`/products/${product.slug}`}>
+                  <Link href={productHref(product.slug)}>
                     <div
                       className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
                         viewMode === "list"
