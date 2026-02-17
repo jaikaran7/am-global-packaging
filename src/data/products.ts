@@ -6,7 +6,15 @@ export interface Product {
   description: string;
   dimensions: string;
   dimensionDetail: { length: number; width: number; height: number };
-  category: "pizza-boxes" | "specialty" | "books" | "ecommerce" | "general-purpose";
+  /** Internal category key — used for filtering */
+  category:
+    | "pizza-boxes"
+    | "specialty"
+    | "books"
+    | "ecommerce"
+    | "general-purpose"
+    | "vegetable-boxes"
+    | "poultry-boxes";
   categoryLabel: string;
   useCases: string[];
   plyOptions: string[];
@@ -23,9 +31,10 @@ export interface Product {
 }
 
 export const products: Product[] = [
+  // ─────────────── PIZZA BOXES ───────────────
   {
     slug: "small-pizza-box",
-    name: 'Small Pizza Box — 200 × 200 × 40 mm',
+    name: "Small Pizza Box — 200 × 200 × 40 mm",
     shortName: "Small Pizza Box",
     tagline: "Compact & efficient for personal-sized pizzas",
     description:
@@ -66,7 +75,7 @@ export const products: Product[] = [
   },
   {
     slug: "medium-pizza-box",
-    name: 'Medium Pizza Box — 250 × 250 × 45 mm',
+    name: "Medium Pizza Box — 250 × 250 × 45 mm",
     shortName: "Medium Pizza Box",
     tagline: "The versatile mid-range choice for growing brands",
     description:
@@ -107,7 +116,7 @@ export const products: Product[] = [
   },
   {
     slug: "large-pizza-box",
-    name: 'Large Pizza Box — 300 × 300 × 45 mm',
+    name: "Large Pizza Box — 300 × 300 × 45 mm",
     shortName: "Large Pizza Box",
     tagline: "Australia's most popular size — built for volume",
     description:
@@ -148,7 +157,7 @@ export const products: Product[] = [
   },
   {
     slug: "extra-large-pizza-box",
-    name: 'Extra-Large Pizza Box — 330 × 330 × 45 mm',
+    name: "Extra-Large Pizza Box — 330 × 330 × 45 mm",
     shortName: "Extra-Large Pizza Box",
     tagline: "Oversized performance for premium pizza brands",
     description:
@@ -189,7 +198,7 @@ export const products: Product[] = [
   },
   {
     slug: "family-party-pizza-box",
-    name: 'Family / Party Pizza Box — 400 × 400 × 50 mm',
+    name: "Family / Party Pizza Box — 400 × 400 × 50 mm",
     shortName: "Family / Party Box",
     tagline: "Maximum capacity for family & party-sized pizzas",
     description:
@@ -228,7 +237,8 @@ export const products: Product[] = [
     ],
     relatedSlugs: ["extra-large-pizza-box", "large-pizza-box"],
   },
-  // ──────────────── NEW PRODUCTS ────────────────
+
+  // ─────────────── SPECIALTY / HEAVY-DUTY ───────────────
   {
     slug: "tea-chest-box",
     name: "Tea Chest Box — 431 × 406 × 596 mm",
@@ -241,12 +251,7 @@ export const products: Product[] = [
     category: "specialty",
     categoryLabel: "Specialty / Heavy-Duty",
     priceAud: 3.70,
-    useCases: [
-      "Bulk storage",
-      "Export cartons",
-      "Heavy goods",
-      "Warehouse logistics",
-    ],
+    useCases: ["Bulk storage", "Export cartons", "Heavy goods", "Warehouse logistics"],
     plyOptions: ["5-Ply (3BC)"],
     gsmRange: "250 – 350 GSM",
     material: "Heavy-duty virgin kraft corrugated board",
@@ -280,15 +285,10 @@ export const products: Product[] = [
       "A sturdy 5-Ply (1BC) corrugated book box engineered for the weight and density of printed materials. The compact square profile provides excellent stacking stability and protects contents from crushing during transit. Ideal for publishers, bookstores, retail shipping, and boxed set packaging.",
     dimensions: "390 × 330 × 330 mm",
     dimensionDetail: { length: 390, width: 330, height: 330 },
-    category: "books",
-    categoryLabel: "Books / Printed Materials",
+    category: "specialty",
+    categoryLabel: "Specialty / Heavy-Duty",
     priceAud: 2.95,
-    useCases: [
-      "Books",
-      "Catalogs",
-      "Boxed sets",
-      "Retail shipping",
-    ],
+    useCases: ["Books", "Catalogs", "Boxed sets", "Retail shipping"],
     plyOptions: ["5-Ply (1BC)"],
     gsmRange: "200 – 280 GSM",
     material: "Virgin kraft corrugated board",
@@ -313,6 +313,8 @@ export const products: Product[] = [
     ],
     relatedSlugs: ["tea-chest-box", "a4-box-type-1"],
   },
+
+  // ─────────────── ECOMMERCE / FBA ───────────────
   {
     slug: "amazon-fba-carton",
     name: "Amazon FBA Carton — 350 × 250 × 200 mm",
@@ -323,14 +325,9 @@ export const products: Product[] = [
     dimensions: "350 × 250 × 200 mm",
     dimensionDetail: { length: 350, width: 250, height: 200 },
     category: "ecommerce",
-    categoryLabel: "Ecommerce / FBA",
+    categoryLabel: "E-Commerce",
     priceAud: 1.05,
-    useCases: [
-      "Amazon FBA",
-      "D2C shipping",
-      "Warehouse fulfillment",
-      "Ecommerce logistics",
-    ],
+    useCases: ["Amazon FBA", "D2C shipping", "Warehouse fulfillment", "Ecommerce logistics"],
     plyOptions: ["3-Ply", "5-Ply"],
     gsmRange: "150 – 220 GSM",
     material: "Virgin kraft / Recycled corrugated board",
@@ -355,48 +352,8 @@ export const products: Product[] = [
     ],
     relatedSlugs: ["a4-box-type-1", "a4-box-type-2"],
   },
-  {
-    slug: "a4-box-type-2",
-    name: "A4 Box Type 2 — 440 × 330 × 300 mm",
-    shortName: "A4 Box Type 2",
-    tagline: "Generous A4 box for documents, office storage, and bulk packing",
-    description:
-      "A larger-format A4 box designed for files, documents, office storage, and general-purpose bulk packing. The generous depth accommodates thick document stacks, binders, and mixed office supplies. Available in both 3-Ply and 5-Ply configurations for varying weight requirements.",
-    dimensions: "440 × 330 × 300 mm",
-    dimensionDetail: { length: 440, width: 330, height: 300 },
-    category: "general-purpose",
-    categoryLabel: "A4 / General Purpose",
-    priceAud: 3.50,
-    useCases: [
-      "Documents & files",
-      "Office storage",
-      "Bulk packing",
-      "General-purpose shipping",
-    ],
-    plyOptions: ["3-Ply", "5-Ply"],
-    gsmRange: "150 – 250 GSM",
-    material: "Virgin kraft / Recycled corrugated board",
-    printOptions: "Up to 4-color flexo printing",
-    moq: "500 units",
-    availability: "In stock — ships within 3–5 business days",
-    features: [
-      "Generous depth for thick document stacks",
-      "Available in 3-Ply and 5-Ply",
-      "Suitable for binders and office supplies",
-      "Strong base for heavy contents",
-      "Custom branding available",
-      "Flat-pack for efficient storage",
-    ],
-    specs: [
-      { label: "Dimensions", value: "440 × 330 × 300 mm" },
-      { label: "Ply Options", value: "3-Ply, 5-Ply" },
-      { label: "Price", value: "$3.50 AUD / unit" },
-      { label: "Material", value: "Kraft / Recycled board" },
-      { label: "Print", value: "Up to 4-color flexo" },
-      { label: "MOQ", value: "500 units" },
-    ],
-    relatedSlugs: ["a4-box-type-1", "tea-chest-box"],
-  },
+
+  // ─────────────── A4 / GENERAL PURPOSE ───────────────
   {
     slug: "a4-box-type-1",
     name: "A4 Box Type 1 — 320 × 220 × 240 mm",
@@ -407,17 +364,12 @@ export const products: Product[] = [
     dimensions: "320 × 220 × 240 mm",
     dimensionDetail: { length: 320, width: 220, height: 240 },
     category: "general-purpose",
-    categoryLabel: "A4 / General Purpose",
+    categoryLabel: "A4 Boxes",
     pricingTiers: [
       { label: "500 units", priceAud: 0.80 },
       { label: "1,500+ units", priceAud: 1.05 },
     ],
-    useCases: [
-      "Documents",
-      "Small goods",
-      "Office shipping",
-      "Lightweight fulfillment",
-    ],
+    useCases: ["Documents", "Small goods", "Office shipping", "Lightweight fulfillment"],
     plyOptions: ["3-Ply", "5-Ply"],
     gsmRange: "120 – 200 GSM",
     material: "Virgin kraft / Recycled corrugated board",
@@ -442,6 +394,199 @@ export const products: Product[] = [
     ],
     relatedSlugs: ["a4-box-type-2", "amazon-fba-carton"],
   },
+  {
+    slug: "a4-box-type-2",
+    name: "A4 Box Type 2 — 440 × 330 × 300 mm",
+    shortName: "A4 Box Type 2",
+    tagline: "Generous A4 box for documents, office storage, and bulk packing",
+    description:
+      "A larger-format A4 box designed for files, documents, office storage, and general-purpose bulk packing. The generous depth accommodates thick document stacks, binders, and mixed office supplies. Available in both 3-Ply and 5-Ply configurations for varying weight requirements.",
+    dimensions: "440 × 330 × 300 mm",
+    dimensionDetail: { length: 440, width: 330, height: 300 },
+    category: "general-purpose",
+    categoryLabel: "A4 Boxes",
+    priceAud: 3.50,
+    useCases: ["Documents & files", "Office storage", "Bulk packing", "General-purpose shipping"],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "150 – 250 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Generous depth for thick document stacks",
+      "Available in 3-Ply and 5-Ply",
+      "Suitable for binders and office supplies",
+      "Strong base for heavy contents",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "440 × 330 × 300 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Price", value: "$3.50 AUD / unit" },
+      { label: "Material", value: "Kraft / Recycled board" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-1", "a4-box-type-3"],
+  },
+  {
+    slug: "a4-box-type-3",
+    name: "A4 Box Type 3 — 321 × 220 × 203 mm",
+    shortName: "A4 Box Type 3",
+    tagline: "Slim-profile A4 box optimised for tight document stacks",
+    description:
+      "A slim-profile A4 box with a slightly reduced height for single-layer document stacks and lightweight goods. The narrow footprint maximises pallet density and reduces freight costs. Available in 3-Ply and 5-Ply configurations for varying strength requirements.",
+    dimensions: "321 × 220 × 203 mm",
+    dimensionDetail: { length: 321, width: 220, height: 203 },
+    category: "general-purpose",
+    categoryLabel: "A4 Boxes",
+    useCases: ["Documents", "Stationery", "Office shipping", "Retail packing"],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "120 – 200 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Slim reduced-height profile",
+      "High pallet density",
+      "Available in 3-Ply and 5-Ply",
+      "Lightweight for lower freight costs",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "321 × 220 × 203 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Material", value: "Kraft / Recycled board" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-1", "a4-box-type-4"],
+  },
+  {
+    slug: "a4-box-type-4",
+    name: "A4 Box Type 4 — 369 × 269 × 211 mm",
+    shortName: "A4 Box Type 4",
+    tagline: "Mid-depth A4 box for mixed documents and small goods",
+    description:
+      "A mid-depth A4 box that bridges the gap between Type 1 and Type 2, ideal for mixed document packs, small goods, and retail kits. The wider base accommodates A4 materials with room for protective inserts. Available in 3-Ply and 5-Ply.",
+    dimensions: "369 × 269 × 211 mm",
+    dimensionDetail: { length: 369, width: 269, height: 211 },
+    category: "general-purpose",
+    categoryLabel: "A4 Boxes",
+    useCases: ["Mixed documents", "Small goods", "Retail kits", "Office packing"],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "130 – 220 GSM",
+    material: "Virgin kraft / Recycled corrugated board",
+    printOptions: "Up to 4-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Mid-depth versatile profile",
+      "Wide base for protective inserts",
+      "Available in 3-Ply and 5-Ply",
+      "Suitable for retail kits and gift packs",
+      "Custom branding available",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "369 × 269 × 211 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Material", value: "Kraft / Recycled board" },
+      { label: "Print", value: "Up to 4-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["a4-box-type-3", "a4-box-type-2"],
+  },
+
+  // ─────────────── VEGETABLE BOXES ───────────────
+  {
+    slug: "vegetable-box",
+    name: "Vegetable Box — 500 × 300 × 200 mm",
+    shortName: "Vegetable Box",
+    tagline: "Ventilated open-top crate for fresh produce and vegetables",
+    description:
+      "A purpose-built corrugated vegetable box with ventilation cut-outs and an open-top design for maximum airflow. Heavy-duty fluting maintains strength under moist produce conditions. Suitable for markets, growers, wholesalers, and supermarket supply chains.",
+    dimensions: "500 × 300 × 200 mm",
+    dimensionDetail: { length: 500, width: 300, height: 200 },
+    category: "vegetable-boxes",
+    categoryLabel: "Vegetable Boxes",
+    useCases: [
+      "Fresh vegetables",
+      "Market produce",
+      "Wholesale supply",
+      "Supermarket logistics",
+    ],
+    plyOptions: ["3-Ply", "5-Ply"],
+    gsmRange: "180 – 260 GSM",
+    material: "Heavy-duty virgin kraft corrugated board",
+    printOptions: "Up to 2-color flexo printing",
+    moq: "500 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Ventilation cut-outs for airflow",
+      "Open-top design for easy loading",
+      "Moisture-resistant outer treatment",
+      "Heavy-duty fluting",
+      "Stackable when full",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "500 × 300 × 200 mm" },
+      { label: "Ply Options", value: "3-Ply, 5-Ply" },
+      { label: "Material", value: "Heavy-duty kraft" },
+      { label: "Print", value: "Up to 2-color flexo" },
+      { label: "MOQ", value: "500 units" },
+    ],
+    relatedSlugs: ["poultry-box", "tea-chest-box"],
+  },
+
+  // ─────────────── POULTRY BOXES ───────────────
+  {
+    slug: "poultry-box",
+    name: "Poultry Box — 369 × 269 × 211 mm",
+    shortName: "Poultry Box",
+    tagline: "Heavy-duty poultry carton for chilled and frozen distribution",
+    description:
+      "A robust corrugated poultry box built for chilled and frozen poultry distribution. Features a wax or moisture-resistant coating option to withstand cold-chain environments. The reinforced base prevents sagging under heavy bird weight during transport and storage.",
+    dimensions: "369 × 269 × 211 mm",
+    dimensionDetail: { length: 369, width: 269, height: 211 },
+    category: "poultry-boxes",
+    categoryLabel: "Poultry Boxes",
+    priceAud: 1.80,
+    useCases: [
+      "Chilled poultry",
+      "Frozen chicken distribution",
+      "Cold-chain logistics",
+      "Wholesale butchery",
+    ],
+    plyOptions: ["5-Ply"],
+    gsmRange: "200 – 300 GSM",
+    material: "Moisture-resistant virgin kraft corrugated board",
+    printOptions: "Up to 2-color flexo printing",
+    moq: "300 units",
+    availability: "In stock — ships within 3–5 business days",
+    features: [
+      "Moisture / wax-resistant coating",
+      "Reinforced base for heavy loads",
+      "Cold-chain certified",
+      "Tight-fit lid closure",
+      "Stackable under refrigeration",
+      "Flat-pack for efficient storage",
+    ],
+    specs: [
+      { label: "Dimensions", value: "369 × 269 × 211 mm" },
+      { label: "Ply", value: "5-Ply" },
+      { label: "Price", value: "$1.80 AUD / unit" },
+      { label: "Material", value: "Moisture-resistant kraft" },
+      { label: "Print", value: "Up to 2-color flexo" },
+      { label: "MOQ", value: "300 units" },
+    ],
+    relatedSlugs: ["vegetable-box", "tea-chest-box"],
+  },
 ];
 
 export function getProductBySlug(slug: string): Product | undefined {
@@ -452,11 +597,31 @@ export function getRelatedProducts(slugs: string[]): Product[] {
   return products.filter((p) => slugs.includes(p.slug));
 }
 
+/** Ordered category list used in nav / sidebar */
 export const categories = [
   { id: "all", label: "All Products" },
   { id: "pizza-boxes", label: "Pizza Boxes" },
-  { id: "specialty", label: "Specialty / Heavy-Duty" },
-  { id: "books", label: "Books / Printed Materials" },
-  { id: "ecommerce", label: "Ecommerce / FBA" },
-  { id: "general-purpose", label: "A4 / General Purpose" },
+  { id: "general-purpose", label: "A4 Boxes" },
+  { id: "specialty", label: "Specialty & Heavy Duty" },
+  { id: "ecommerce", label: "E-Commerce" },
+  { id: "vegetable-boxes", label: "Vegetable Boxes" },
+  { id: "poultry-boxes", label: "Poultry Boxes" },
 ] as const;
+
+/** Returns the first (default) product slug for a given category */
+export function getDefaultSlugForCategory(categoryId: string): string {
+  const map: Record<string, string> = {
+    "pizza-boxes": "small-pizza-box",
+    "general-purpose": "a4-box-type-1",
+    specialty: "tea-chest-box",
+    ecommerce: "amazon-fba-carton",
+    "vegetable-boxes": "vegetable-box",
+    "poultry-boxes": "poultry-box",
+  };
+  return map[categoryId] ?? products.find((p) => p.category === categoryId)?.slug ?? products[0].slug;
+}
+
+/** Returns all products in the same category, ordered as product-type cards */
+export function getCategoryProducts(categoryId: string): Product[] {
+  return products.filter((p) => p.category === categoryId);
+}
