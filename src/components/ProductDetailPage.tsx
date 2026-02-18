@@ -200,40 +200,54 @@ function DetailBox3D({
   );
 }
 
-// ─── Product-type selector card (used when from=all) ─────────────────────────
+// ─── Product-type selector card (category products below image) ──────────────
 function ProductTypeCard({
   product,
   isActive,
   onClick,
+  href,
 }: {
   product: Product;
   isActive: boolean;
   onClick: () => void;
+  href?: string;
 }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-center transition-all duration-300 ${
-        isActive
-          ? "border-forest bg-forest/5 shadow-md"
-          : "border-kraft/15 bg-white hover:border-kraft/30 hover:bg-kraft-pale/20"
-      }`}
-    >
+  const label =
+    product.shortName
+      .replace(/A4 Box /i, "")
+      .replace(/Pizza Box/i, "")
+      .replace(/Carton/i, "")
+      .replace(/Box/i, "")
+      .trim() || product.shortName;
+  const className = `flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-center transition-all duration-300 ${
+    isActive
+      ? "border-forest bg-forest/5 shadow-md"
+      : "border-kraft/15 bg-white hover:border-kraft/30 hover:bg-kraft-pale/20"
+  }`;
+  const content = (
+    <>
       <span
         className={`text-[11px] font-bold leading-tight ${
           isActive ? "text-forest" : "text-charcoal/70"
         }`}
       >
-        {product.shortName
-          .replace(/A4 Box /i, "")
-          .replace(/Pizza Box/i, "")
-          .replace(/Carton/i, "")
-          .replace(/Box/i, "")
-          .trim() || product.shortName}
+        {label}
       </span>
       <span className="text-[9px] text-warm-gray leading-tight">
         {product.dimensionDetail.length}×{product.dimensionDetail.width} mm
       </span>
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
     </button>
   );
 }
@@ -375,50 +389,34 @@ export default function ProductDetailPage({ product: initialProduct }: { product
               </div>
             </div>
 
-            {/* ── Thumbnails / Product-type selector ── */}
-            {fromAll && categoryProducts.length > 1 ? (
-              /* Product-type cards — only shown when navigated from All Products */
-              <div className="mt-4">
-                <p className="text-[10px] font-bold text-warm-gray uppercase tracking-[0.15em] mb-3">
-                  {product.categoryLabel} — Select Type
-                </p>
-                <div
-                  className={`grid gap-2 ${
-                    categoryProducts.length <= 3
-                      ? "grid-cols-3"
-                      : "grid-cols-4"
-                  }`}
-                >
-                  {categoryProducts.map((p) => (
+            {/* ── Category product cards — always show (same UI whether from All Products or category/direct) ── */}
+            <div className="mt-4">
+              <p className="text-[10px] font-bold text-warm-gray uppercase tracking-[0.15em] mb-3">
+                {product.categoryLabel} — Select Type
+              </p>
+              <div
+                className={`grid gap-2 ${
+                  categoryProducts.length <= 3 ? "grid-cols-3" : "grid-cols-4"
+                }`}
+              >
+                {categoryProducts.map((p) => {
+                  const isActive = p.slug === activeProductSlug;
+                  return (
                     <ProductTypeCard
                       key={p.slug}
                       product={p}
-                      isActive={p.slug === activeProductSlug}
+                      isActive={isActive}
                       onClick={() => handleProductSwitch(p.slug)}
+                      href={
+                        fromAll && categoryProducts.length > 1
+                          ? undefined
+                          : `/products/${p.slug}`
+                      }
                     />
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ) : (
-              /* Standard Closed / Open / Ply Layers thumbnail cards */
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                {viewOptions.map((label, i) => (
-                  <button
-                    key={label}
-                    onClick={() => setActiveView(i)}
-                    className={`relative bg-gradient-to-br from-kraft-pale/40 to-cream/30 rounded-xl h-20 flex items-center justify-center border-2 transition-all ${
-                      activeView === i
-                        ? "border-forest shadow-md"
-                        : "border-transparent hover:border-kraft/20"
-                    }`}
-                  >
-                    <span className="text-[10px] font-semibold text-charcoal/60">
-                      {label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
           </div>
 
           {/* ── Right: Product details ── */}

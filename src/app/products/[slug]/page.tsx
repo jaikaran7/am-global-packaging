@@ -1,14 +1,13 @@
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductDetailPage from "@/components/ProductDetailPage";
+import ProductsPage from "@/components/ProductsPage";
 import {
   products,
   getProductBySlug,
   isCategoryRouteSlug,
-  getCategoryIdByRouteSlug,
-  getDefaultSlugForCategory,
 } from "@/data/products";
 
 export function generateStaticParams() {
@@ -45,12 +44,15 @@ export default async function ProductDetailRoute({
 }) {
   const { slug } = await params;
 
+  // Category slug → show category listing (no auto-open of first product)
   if (isCategoryRouteSlug(slug)) {
-    const categoryId = getCategoryIdByRouteSlug(slug);
-    if (categoryId) {
-      const defaultProductSlug = getDefaultSlugForCategory(categoryId);
-      redirect(`/products/${defaultProductSlug}?from=all`);
-    }
+    return (
+      <main>
+        <Navbar />
+        <ProductsPage />
+        <Footer />
+      </main>
+    );
   }
 
   const product = getProductBySlug(slug);

@@ -22,6 +22,8 @@ import {
   productCategories,
   categoryRouteSlugs,
   getCategoryProducts,
+  isCategoryRouteSlug,
+  getCategoryIdByRouteSlug,
   type Product,
 } from "@/data/products";
 
@@ -175,10 +177,103 @@ function PriceTag({ product }: { product: Product }) {
   return null;
 }
 
+/** Full detailed product card — Product Image, Category Label, Name, Description, Dimension/Ply badges, Price, View Details */
+function ProductCard({
+  product,
+  hovered,
+  onMouseEnter,
+  onMouseLeave,
+  viewMode = "grid",
+}: {
+  product: Product;
+  hovered: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  viewMode?: "grid" | "list";
+}) {
+  const maxDim = Math.max(
+    product.dimensionDetail.length,
+    product.dimensionDetail.width,
+    product.dimensionDetail.height
+  );
+  return (
+    <Link href={`/products/${product.slug}`}>
+      <div
+        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
+          viewMode === "list" ? "flex flex-row items-stretch" : ""
+        }`}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {/* Product image with 3D box and dimension badge */}
+        <div
+          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
+            viewMode === "list"
+              ? "w-[200px] h-[200px] flex-shrink-0"
+              : "h-[220px] md:h-[240px]"
+          }`}
+        >
+          <div className="absolute inset-0 corrugated-pattern opacity-20" />
+          <Box3D product={product} hovered={hovered} />
+          <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10">
+            {maxDim}mm
+          </div>
+        </div>
+        {/* Card body */}
+        <div className={`p-5 flex flex-col ${viewMode === "list" ? "flex-1 min-w-0" : ""}`}>
+          <span className="text-[10px] font-semibold tracking-[0.15em] text-kraft uppercase">
+            {product.categoryLabel}
+          </span>
+          <h3 className="text-base font-bold text-charcoal mt-1.5 tracking-tight group-hover:text-forest transition-colors">
+            {product.shortName}
+          </h3>
+          <p className="text-xs text-warm-gray mt-1.5 leading-relaxed line-clamp-2">
+            {product.tagline}
+          </p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10">
+              {product.dimensions}
+            </span>
+            {product.plyOptions.map((ply) => (
+              <span
+                key={ply}
+                className="px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10"
+              >
+                {ply}
+              </span>
+            ))}
+          </div>
+          {product.moq && (
+            <p className="text-xs text-warm-gray mt-2">
+              MOQ: {product.moq}
+            </p>
+          )}
+          <div className="mt-4 pt-4 border-t border-kraft/8 flex items-center justify-between">
+            <PriceTag product={product} />
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
+              View Details
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function ProductsPage() {
   const pathname = usePathname();
+  const pathSlug = pathname.replace(/^\/products\/?/, "") || "";
   const isAllProductsPage = pathname === "/products";
+  const isCategoryListingPage =
+    pathname.startsWith("/products/") &&
+    pathSlug !== "" &&
+    isCategoryRouteSlug(pathSlug);
+  const currentCategoryId = isCategoryListingPage
+    ? getCategoryIdByRouteSlug(pathSlug)
+    : undefined;
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
+  const [hoveredProductSlug, setHoveredProductSlug] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -190,10 +285,21 @@ export default function ProductsPage() {
     return { ...cat, firstProduct };
   });
 
+  /** Products in current category (when on category listing page) */
+  const categoryProducts =
+    currentCategoryId != null ? getCategoryProducts(currentCategoryId) : [];
+  const currentCategoryLabel =
+    currentCategoryId != null
+      ? categories.find((c) => c.id === currentCategoryId)?.label ?? ""
+      : "";
+
   const plyFilters = ["3-Ply", "5-Ply", "7-Ply"];
 
-  /** Category card links to category landing (first product opens with switcher) */
-  const categoryHref = (routeSlug: string) => `/products/${routeSlug}`;
+  /** All Products page only: category card opens first product with switcher (?from=all) */
+  const categoryCardHref = (cat: (typeof categoryCards)[0]) =>
+    cat.firstProduct
+      ? `/products/${cat.firstProduct.slug}?from=all`
+      : `/products/${cat.routeSlug}`;
 
   return (
     <div className="min-h-screen bg-offwhite">
@@ -278,8 +384,12 @@ export default function ProductsPage() {
                 <div className="space-y-1">
                   {categories.map((cat) => {
                     const isAll = cat.id === "all";
-                    const isActive = isAll && isAllProductsPage;
-                    const href = isAll ? "/products" : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
+                    const isActive = isAll
+                      ? isAllProductsPage
+                      : isCategoryListingPage && currentCategoryId === cat.id;
+                    const href = isAll
+                      ? "/products"
+                      : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
                     return (
                       <Link
                         key={cat.id}
@@ -361,7 +471,9 @@ export default function ProductsPage() {
                     {categories.map((cat) => {
                       const isAll = cat.id === "all";
                       const href = isAll ? "/products" : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
-                      const isActive = isAll && isAllProductsPage;
+                      const isActive = isAll
+                        ? isAllProductsPage
+                        : isCategoryListingPage && currentCategoryId === cat.id;
                       return (
                         <Link
                           key={cat.id}
@@ -381,16 +493,31 @@ export default function ProductsPage() {
             </div>
           )}
 
-          {/* Right: product grid */}
+          {/* Right: category cards (All Products) or product grid (category listing) */}
           <div>
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-8">
               <p className="text-sm text-warm-gray">
-                Showing{" "}
-                <span className="font-semibold text-charcoal">
-                  {categoryCards.length}
-                </span>{" "}
-                categories
+                {isCategoryListingPage ? (
+                  <>
+                    Showing{" "}
+                    <span className="font-semibold text-charcoal">
+                      {categoryProducts.length}
+                    </span>{" "}
+                    product{categoryProducts.length !== 1 ? "s" : ""} in{" "}
+                    <span className="font-semibold text-charcoal">
+                      {currentCategoryLabel}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Showing{" "}
+                    <span className="font-semibold text-charcoal">
+                      {categoryCards.length}
+                    </span>{" "}
+                    categories
+                  </>
+                )}
               </p>
               <div className="hidden sm:flex items-center gap-1 bg-white border border-kraft/10 rounded-lg p-1">
                 <button
@@ -416,77 +543,107 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Category cards — one per category (category landing page) */}
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid sm:grid-cols-2 xl:grid-cols-3 gap-6"
-                  : "flex flex-col gap-5"
-              }
-            >
-              {categoryCards.map((cat, i) => (
-                <motion.div
-                  key={cat.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: i * 0.06 }}
-                >
-                  <Link href={categoryHref(cat.routeSlug)}>
-                    <div
-                      className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
-                        viewMode === "list"
-                          ? "flex flex-row items-center"
-                          : ""
-                      }`}
-                      onMouseEnter={() => setHoveredCategoryId(cat.id)}
-                      onMouseLeave={() => setHoveredCategoryId(null)}
-                    >
-                      {/* Category visual — use first product in category for 3D box */}
+            {/* Category cards — All Products only; category card opens first product with switcher */}
+            {isAllProductsPage && (
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                    : "flex flex-col gap-5"
+                }
+              >
+                {categoryCards.map((cat, i) => (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                  >
+                    <Link href={categoryCardHref(cat)}>
                       <div
-                        className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
+                        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
                           viewMode === "list"
-                            ? "w-[200px] h-[160px] flex-shrink-0"
-                            : "h-[220px] md:h-[240px]"
+                            ? "flex flex-row items-center"
+                            : ""
                         }`}
+                        onMouseEnter={() => setHoveredCategoryId(cat.id)}
+                        onMouseLeave={() => setHoveredCategoryId(null)}
                       >
-                        <div className="absolute inset-0 corrugated-pattern opacity-20" />
-                        {cat.firstProduct && (
-                          <Box3D
-                            product={cat.firstProduct}
-                            hovered={hoveredCategoryId === cat.id}
-                          />
-                        )}
-                        <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10">
-                          {getCategoryProducts(cat.id).length} type{getCategoryProducts(cat.id).length !== 1 ? "s" : ""}
+                        {/* Category visual — use first product in category for 3D box */}
+                        <div
+                          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
+                            viewMode === "list"
+                              ? "w-[200px] h-[160px] flex-shrink-0"
+                              : "h-[220px] md:h-[240px]"
+                          }`}
+                        >
+                          <div className="absolute inset-0 corrugated-pattern opacity-20" />
+                          {cat.firstProduct && (
+                            <Box3D
+                              product={cat.firstProduct}
+                              hovered={hoveredCategoryId === cat.id}
+                            />
+                          )}
+                          <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10">
+                            {getCategoryProducts(cat.id).length} type{getCategoryProducts(cat.id).length !== 1 ? "s" : ""}
+                          </div>
+                        </div>
+
+                        {/* Category info */}
+                        <div
+                          className={`p-5 ${
+                            viewMode === "list" ? "flex-1" : ""
+                          }`}
+                        >
+                          <h3 className="text-base font-bold text-charcoal tracking-tight group-hover:text-forest transition-colors">
+                            {cat.label}
+                          </h3>
+                          <p className="text-xs text-warm-gray mt-1.5 leading-relaxed line-clamp-2">
+                            View sizes and options
+                          </p>
+
+                          {/* CTA */}
+                          <div className="flex items-center justify-end mt-4 pt-4 border-t border-kraft/8">
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
+                              View Category
+                              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                            </span>
+                          </div>
                         </div>
                       </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
-                      {/* Category info */}
-                      <div
-                        className={`p-5 ${
-                          viewMode === "list" ? "flex-1" : ""
-                        }`}
-                      >
-                        <h3 className="text-base font-bold text-charcoal tracking-tight group-hover:text-forest transition-colors">
-                          {cat.label}
-                        </h3>
-                        <p className="text-xs text-warm-gray mt-1.5 leading-relaxed line-clamp-2">
-                          View sizes and options
-                        </p>
-
-                        {/* CTA */}
-                        <div className="flex items-center justify-end mt-4 pt-4 border-t border-kraft/8">
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
-                            View Category
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+            {/* Category listing — full detailed product cards (same as screenshot) */}
+            {isCategoryListingPage && (
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                    : "flex flex-col gap-5"
+                }
+              >
+                {categoryProducts.map((product, i) => (
+                  <motion.div
+                    key={product.slug}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                  >
+                    <ProductCard
+                      product={product}
+                      hovered={hoveredProductSlug === product.slug}
+                      onMouseEnter={() => setHoveredProductSlug(product.slug)}
+                      onMouseLeave={() => setHoveredProductSlug(null)}
+                      viewMode={viewMode}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
             {/* Bottom CTA */}
             <motion.div
