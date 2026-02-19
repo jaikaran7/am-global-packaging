@@ -1,13 +1,17 @@
-import { AdminLayoutClient } from "@/components/admin/AdminLayoutClient";
+'use client'
+
+import { useState } from 'react'
+import Sidebar from './components/Sidebar'
 
 export default function AdminLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{ children: React.ReactNode }>) {
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
-      <AdminLayoutClient>{children}</AdminLayoutClient>
+    <div className="admin-body flex min-h-screen">
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <main className="flex-1 min-w-0 p-6">{children}</main>
     </div>
-  );
+  )
 }
