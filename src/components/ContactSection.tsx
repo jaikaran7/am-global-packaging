@@ -1,12 +1,64 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
 import { Send, Phone, MapPin, Mail, ChevronRight } from "lucide-react";
+import {
+  products,
+  categories,
+  getCategoryProducts,
+} from "@/data/products";
+
+const productCategories = categories.filter((c) => c.id !== "all");
+
+/** Corrugated Sheets options (not in main products catalogue) */
+const CORRUGATED_SHEETS_OPTIONS = [
+  { id: "standard-single-wall", label: "Standard Single-Wall (3-Ply)", plyOptions: ["3-Ply"] },
+  { id: "double-wall", label: "Double-Wall (5-Ply)", plyOptions: ["5-Ply"] },
+  { id: "heavy-duty", label: "Heavy-Duty / Industrial (7-Ply)", plyOptions: ["7-Ply"] },
+  { id: "custom-thickness", label: "Custom thickness / dimensions", plyOptions: ["3-Ply", "5-Ply", "7-Ply"] },
+] as const;
+const CORRUGATED_SHEETS_ID = "corrugated-sheets";
+
+const allCategories = [
+  ...productCategories,
+  { id: CORRUGATED_SHEETS_ID, label: "Corrugated Sheets" },
+];
 
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [productSlug, setProductSlug] = useState<string>("");
+  const [plyPreference, setPlyPreference] = useState<string>("");
+  const [quantity, setQuantity] = useState<string>("");
+
+  const isCorrugatedSheets = categoryId === CORRUGATED_SHEETS_ID;
+  const categoryProducts = useMemo(
+    () => (categoryId && !isCorrugatedSheets ? getCategoryProducts(categoryId) : []),
+    [categoryId, isCorrugatedSheets]
+  );
+  const selectedProduct = useMemo(
+    () => (categoryId && !isCorrugatedSheets ? products.find((p) => p.slug === productSlug) : undefined),
+    [categoryId, productSlug, isCorrugatedSheets]
+  );
+  const selectedSheetOption = useMemo(
+    () => (isCorrugatedSheets ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === productSlug) : undefined),
+    [isCorrugatedSheets, productSlug]
+  );
+  const plyOptions = selectedProduct?.plyOptions ?? selectedSheetOption?.plyOptions ?? [];
+  const hasProductSelection = selectedProduct !== undefined || selectedSheetOption !== undefined;
+  function getProductPlaceholder(): string {
+    if (categoryId === "") return "Select category first";
+    if (isCorrugatedSheets) return "Select sheet type";
+    return "Select product";
+  }
+  function getPlyPlaceholder(): string {
+    if (!hasProductSelection) return "Select product first";
+    if (plyOptions.length === 0) return "No ply options";
+    return "Select ply type";
+  }
 
   return (
     <section
@@ -96,42 +148,86 @@ export default function ContactSection() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 mt-5">
-                <label className="text-xs font-semibold text-charcoal tracking-wide">
-                  Product Interest
-                </label>
-                <select className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none">
-                  <option>Select product type</option>
-                  <option>Corrugated Boxes</option>
-                  <option>Corrugated Sheets</option>
-                  <option>Custom Packaging</option>
-                  <option>Bulk / Industrial Order</option>
-                </select>
+              <div className="grid sm:grid-cols-2 gap-5 mt-5">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-charcoal tracking-wide">
+                    Product Category *
+                  </label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value);
+                      setProductSlug("");
+                      setPlyPreference("");
+                    }}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+                  >
+                    <option value="">Select category</option>
+                    {allCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-charcoal tracking-wide">
+                    Product *
+                  </label>
+                  <select
+                    value={productSlug}
+                    onChange={(e) => {
+                      setProductSlug(e.target.value);
+                      setPlyPreference("");
+                    }}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+                  >
+                    <option value="">{getProductPlaceholder()}</option>
+                    {isCorrugatedSheets
+                      ? CORRUGATED_SHEETS_OPTIONS.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))
+                      : categoryProducts.map((p) => (
+                          <option key={p.slug} value={p.slug}>
+                            {p.shortName} — {p.dimensions}
+                          </option>
+                        ))}
+                  </select>
+                </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-5 mt-5">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
-                    Estimated Quantity
+                    Quantity
                   </label>
-                  <select className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none">
-                    <option>Select quantity range</option>
-                    <option>500 - 1,000 units</option>
-                    <option>1,000 - 5,000 units</option>
-                    <option>5,000 - 25,000 units</option>
-                    <option>25,000+ units</option>
-                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 5000"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
                     Ply Preference
                   </label>
-                  <select className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none">
-                    <option>Select ply type</option>
-                    <option>3-Ply (Single Wall)</option>
-                    <option>5-Ply (Double Wall)</option>
-                    <option>7-Ply (Triple Wall)</option>
-                    <option>Not sure / Need advice</option>
+                  <select
+                    value={plyPreference}
+                    onChange={(e) => setPlyPreference(e.target.value)}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={!hasProductSelection || plyOptions.length === 0}
+                  >
+                    <option value="">{getPlyPlaceholder()}</option>
+                    {plyOptions.map((ply) => (
+                      <option key={ply} value={ply}>
+                        {ply}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

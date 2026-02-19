@@ -174,3 +174,118 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ============================================
+   Admin Dashboard — Glassmorphism Utilities
+   ============================================ */
+
+:root {
+  --admin-glass-bg: rgba(255,255,255,0.65);
+  --admin-glass-border: rgba(255,255,255,0.55);
+  --admin-glass-shadow: 0 10px 30px rgba(16,18,20,0.06);
+  --admin-brand: #ff7a2d;
+  --admin-brand-light: #fff2e8;
+  --admin-brand-50: #fff8f3;
+}
+
+.admin-body {
+  background: linear-gradient(180deg, #f6f8fa 0%, #eef2f4 100%);
+  min-height: 100vh;
+}
+
+.glass {
+  background: var(--admin-glass-bg);
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: var(--admin-glass-shadow);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border-radius: 12px;
+}
+
+.glass--soft {
+  box-shadow: 0 8px 32px rgba(16,18,20,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.glass--elevated {
+  box-shadow: 0 12px 40px rgba(16,18,20,0.08), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.kpi-pill {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,248,250,0.85));
+  border-radius: 14px;
+  padding: 10px 18px;
+  box-shadow: 0 6px 18px rgba(16,18,20,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.5);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-sidebar {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border-right: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 4px 0 24px rgba(16,18,20,0.03);
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.admin-nav-item:hover {
+  background: rgba(255,255,255,0.6);
+  color: #1f2937;
+}
+.admin-nav-item.active {
+  background: linear-gradient(135deg, var(--admin-brand-light) 0%, #fff 100%);
+  color: var(--admin-brand);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255,122,45,0.1);
+}
+
+.admin-topbar {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(16,18,20,0.04);
+}
+
+@keyframes adminFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-animate-in {
+  animation: adminFadeInUp 0.5s ease forwards;
+}
+
+.admin-card-warm {
+  position: relative;
+  overflow: hidden;
+}
+.admin-card-warm::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at bottom right, rgba(255,122,45,0.04), transparent 70%);
+  pointer-events: none;
+}
