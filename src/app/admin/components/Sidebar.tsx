@@ -55,11 +55,11 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
       initial={false}
       animate={{ width: collapsed ? 76 : 240 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="admin-sidebar flex flex-col h-screen sticky top-0 z-30 overflow-hidden rounded-r-2xl"
+      className="admin-sidebar flex flex-col h-screen sticky top-0 z-30 overflow-hidden rounded-r-[20px]"
     >
       {/* Logo */}
       <div className="p-4 flex items-center gap-3 min-h-[68px]">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff7a2d] to-[#ff9a5c] flex items-center justify-center flex-shrink-0 shadow-md">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff7a2d] to-[#ff9a5c] flex items-center justify-center flex-shrink-0 shadow-[0_4px_12px_rgba(255,122,45,0.25)]">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="white" strokeWidth="2" strokeLinejoin="round" />
             <path d="M12 12L20 7" stroke="white" strokeWidth="1.5" />
@@ -76,8 +76,8 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
               transition={{ duration: 0.2 }}
               className="flex flex-col min-w-0"
             >
-              <span className="text-base font-bold text-gray-800 tracking-tight">AM Global</span>
-              <span className="text-[10px] text-gray-400 font-medium tracking-wide uppercase">Packaging</span>
+              <span className="text-base font-bold text-[#2b2f33] tracking-tight">AM Global</span>
+              <span className="text-[10px] text-[#9aa6b0] font-medium tracking-wide uppercase">Packaging</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -87,7 +87,7 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
       <div className="px-3 mb-2">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center p-1.5 rounded-lg hover:bg-white/50 transition-colors"
+          className="w-full flex items-center justify-center p-1.5 rounded-xl hover:bg-white/50 transition-colors"
           aria-label="Toggle sidebar"
           aria-expanded={!collapsed}
         >
@@ -130,7 +130,7 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
 
       {/* Bottom section */}
       <div className="px-3 pb-4 space-y-1">
-        <div className="border-t border-gray-200/50 mb-2" />
+        <div className="border-t border-white/40 mb-2" />
         {bottomItems.map((item) => (
           <Link
             key={item.href}

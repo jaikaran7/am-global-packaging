@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   EnvelopeIcon,
@@ -9,11 +10,13 @@ import {
 } from '@heroicons/react/24/outline'
 
 const kpiPills = [
-  { label: 'New Enquiries', value: 12, color: 'bg-orange-50 text-[#ff7a2d]', iconBg: 'bg-orange-100' },
-  { label: 'Pending Orders', value: 5, color: 'bg-amber-50 text-amber-600', iconBg: 'bg-amber-100' },
-  { label: 'Low Stock Alerts', value: 8, color: 'bg-emerald-50 text-emerald-600', iconBg: 'bg-emerald-100' },
-  { label: 'Upcoming Loads', value: 3, color: 'bg-violet-50 text-violet-600', iconBg: 'bg-violet-100' },
+  { label: 'New Enquiries', valueKey: 'newEnquiries' as const, color: 'bg-orange-50 text-[#ff7a2d]', iconBg: 'bg-orange-100' },
+  { label: 'Pending Orders', valueKey: 'pendingOrders' as const, color: 'bg-amber-50 text-amber-600', iconBg: 'bg-amber-100' },
+  { label: 'Low Stock Alerts', valueKey: 'lowStock' as const, color: 'bg-emerald-50 text-emerald-600', iconBg: 'bg-emerald-100' },
+  { label: 'Upcoming Loads', valueKey: 'upcomingLoads' as const, color: 'bg-violet-50 text-violet-600', iconBg: 'bg-violet-100' },
 ]
+
+const defaultCounts = { newEnquiries: 0, pendingOrders: 5, lowStock: 8, upcomingLoads: 3 }
 
 const pillIcons = [
   <svg key="enq" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>,
@@ -22,42 +25,66 @@ const pillIcons = [
   <svg key="ld" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>,
 ]
 
-export default function Topbar() {
+interface TopbarProps {
+  newEnquiriesCount?: number
+}
+
+export default function Topbar({ newEnquiriesCount }: Readonly<TopbarProps>) {
+  const counts = {
+    newEnquiries: newEnquiriesCount ?? defaultCounts.newEnquiries,
+    pendingOrders: defaultCounts.pendingOrders,
+    lowStock: defaultCounts.lowStock,
+    upcomingLoads: defaultCounts.upcomingLoads,
+  }
+
   return (
     <div className="admin-topbar px-6 py-3 flex items-center gap-4">
       {/* KPI pills */}
       <div className="flex items-center gap-3 flex-1 overflow-x-auto">
-        {kpiPills.map((pill, idx) => (
-          <motion.div
-            key={pill.label}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.08, duration: 0.4 }}
-            className="kpi-pill cursor-pointer hover:shadow-md transition-shadow flex-shrink-0"
-          >
-            <div className={`w-8 h-8 rounded-lg ${pill.iconBg} flex items-center justify-center`}>
-              <span className={pill.color.split(' ')[1]}>{pillIcons[idx]}</span>
-            </div>
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">{pill.label}</span>
-            <span className={`text-lg font-bold ${pill.color.split(' ')[1]}`}>{pill.value}</span>
-          </motion.div>
-        ))}
+        {kpiPills.map((pill, idx) => {
+          const content = (
+            <>
+              <div className={`w-8 h-8 rounded-xl ${pill.iconBg} flex items-center justify-center shadow-sm`}>
+                <span className={pill.color.split(' ')[1]}>{pillIcons[idx]}</span>
+              </div>
+              <span className="text-sm text-[#6b7280] font-medium whitespace-nowrap">{pill.label}</span>
+              <span className="text-lg font-bold text-[#ff7a2d]">{counts[pill.valueKey]}</span>
+            </>
+          )
+          return (
+            <motion.div
+              key={pill.label}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.08, duration: 0.4 }}
+              className="kpi-pill cursor-pointer hover:shadow-[0_6px_20px_rgba(16,18,20,0.06)] transition-all flex-shrink-0"
+            >
+              {pill.valueKey === 'newEnquiries' ? (
+                <Link href="/admin/enquiries?status=new" className="flex items-center gap-2">
+                  {content}
+                </Link>
+              ) : (
+                content
+              )}
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* Right actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button className="w-9 h-9 rounded-xl bg-white/50 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm" aria-label="Messages">
-          <EnvelopeIcon className="w-[18px] h-[18px] text-gray-500" />
+        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Messages">
+          <EnvelopeIcon className="w-[18px] h-[18px] text-[#6b7280]" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/50 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm relative" aria-label="Notifications">
-          <BellIcon className="w-[18px] h-[18px] text-gray-500" />
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#ff7a2d] rounded-full border-2 border-white" />
+        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm relative" aria-label="Notifications">
+          <BellIcon className="w-[18px] h-[18px] text-[#6b7280]" />
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#ff7a2d] rounded-full border-2 border-white shadow-sm" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/50 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm" aria-label="Settings">
-          <Cog6ToothIcon className="w-[18px] h-[18px] text-gray-500" />
+        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Settings">
+          <Cog6ToothIcon className="w-[18px] h-[18px] text-[#6b7280]" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/50 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm" aria-label="Logout">
-          <ArrowRightStartOnRectangleIcon className="w-[18px] h-[18px] text-gray-500" />
+        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Logout">
+          <ArrowRightStartOnRectangleIcon className="w-[18px] h-[18px] text-[#6b7280]" />
         </button>
       </div>
     </div>

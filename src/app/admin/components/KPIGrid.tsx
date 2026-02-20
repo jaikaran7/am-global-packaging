@@ -78,15 +78,15 @@ export default function KPIGrid() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.07, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
           whileHover={{ y: -3, transition: { duration: 0.2 } }}
-          className="glass glass--soft p-5 rounded-xl admin-card-warm cursor-pointer"
+          className="glass glass--soft p-5 rounded-[16px] admin-card-warm cursor-pointer"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{kpi.title}</p>
+              <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-2">{kpi.title}</p>
               <AnimatedCount
                 value={kpi.value}
                 prefix={kpi.title === 'Total Revenue' ? '$' : ''}
-                className="text-2xl font-extrabold text-gray-800"
+                className="text-2xl font-extrabold text-[#2b2f33]"
                 duration={1.6}
               />
               {kpi.delta && (
@@ -106,7 +106,7 @@ export default function KPIGrid() {
                 </p>
               )}
             </div>
-            <div className={`w-11 h-11 rounded-xl ${kpi.iconBg} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+            <div className={`w-11 h-11 rounded-xl ${kpi.iconBg} flex items-center justify-center flex-shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/50`}>
               {kpi.icon}
             </div>
           </div>

@@ -2,12 +2,35 @@
 
 import { useRef, useState, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
-import { Send, Phone, MapPin, Mail, ChevronRight } from "lucide-react";
+import { Send, Phone, MapPin, Mail, ChevronRight, Loader2, CheckCircle } from "lucide-react";
 import {
   products,
   categories,
   getCategoryProducts,
 } from "@/data/products";
+
+async function submitEnquiry(payload: {
+  full_name: string;
+  company_name: string;
+  email: string;
+  phone?: string;
+  product_category: string;
+  product: string;
+  quantity?: number | null;
+  ply_preference?: string | null;
+  project_details?: string | null;
+}) {
+  const res = await fetch("/api/enquiries", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || "Failed to submit enquiry");
+  }
+  return res.json();
+}
 
 const productCategories = categories.filter((c) => c.id !== "all");
 
@@ -33,6 +56,8 @@ export default function ContactSection() {
   const [productSlug, setProductSlug] = useState<string>("");
   const [plyPreference, setPlyPreference] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [submitError, setSubmitError] = useState<string>("");
 
   const isCorrugatedSheets = categoryId === CORRUGATED_SHEETS_ID;
   const categoryProducts = useMemo(
@@ -58,6 +83,57 @@ export default function ContactSection() {
     if (!hasProductSelection) return "Select product first";
     if (plyOptions.length === 0) return "No ply options";
     return "Select ply type";
+  }
+
+  const productCategoryLabel = allCategories.find((c) => c.id === categoryId)?.label ?? categoryId;
+  const productLabel = selectedProduct
+    ? `${selectedProduct.shortName} — ${selectedProduct.dimensions}`
+    : selectedSheetOption?.label ?? productSlug;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitError("");
+    const form = e.currentTarget;
+    const full_name = (form.elements.namedItem("full_name") as HTMLInputElement)?.value?.trim();
+    const company_name = (form.elements.namedItem("company_name") as HTMLInputElement)?.value?.trim();
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value?.trim();
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement)?.value?.trim() || undefined;
+    const project_details = (form.elements.namedItem("project_details") as HTMLTextAreaElement)?.value?.trim() || undefined;
+
+    if (!full_name || !company_name || !email) {
+      setSubmitStatus("error");
+      setSubmitError("Please fill in required fields: Full Name, Company Name, Email.");
+      return;
+    }
+    if (!categoryId || !productSlug) {
+      setSubmitStatus("error");
+      setSubmitError("Please select Product Category and Product.");
+      return;
+    }
+
+    setSubmitStatus("loading");
+    try {
+      await submitEnquiry({
+        full_name,
+        company_name,
+        email,
+        phone,
+        product_category: productCategoryLabel,
+        product: productLabel,
+        quantity: quantity ? Number(quantity) || null : null,
+        ply_preference: plyPreference || null,
+        project_details: project_details || null,
+      });
+      setSubmitStatus("success");
+      form.reset();
+      setCategoryId("");
+      setProductSlug("");
+      setPlyPreference("");
+      setQuantity("");
+    } catch (err) {
+      setSubmitStatus("error");
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    }
   }
 
   return (
@@ -104,16 +180,30 @@ export default function ContactSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="bg-white rounded-3xl p-8 md:p-10 shadow-xl shadow-kraft/5 border border-kraft/5">
+            <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-8 md:p-10 shadow-xl shadow-kraft/5 border border-kraft/5">
+              {submitStatus === "success" && (
+                <div className="mb-6 p-4 rounded-xl bg-forest/10 border border-forest/20 flex items-center gap-3 text-forest">
+                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-sm font-medium">Thanks, we&apos;ll contact you within 24 hours.</p>
+                </div>
+              )}
+              {submitStatus === "error" && submitError && (
+                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {submitError}
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
                     Full Name *
                   </label>
                   <input
+                    name="full_name"
                     type="text"
                     placeholder="John Doe"
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                    required
+                    disabled={submitStatus === "loading"}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -121,9 +211,12 @@ export default function ContactSection() {
                     Company Name *
                   </label>
                   <input
+                    name="company_name"
                     type="text"
                     placeholder="Your Company"
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                    required
+                    disabled={submitStatus === "loading"}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -131,9 +224,12 @@ export default function ContactSection() {
                     Email *
                   </label>
                   <input
+                    name="email"
                     type="email"
                     placeholder="john@company.com"
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                    required
+                    disabled={submitStatus === "loading"}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -141,9 +237,11 @@ export default function ContactSection() {
                     Phone
                   </label>
                   <input
+                    name="phone"
                     type="tel"
                     placeholder="+91 99XXX XXXXX"
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                    disabled={submitStatus === "loading"}
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -237,22 +335,37 @@ export default function ContactSection() {
                   Project Details
                 </label>
                 <textarea
+                  name="project_details"
                   rows={4}
                   placeholder="Tell us about your packaging requirements, dimensions, special features..."
-                  className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all resize-none"
+                  disabled={submitStatus === "loading"}
+                  className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all resize-none disabled:opacity-60"
                 />
               </div>
 
-              <button className="group w-full mt-8 inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/20 hover:shadow-xl hover:shadow-forest/30 text-sm">
-                <Send className="w-4 h-4" />
-                Submit Quote Request
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <button
+                type="submit"
+                disabled={submitStatus === "loading"}
+                className="group w-full mt-8 inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/20 hover:shadow-xl hover:shadow-forest/30 text-sm disabled:opacity-70 disabled:pointer-events-none"
+              >
+                {submitStatus === "loading" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Submit Quote Request
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
               </button>
 
               <p className="text-[11px] text-warm-gray text-center mt-4">
                 We respond to all inquiries within 24 hours during business days.
               </p>
-            </div>
+            </form>
           </motion.div>
 
           {/* Right: Contact Info */}

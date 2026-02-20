@@ -27,12 +27,12 @@ export default function SalesChart() {
     <GlassCard className="p-6 h-full" delay={0.2}>
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Sales Analytics</h3>
+          <h3 className="text-sm font-semibold text-[#2b2f33] mb-1">Sales Analytics</h3>
           <div className="flex items-baseline gap-2">
             <AnimatedCount
               value={48750}
               prefix="$"
-              className="text-3xl font-extrabold text-gray-800"
+              className="text-3xl font-extrabold text-[#2b2f33]"
               duration={1.8}
             />
           </div>
@@ -57,7 +57,7 @@ export default function SalesChart() {
                 <stop offset="95%" stopColor="#9aa6b0" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,18,20,0.04)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,18,20,0.06)" />
             <XAxis
               dataKey="month"
               axisLine={false}
@@ -72,10 +72,10 @@ export default function SalesChart() {
             />
             <Tooltip
               contentStyle={{
-                background: 'rgba(255,255,255,0.9)',
+                background: 'rgba(255,255,255,0.92)',
                 border: '1px solid rgba(255,255,255,0.6)',
-                borderRadius: '10px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                borderRadius: '12px',
+                boxShadow: '0 10px 40px rgba(16,18,20,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
                 fontSize: '13px',
               }}
               formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}

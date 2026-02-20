@@ -33,8 +33,8 @@ export default function StockChart() {
   return (
     <GlassCard className="p-6 h-full" delay={0.3}>
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold text-gray-700">Stock Overview</h3>
-        <select className="text-xs font-medium text-gray-500 bg-white/60 border border-gray-200/60 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#ff7a2d]/20 cursor-pointer">
+        <h3 className="text-sm font-semibold text-[#2b2f33]">Stock Overview</h3>
+        <select className="text-xs font-medium text-[#6b7280] bg-white/50 border border-white/60 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#ff7a2d]/20 cursor-pointer shadow-sm">
           <option>May 2024</option>
           <option>Jun 2024</option>
           <option>Jul 2024</option>
@@ -46,7 +46,7 @@ export default function StockChart() {
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
-            <span className="text-[11px] text-gray-500">{item.label}</span>
+            <span className="text-[11px] text-[#6b7280]">{item.label}</span>
           </div>
         ))}
       </div>
@@ -54,7 +54,7 @@ export default function StockChart() {
       <div style={{ width: '100%', height: 195 }}>
         <ResponsiveContainer>
           <BarChart data={data} barGap={2} barCategoryGap="25%" margin={{ top: 0, right: 5, left: -15, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,18,20,0.04)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,18,20,0.06)" vertical={false} />
             <XAxis
               dataKey="day"
               axisLine={false}
@@ -68,10 +68,10 @@ export default function StockChart() {
             />
             <Tooltip
               contentStyle={{
-                background: 'rgba(255,255,255,0.9)',
+                background: 'rgba(255,255,255,0.92)',
                 border: '1px solid rgba(255,255,255,0.6)',
-                borderRadius: '10px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                borderRadius: '12px',
+                boxShadow: '0 10px 40px rgba(16,18,20,0.06), inset 0 1px 0 rgba(255,255,255,0.7)',
                 fontSize: '13px',
               }}
             />
