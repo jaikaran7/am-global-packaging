@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import ProductEditorForm from "../components/ProductEditorForm";
-import type { ProductEditorValues } from "../components/ProductEditorForm";
+import ProductEditorForm from "@/components/admin/products/ProductEditorForm";
+import type { ProductEditorValues } from "@/components/admin/products/ProductEditorForm";
 
 async function fetchCategories(): Promise<{ id: string; name: string; slug: string }[]> {
   const res = await fetch("/api/admin/categories");
@@ -11,7 +12,7 @@ async function fetchCategories(): Promise<{ id: string; name: string; slug: stri
   return res.json();
 }
 
-export default function NewProductPage() {
+function NewProductContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultCategoryId = searchParams.get("category") ?? null;
@@ -49,15 +50,23 @@ export default function NewProductPage() {
   }
 
   return (
+    <ProductEditorForm
+      mode="create"
+      categories={categories}
+      defaultCategoryId={defaultCategoryId}
+      saveProduct={saveProduct}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+export default function NewProductPage() {
+  return (
     <div className="max-w-[900px] mx-auto">
       <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight mb-6">Add product</h1>
-      <ProductEditorForm
-        mode="create"
-        categories={categories}
-        defaultCategoryId={defaultCategoryId}
-        saveProduct={saveProduct}
-        onSuccess={onSuccess}
-      />
+      <Suspense fallback={<div className="glass rounded-2xl p-8 text-center text-[#6b7280]">Loading...</div>}>
+        <NewProductContent />
+      </Suspense>
     </div>
   );
 }

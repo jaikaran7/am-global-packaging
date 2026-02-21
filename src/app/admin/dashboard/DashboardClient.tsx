@@ -2,12 +2,12 @@
 
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
-import Topbar from '../components/Topbar'
-import KPIGrid from '../components/KPIGrid'
-import DashboardOverview from '../components/DashboardOverview'
+import Topbar from '@/components/admin/layout/Topbar'
+import KPIGrid from '@/components/admin/dashboard/KPIGrid'
+import DashboardOverview from '@/components/admin/dashboard/DashboardOverview'
 
-const SalesChart = dynamic(() => import('../components/SalesChart'), { ssr: false })
-const StockChart = dynamic(() => import('../components/StockChart'), { ssr: false })
+const SalesChart = dynamic(() => import('@/components/admin/dashboard/SalesChart'), { ssr: false })
+const StockChart = dynamic(() => import('@/components/admin/dashboard/StockChart'), { ssr: false })
 
 export type RecentEnquiryItem = {
   id: string

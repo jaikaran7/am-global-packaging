@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ProductEditorForm from "../components/ProductEditorForm";
-import type { ProductEditorValues } from "../components/ProductEditorForm";
+import ProductEditorForm from "@/components/admin/products/ProductEditorForm";
+import type { ProductEditorValues } from "@/components/admin/products/ProductEditorForm";
 
 type Variant = {
   id: string;

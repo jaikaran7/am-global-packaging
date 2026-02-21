@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     id: e.id,
     name: e.full_name,
     subject: `${e.product_category} — ${e.product}`,
-    status: e.status === 'new' ? 'new' : 'read',
+    status: (e.status === 'new' ? 'new' : 'read') as 'new' | 'read',
   }))
 
   return <DashboardClient newEnquiriesCount={count ?? 0} recentEnquiries={recent} />

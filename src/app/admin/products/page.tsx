@@ -16,7 +16,8 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
-import ProductList from "./components/ProductList";
+import ProductList from "@/components/admin/products/ProductList";
+import { SearchableSelect } from "@/components/ui/select";
 
 type Stats = {
   totalProducts: number;
@@ -111,23 +112,28 @@ export default function AdminProductsPage() {
 
       {/* Filters bar */}
       <div className="glass glass--soft rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
-        <select
-          value={categoryId ?? ""}
-          onChange={(e) => setCategoryId(e.target.value || null)}
-          className="admin-btn-secondary py-2 px-3 rounded-xl text-sm min-w-[140px]"
-        >
-          <option value="">All Categories</option>
-          {/* Populated by ProductList sidebar; here we only show All for top bar */}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="admin-btn-secondary py-2 px-3 rounded-xl text-sm min-w-[120px]"
-        >
-          <option value="">Status: All</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        <div className="min-w-[180px]">
+          <SearchableSelect
+            value={categoryId ?? ""}
+            onChange={(value) => setCategoryId(value || null)}
+            options={[{ value: "", label: "All Categories" }]}
+            placeholder="All Categories"
+            allowClear={false}
+          />
+        </div>
+        <div className="min-w-[160px]">
+          <SearchableSelect
+            value={status}
+            onChange={(value) => setStatus(value)}
+            options={[
+              { value: "", label: "Status: All" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+            placeholder="Status: All"
+            allowClear={false}
+          />
+        </div>
         <input
           type="search"
           placeholder="Search products..."

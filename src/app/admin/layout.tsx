@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Sidebar from './components/Sidebar'
+import Sidebar from '@/components/admin/layout/Sidebar'
 import QueryProvider from './QueryProvider'
 
 export default function AdminLayout({

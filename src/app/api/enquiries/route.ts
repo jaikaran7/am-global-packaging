@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Resend } from "resend";
+import { isAustralianPhone } from "@/lib/validation/phone";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const REQUIRED_FIELDS = [
-  "full_name",
-  "company_name",
-  "email",
-  "product_category",
-  "product",
-] as const;
+const REQUIRED_FIELDS = ["full_name", "email", "product_category", "product"] as const;
 
 export async function POST(req: Request) {
   try {
@@ -19,10 +14,14 @@ export async function POST(req: Request) {
     for (const field of REQUIRED_FIELDS) {
       if (!body[field] || String(body[field]).trim() === "") {
         return NextResponse.json(
-          { error: `${field.replace(/_/g, " ")} is required` },
+          { error: `${field.replaceAll("_", " ")} is required` },
           { status: 400 }
         );
       }
+    }
+
+    if (body.phone && !isAustralianPhone(String(body.phone))) {
+      return NextResponse.json({ error: "Invalid Australian phone number" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -31,7 +30,10 @@ export async function POST(req: Request) {
       .insert([
         {
           full_name: String(body.full_name).trim(),
-          company_name: String(body.company_name).trim(),
+          company_name: body.company_name ? String(body.company_name).trim() : null,
+          custom_name: body.custom_name ? String(body.custom_name).trim() : null,
+          custom_spec: body.custom_spec ? String(body.custom_spec).trim() : null,
+          custom_notes: body.custom_notes ? String(body.custom_notes).trim() : null,
           email: String(body.email).trim(),
           phone: body.phone ? String(body.phone).trim() : null,
           product_category: String(body.product_category).trim(),

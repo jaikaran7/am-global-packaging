@@ -159,12 +159,23 @@ export default function EnquiriesTable() {
   }
 
   async function handleUpdateStatus(id: string, status: EnquiryStatus) {
+    if (status === "successful") {
+      const proceed = window.confirm(
+        "Mark this enquiry as Successful? You will be redirected to create a quotation."
+      );
+      if (!proceed) return;
+    }
+
     setUpdatingId(id);
     await updateEnquiryStatus(id, status);
     setUpdatingId(null);
     setDetailId(null);
     fetchEnquiries();
     fetchCounts();
+
+    if (status === "successful") {
+      router.push(`/admin/quotations?from_enquiry=${id}`);
+    }
   }
 
   const selected = detailId ? enquiries.find((e) => e.id === detailId) : null;

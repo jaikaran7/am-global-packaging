@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ProductDetailPage from "@/components/ProductDetailPage";
-import ProductsPage from "@/components/ProductsPage";
+import Navbar from "@/components/public/Navbar";
+import Footer from "@/components/public/Footer";
+import ProductDetailPage from "@/components/public/ProductDetailPage";
+import ProductsPage from "@/components/public/ProductsPage";
 import {
   products,
   getProductBySlug,

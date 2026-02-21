@@ -48,13 +48,16 @@ export async function GET(req: Request) {
 
     const categoryMap = Object.fromEntries((categoriesRes.data ?? []).map((c) => [c.id, c]));
 
-    const variantsByProduct: Record<string, typeof variantsRes.data> = {};
+    type VariantRow = NonNullable<typeof variantsRes.data>[number];
+    type ImageRow = NonNullable<typeof imagesRes.data>[number];
+
+    const variantsByProduct: Record<string, VariantRow[]> = {};
     for (const v of variantsRes.data ?? []) {
       if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
       variantsByProduct[v.product_id].push(v);
     }
 
-    const imagesByProduct: Record<string, typeof imagesRes.data> = {};
+    const imagesByProduct: Record<string, ImageRow[]> = {};
     for (const img of imagesRes.data ?? []) {
       if (!imagesByProduct[img.product_id]) imagesByProduct[img.product_id] = [];
       imagesByProduct[img.product_id].push(img);
