@@ -1,6 +1,6 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ProductsPage from "@/components/ProductsPage";
+import Navbar from "@/components/public/Navbar";
+import Footer from "@/components/public/Footer";
+import ProductsPage from "@/components/public/ProductsPage";
 
 export const metadata = {
   title: "Products — AM Global Packaging Solutions",

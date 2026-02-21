@@ -2,7 +2,9 @@
 
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
+import { Combobox } from "@headlessui/react"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { XMarkIcon } from "@heroicons/react/24/outline"
 
 import { cn } from "@/lib/utils"
 
@@ -183,3 +185,117 @@ export {
   SelectTrigger,
   SelectValue,
 }
+
+type SelectOption = {
+  value: string
+  label: string
+  disabled?: boolean
+}
+
+type SearchableSelectProps = {
+  options: SelectOption[]
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  searchPlaceholder?: string
+  allowClear?: boolean
+  disabled?: boolean
+  className?: string
+  buttonClassName?: string
+  listClassName?: string
+}
+
+function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder = "Select...",
+  searchPlaceholder = "Search...",
+  allowClear = true,
+  disabled,
+  className,
+  buttonClassName,
+  listClassName,
+}: Readonly<SearchableSelectProps>) {
+  const [query, setQuery] = React.useState("")
+  const selected = options.find((o) => o.value === value) ?? null
+  const filtered =
+    query.trim().length === 0
+      ? options
+      : options.filter((opt) => opt.label.toLowerCase().includes(query.trim().toLowerCase()))
+
+  return (
+    <Combobox value={value} onChange={onChange} disabled={disabled}>
+      <div className={cn("relative", className)}>
+        <Combobox.Button
+          className={cn(
+            "admin-btn-secondary w-full py-2 px-3 rounded-xl text-sm flex items-center justify-between gap-2",
+            disabled && "opacity-60 cursor-not-allowed",
+            buttonClassName
+          )}
+        >
+          <span className={cn("truncate", !selected && "text-[#9aa6b0]")}>
+            {selected?.label ?? placeholder}
+          </span>
+        </Combobox.Button>
+        {allowClear && value ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onChange("")
+              setQuery("")
+            }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-white/70"
+            aria-label="Clear selection"
+          >
+            <XMarkIcon className="w-4 h-4 text-[#9aa6b0]" />
+          </button>
+        ) : null}
+        <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9aa6b0] pointer-events-none" />
+        <Combobox.Options
+          className={cn(
+            "absolute z-50 mt-1 w-full glass rounded-xl shadow-lg border border-white/60 overflow-hidden",
+            listClassName
+          )}
+        >
+          <div className="p-2 border-b border-gray-100/50">
+            <Combobox.Input
+              className="w-full px-2.5 py-1.5 rounded-lg bg-white/70 text-sm outline-none"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {filtered.length === 0 && (
+              <div className="p-3 text-center text-xs text-[#9aa6b0]">No results</div>
+            )}
+            {filtered.map((opt) => (
+              <Combobox.Option
+                key={opt.value}
+                value={opt.value}
+                disabled={opt.disabled}
+                className={({ active }) =>
+                  cn(
+                    "px-3 py-2 text-sm cursor-pointer flex items-center justify-between",
+                    active ? "bg-white/70" : ""
+                  )
+                }
+              >
+                {({ selected: isSelected }) => (
+                  <>
+                    <span className="truncate">{opt.label}</span>
+                    {isSelected && <CheckIcon className="w-4 h-4 text-[#ff7a2d]" />}
+                  </>
+                )}
+              </Combobox.Option>
+            ))}
+          </div>
+        </Combobox.Options>
+      </div>
+    </Combobox>
+  )
+}
+
+export { SearchableSelect }

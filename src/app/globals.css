@@ -64,6 +64,15 @@
   --color-charcoal: #1A1A1A;
   --color-warm-gray: #6B6560;
   --color-warm-gray-light: #9B9590;
+
+  /* Admin dashboard glass / brand */
+  --color-admin-brand: #ff7a2d;
+  --color-admin-brand-light: #fff2e8;
+  --color-admin-neutral-heading: #2b2f33;
+  --color-admin-neutral-body: #6b7280;
+  --color-admin-neutral-muted: #9aa6b0;
+  --shadow-glass: 0 10px 40px rgba(16,18,20,0.06);
+  --shadow-glass-inset: inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 :root {
@@ -99,6 +108,19 @@
   --sidebar-accent-foreground: #1A1A1A;
   --sidebar-border: #E5DFD5;
   --sidebar-ring: #B8860B;
+
+  /* Admin dashboard glass / brand tokens */
+  --admin-brand: #ff7a2d;
+  --admin-brand-light: #fff2e8;
+  --admin-brand-50: #fff8f3;
+  --admin-neutral-heading: #2b2f33;
+  --admin-neutral-body: #6b7280;
+  --admin-neutral-muted: #9aa6b0;
+  --admin-glass-bg: rgba(255,255,255,0.7);
+  --admin-glass-bg-strong: rgba(255,255,255,0.8);
+  --admin-glass-border: rgba(255,255,255,0.6);
+  --admin-glass-shadow: 0 10px 40px rgba(16,18,20,0.06);
+  --admin-glass-inset: inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 @layer base {
@@ -176,42 +198,44 @@
 }
 
 /* ============================================
-   Admin Dashboard — Glassmorphism Utilities
+   Admin Dashboard — Glassmorphism (reference match)
    ============================================ */
 
-:root {
-  --admin-glass-bg: rgba(255,255,255,0.65);
-  --admin-glass-border: rgba(255,255,255,0.55);
-  --admin-glass-shadow: 0 10px 30px rgba(16,18,20,0.06);
-  --admin-brand: #ff7a2d;
-  --admin-brand-light: #fff2e8;
-  --admin-brand-50: #fff8f3;
-}
+/* Admin tokens are in :root above (--admin-*). */
 
+/* Global background — soft neutral gradient (no flat white) */
 .admin-body {
   background: linear-gradient(180deg, #f6f8fa 0%, #eef2f4 100%);
   min-height: 100vh;
 }
 
+/* Reusable glass panels — no harsh borders */
 .glass {
   background: var(--admin-glass-bg);
-  border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: var(--admin-glass-shadow);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  border-radius: 12px;
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-glass-shadow), var(--admin-glass-inset);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border-radius: 16px;
 }
 
 .glass--soft {
-  box-shadow: 0 8px 32px rgba(16,18,20,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+  box-shadow: 0 8px 32px rgba(16,18,20,0.06), var(--admin-glass-inset);
+  border-radius: 16px;
 }
 
-.glass--elevated {
-  box-shadow: 0 12px 40px rgba(16,18,20,0.08), inset 0 1px 0 rgba(255,255,255,0.7);
+.glass-strong {
+  background: var(--admin-glass-bg-strong);
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: 0 12px 40px rgba(16,18,20,0.06), var(--admin-glass-inset);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  border-radius: 16px;
 }
 
+/* KPI pills — glossy, rounded-xl, subtle shadow, number in brand */
 .kpi-pill {
-  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,248,250,0.85));
+  background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(248,248,250,0.82) 100%);
   border-radius: 14px;
   padding: 10px 18px;
   box-shadow: 0 6px 18px rgba(16,18,20,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
@@ -221,12 +245,13 @@
   align-items: center;
 }
 
+/* Sidebar — frosted glass panel */
 .admin-sidebar {
   background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
   border-right: 1px solid rgba(255,255,255,0.4);
-  box-shadow: 4px 0 24px rgba(16,18,20,0.03);
+  box-shadow: 4px 0 24px rgba(16,18,20,0.04);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
 
 .admin-nav-item {
@@ -234,30 +259,32 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: all 0.2s ease;
-  color: #4b5563;
+  color: var(--admin-neutral-body);
   font-size: 0.875rem;
   font-weight: 500;
 }
 .admin-nav-item:hover {
   background: rgba(255,255,255,0.6);
-  color: #1f2937;
+  color: var(--admin-neutral-heading);
 }
 .admin-nav-item.active {
-  background: linear-gradient(135deg, var(--admin-brand-light) 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--admin-brand-light) 0%, rgba(255,255,255,0.95) 100%);
   color: var(--admin-brand);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255,122,45,0.1);
+  box-shadow: 0 2px 12px rgba(255,122,45,0.12);
+  border-radius: 12px;
 }
 
+/* Top bar — frosted glass */
 .admin-topbar {
-  background: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(16,18,20,0.04), inset 0 1px 0 rgba(255,255,255,0.6);
   backdrop-filter: blur(12px) saturate(120%);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(16,18,20,0.04);
 }
 
 @keyframes adminFadeInUp {
@@ -275,6 +302,7 @@
   animation: adminFadeInUp 0.5s ease forwards;
 }
 
+/* Card warmth — subtle orange glow corner */
 .admin-card-warm {
   position: relative;
   overflow: hidden;
@@ -288,4 +316,32 @@
   height: 80px;
   background: radial-gradient(circle at bottom right, rgba(255,122,45,0.04), transparent 70%);
   pointer-events: none;
+}
+
+/* Buttons — raised, glossy (utility) */
+.admin-btn-primary {
+  background: linear-gradient(180deg, #ff7a2d 0%, #ff9a5c 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(255,122,45,0.35);
+  border: none;
+  border-radius: 14px;
+}
+.admin-btn-primary:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 6px 20px rgba(255,122,45,0.4);
+  transform: translateY(-1px);
+}
+
+.admin-btn-secondary {
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: 0 6px 18px rgba(16,18,20,0.04), var(--admin-glass-inset);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 14px;
+  color: var(--admin-neutral-heading);
+}
+.admin-btn-secondary:hover {
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 8px 24px rgba(16,18,20,0.06), var(--admin-glass-inset);
 }
