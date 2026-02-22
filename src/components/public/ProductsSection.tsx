@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
@@ -96,26 +96,6 @@ export default function ProductsSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activeProduct, setActiveProduct] = useState(0);
   const activeTab = productTabs[activeProduct];
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopAutoRotation = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const startAutoRotation = useCallback(() => {
-    stopAutoRotation();
-    intervalRef.current = setInterval(() => {
-      setActiveProduct((prev) => (prev + 1) % productTabs.length);
-    }, 3000);
-  }, [stopAutoRotation]);
-
-  useEffect(() => {
-    startAutoRotation();
-    return () => stopAutoRotation();
-  }, [startAutoRotation, stopAutoRotation]);
 
   return (
     <section id="products" className="relative py-32 bg-offwhite overflow-hidden">
@@ -150,11 +130,7 @@ export default function ProductsSection() {
         </motion.div>
 
         {/* Product Toggle */}
-        <div
-          className="flex justify-center mb-16"
-          onMouseEnter={stopAutoRotation}
-          onMouseLeave={startAutoRotation}
-        >
+        <div className="flex justify-center mb-16">
           <div className="inline-flex bg-white rounded-full p-1.5 border border-kraft/10 shadow-sm">
             {productTabs.map((tab, i) => (
               <button

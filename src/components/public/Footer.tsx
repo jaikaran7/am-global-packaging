@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, MapPin, Phone, Mail } from "lucide-react";
 
 const footerLinks = [
   {
@@ -26,10 +27,10 @@ const footerLinks = [
   {
     title: "Resources",
     links: [
-      { label: "Ply Guide", href: "#" },
-      { label: "GSM Calculator", href: "#" },
-      { label: "Box Styles", href: "#" },
-      { label: "FAQs", href: "#" },
+      { label: "Ply Guide", href: "/#ply-guide" },
+      { label: "GSM Calculator", href: "/resources/gsm-calculator" },
+      { label: "Box Styles", href: "/#products" },
+      { label: "FAQs", href: "/faqs" },
     ],
   },
 ];
@@ -70,8 +71,35 @@ export default function Footer() {
               </div>
             </a>
             <p className="text-sm text-offwhite/40 leading-relaxed">
-              India&apos;s trusted corrugated packaging manufacturer.
+              Australian-focused packaging sourcing backed by trusted partner
+              factories across India and Asia.
             </p>
+            <div className="mt-8">
+              <div className="text-[11px] font-semibold tracking-[0.22em] text-offwhite/30 uppercase mb-3">
+                Contact
+              </div>
+              <ul className="space-y-2.5 text-sm text-offwhite/55">
+                <li className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-offwhite/30" />
+                  Melbourne, Australia
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-offwhite/30" />
+                  +61 XXX XXX XXX
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-offwhite/30" />
+                  hello@amglobalpack.com
+                </li>
+              </ul>
+            </div>
+            <a
+              href="#contact"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 mt-6 bg-forest text-offwhite text-xs font-semibold rounded-full hover:bg-forest-light transition-all duration-300"
+            >
+              Request a Quote
+              <ChevronRight className="w-3.5 h-3.5" />
+            </a>
           </div>
 
           {/* Accordion sections */}
@@ -91,9 +119,9 @@ export default function Footer() {
                   <ul className="mt-3 space-y-2 text-sm text-neutral-500">
                     {group.links.map((link) => (
                       <li key={link.label}>
-                        <a href={link.href} className="hover:text-kraft-light transition-colors">
+                        <Link href={link.href} className="hover:text-kraft-light transition-colors">
                           {link.label}
-                        </a>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -102,14 +130,6 @@ export default function Footer() {
             );
           })}
 
-          {/* CTA */}
-          <a
-            href="#contact"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-forest text-offwhite text-xs font-semibold rounded-full hover:bg-forest-light transition-all duration-300 w-full"
-          >
-            Request a Quote
-            <ChevronRight className="w-3.5 h-3.5" />
-          </a>
         </div>
 
         <div className="hidden md:grid lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-12 lg:gap-8 mb-16">
@@ -134,10 +154,26 @@ export default function Footer() {
                 </span>
               </div>
             </a>
-            <p className="text-sm text-offwhite/40 leading-relaxed max-w-xs mb-8">
-              India&apos;s trusted corrugated packaging manufacturer. Engineering
-              strength, sustainability, and scale into every box.
-            </p>
+           
+            <div className="mt-8 mb-6">
+              <div className="text-[11px] font-semibold tracking-[0.22em] text-offwhite/30 uppercase mb-3">
+                Contact
+              </div>
+              <ul className="space-y-2.5 text-sm text-offwhite/55">
+                <li className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-offwhite/30" />
+                  Melbourne, Australia
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-offwhite/30" />
+                  +61 0434 396 360
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-offwhite/30" />
+                  hello@amglobalpack.com
+                </li>
+              </ul>
+            </div>
             <a
               href="#contact"
               className="inline-flex items-center gap-2 px-6 py-3 bg-forest text-offwhite text-xs font-semibold rounded-full hover:bg-forest-light transition-all duration-300"
@@ -156,12 +192,12 @@ export default function Footer() {
               <ul className="flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-sm text-offwhite/50 hover:text-kraft-light transition-colors duration-200"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -176,17 +212,19 @@ export default function Footer() {
             rights reserved.
           </div>
           <div className="flex items-center gap-6">
-            {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
-              (item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-xs text-offwhite/30 hover:text-offwhite/60 transition-colors"
-                >
-                  {item}
-                </a>
-              )
-            )}
+            {[
+              { label: "Privacy Policy", href: "/privacy-policy" },
+              { label: "Terms of Service", href: "/terms-of-service" },
+              { label: "Cookie Policy", href: "/cookie-policy" },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="text-xs text-offwhite/30 hover:text-offwhite/60 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

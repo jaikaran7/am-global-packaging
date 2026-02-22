@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 
 const plyOptions = [
@@ -93,29 +93,9 @@ export default function PlySection() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activePly, setActivePly] = useState(1);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopAutoRotation = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const startAutoRotation = useCallback(() => {
-    stopAutoRotation();
-    intervalRef.current = setInterval(() => {
-      setActivePly((prev) => (prev + 1) % plyOptions.length);
-    }, 3000);
-  }, [stopAutoRotation]);
-
-  useEffect(() => {
-    startAutoRotation();
-    return () => stopAutoRotation();
-  }, [startAutoRotation, stopAutoRotation]);
 
   return (
-    <section className="relative py-32 bg-white overflow-hidden">
+    <section id="ply-guide" className="relative py-32 bg-white overflow-hidden">
       <div className="absolute inset-0 kraft-texture opacity-50" />
 
       <div ref={ref} className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative">
@@ -144,11 +124,7 @@ export default function PlySection() {
         </motion.div>
 
         {/* Ply Selector */}
-        <div
-          className="flex justify-center gap-4 mb-16"
-          onMouseEnter={stopAutoRotation}
-          onMouseLeave={startAutoRotation}
-        >
+        <div className="flex justify-center gap-4 mb-16">
           {plyOptions.map((option, i) => (
             <button
               key={option.ply}

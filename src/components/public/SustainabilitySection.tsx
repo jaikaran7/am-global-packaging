@@ -7,7 +7,7 @@ import { Leaf, Recycle, TreePine, Droplets } from "lucide-react";
 const pillars = [
   {
     icon: Recycle,
-    title: "100% Recyclable",
+    title: "Recyclable",
     desc: "Every product we manufacture is fully recyclable and biodegradable, closing the loop on packaging waste.",
   },
   {

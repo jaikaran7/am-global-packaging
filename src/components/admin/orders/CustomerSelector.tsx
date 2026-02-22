@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Transition } from "@headlessui/react";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
   XMarkIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
+import { useDropdownManager } from "@/components/ui/use-dropdown-manager";
 
 type Customer = {
   id: string;
@@ -35,6 +37,8 @@ export default function CustomerSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useDropdownManager(isOpen, () => setIsOpen(false));
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -113,7 +117,7 @@ export default function CustomerSelector({
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative w-full overflow-visible">
       <div
         className="admin-btn-secondary w-full py-2.5 px-3 rounded-xl flex items-center gap-2 cursor-pointer"
         onClick={() => !disabled && setIsOpen(true)}
@@ -122,64 +126,74 @@ export default function CustomerSelector({
         <span className="text-sm text-[#9aa6b0]">Select customer...</span>
       </div>
 
-      {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 glass rounded-xl shadow-lg border border-white/60 overflow-hidden">
-          <div className="p-2 border-b border-gray-100/50">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gray-50/50">
-              <MagnifyingGlassIcon className="w-4 h-4 text-[#9aa6b0]" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customers..."
-                className="flex-1 bg-transparent text-sm outline-none text-[#2b2f33] placeholder-[#9aa6b0]"
-                autoFocus
-              />
+      <Transition appear show={isOpen} as="div" className="contents">
+        <Transition.Child
+          as="div"
+          enter="transition duration-150 ease-out"
+          enterFrom="opacity-0 scale-95"
+          enterTo="opacity-100 scale-100"
+          leave="transition duration-150 ease-in"
+          leaveFrom="opacity-100 scale-100"
+          leaveTo="opacity-0 scale-95"
+        >
+          <div className="absolute top-full left-0 mt-2 w-full z-[70] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top">
+            <div className="p-2 border-b border-slate-100">
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50">
+                <MagnifyingGlassIcon className="w-4 h-4 text-[#9aa6b0]" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search customers..."
+                  className="flex-1 bg-transparent text-sm outline-none text-[#2b2f33] placeholder-[#9aa6b0]"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {loading && (
+                <div className="p-3 text-center text-sm text-[#9aa6b0]">Loading...</div>
+              )}
+              {!loading && customers.length === 0 && (
+                <div className="p-3 text-center text-sm text-[#9aa6b0]">No customers found</div>
+              )}
+              {!loading &&
+                customers.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleSelect(c)}
+                    className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-[#6b7280]">
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#2b2f33]">{c.name}</p>
+                      <p className="text-xs text-[#9aa6b0]">
+                        {c.company && `${c.company} · `}
+                        {c.email}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+            </div>
+            <div className="p-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onCreateNew();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[#ff7a2d] hover:bg-orange-50 transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create new customer
+              </button>
             </div>
           </div>
-          <div className="max-h-48 overflow-y-auto">
-            {loading && (
-              <div className="p-3 text-center text-sm text-[#9aa6b0]">Loading...</div>
-            )}
-            {!loading && customers.length === 0 && (
-              <div className="p-3 text-center text-sm text-[#9aa6b0]">No customers found</div>
-            )}
-            {!loading &&
-              customers.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleSelect(c)}
-                  className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-white/60 transition-colors text-left"
-                >
-                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-[#6b7280]">
-                    {c.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[#2b2f33]">{c.name}</p>
-                    <p className="text-xs text-[#9aa6b0]">
-                      {c.company && `${c.company} · `}
-                      {c.email}
-                    </p>
-                  </div>
-                </button>
-              ))}
-          </div>
-          <div className="p-2 border-t border-gray-100/50">
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                onCreateNew();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[#ff7a2d] hover:bg-orange-50/50 transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Create new customer
-            </button>
-          </div>
-        </div>
-      )}
+        </Transition.Child>
+      </Transition>
     </div>
   );
 }

@@ -16,57 +16,43 @@ import {
 const industries = [
   {
     icon: ShoppingCart,
-    name: "E-Commerce",
-    desc: "Shipping-safe packaging for online retail fulfillment",
+    name: "E-Commerce & Retail",
+    desc: "Durable cartons and FBA-compliant boxes for online fulfillment and shipping.",
     color: "from-kraft/10 to-kraft-light/10",
     border: "border-kraft/15",
-  },
-  {
-    icon: Pill,
-    name: "Pharmaceuticals",
-    desc: "Tamper-evident, compliant medical packaging",
-    color: "from-forest/10 to-forest-light/10",
-    border: "border-forest/15",
-  },
-  {
-    icon: Cpu,
-    name: "Electronics",
-    desc: "Static-safe, cushioned protection for tech products",
-    color: "from-kraft/10 to-kraft-light/10",
-    border: "border-kraft/15",
-  },
-  {
-    icon: Car,
-    name: "Automotive",
-    desc: "Heavy-duty containers for parts and components",
-    color: "from-forest/10 to-forest-light/10",
-    border: "border-forest/15",
   },
   {
     icon: UtensilsCrossed,
     name: "Food & Beverage",
-    desc: "Food-grade certified packaging for perishables",
+    desc: "Food-grade corrugated packaging for takeaway, delivery, and fresh produce.",
+    color: "from-forest/10 to-forest-light/10",
+    border: "border-forest/15",
+  },
+  {
+    icon: Wheat,
+    name: "Agriculture & Produce",
+    desc: "Ventilated and heavy-duty cartons designed for fresh produce and poultry transport.",
+    color: "from-kraft/10 to-kraft-light/10",
+    border: "border-kraft/15",
+  },
+  {
+    icon: Wrench,
+    name: "Industrial & Heavy-Duty Supply",
+    desc: "Strong multi-ply cartons built for bulk storage and export packaging.",
+    color: "from-forest/10 to-forest-light/10",
+    border: "border-forest/15",
+  },
+  {
+    icon: Pill,
+    name: "Office & Commercial Supply",
+    desc: "Reliable document and small-goods cartons for office and business shipping.",
     color: "from-kraft/10 to-kraft-light/10",
     border: "border-kraft/15",
   },
   {
     icon: Shirt,
-    name: "Textiles & Fashion",
-    desc: "Premium retail-ready packaging with custom printing",
-    color: "from-forest/10 to-forest-light/10",
-    border: "border-forest/15",
-  },
-  {
-    icon: Wrench,
-    name: "Industrial & Machinery",
-    desc: "Triple-wall heavy-duty crating solutions",
-    color: "from-kraft/10 to-kraft-light/10",
-    border: "border-kraft/15",
-  },
-  {
-    icon: Wheat,
-    name: "Agriculture",
-    desc: "Durable containers for produce and agri-products",
+    name: "Small & Growing Brands",
+    desc: "Scalable packaging solutions for startups and growing Australian businesses.",
     color: "from-forest/10 to-forest-light/10",
     border: "border-forest/15",
   },
@@ -113,18 +99,18 @@ export default function IndustriesSection() {
             <div className="w-8 h-px bg-kraft-light" />
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-offwhite leading-[1.1] tracking-tight">
-            Packaging solutions for
+            Packaging built for
             <br />
-            <span className="text-kraft-light">every sector</span>
+            <span className="text-kraft-light">growing Australian industries</span>
           </h2>
           <p className="mt-6 text-offwhite/50 leading-relaxed">
-            We partner with businesses across diverse industries, delivering
-            packaging engineered for their specific requirements.
+            We supply durable corrugated boxes across food, e-commerce, agriculture,
+            industrial, and commercial sectors — backed by trusted manufacturing partners.
           </p>
         </motion.div>
 
         {/* Industries Grid */}
-        <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-8">
+        <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-3 md:gap-8">
           {industries.map((industry, i) => (
             <motion.div
               key={industry.name}
@@ -135,15 +121,15 @@ export default function IndustriesSection() {
                 delay: 0.1 + i * 0.07,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="group relative p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default min-w-[280px] flex-shrink-0 md:min-w-0"
+              className="group relative p-5 md:p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default min-w-[280px] flex-shrink-0 md:min-w-0"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-kraft/20 to-kraft-light/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-kraft/20 to-kraft-light/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                 <industry.icon className="w-5 h-5 text-kraft-light" />
               </div>
               <h3 className="text-base font-bold text-offwhite mb-2">
                 {industry.name}
               </h3>
-              <p className="hidden md:block text-sm text-neutral-400 leading-relaxed">
+              <p className="hidden md:block text-sm text-neutral-400 leading-relaxed truncate">
                 {industry.desc}
               </p>
               {/* Hover glow */}
@@ -157,23 +143,27 @@ export default function IndustriesSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-16 pt-16 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
+          className="mt-20 md:mt-24"
         >
-          {[
-            { value: "8+", label: "Industries" },
-            { value: "500+", label: "Active Clients" },
-            { value: "99.2%", label: "On-Time Delivery" },
-            { value: "24/7", label: "Support" },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <div className="text-3xl font-bold text-kraft-light">
-                {stat.value}
-              </div>
-              <div className="text-xs text-offwhite/40 mt-1 tracking-wider uppercase">
-                {stat.label}
-              </div>
+          <div className="rounded-3xl bg-white/[0.06] border border-white/[0.08] px-6 py-6 md:px-10 md:py-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
+              {[
+                { value: "3, 5 & 7 Ply Options", label: "Flexible strength configurations" },
+                { value: "MOQ from 200 Units", label: "Bulk-friendly ordering" },
+                { value: "Partner-Sourced Manufacturing", label: "Trusted India & Asia network" },
+                { value: "Australia-Focused Supply", label: "Dedicated to Australian businesses" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <div className="text-lg md:text-xl font-semibold text-kraft-light">
+                    {stat.value}
+                  </div>
+                  <div className="text-[11px] text-offwhite/50 mt-2 tracking-wide uppercase">
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </motion.div>
       </div>
     </section>

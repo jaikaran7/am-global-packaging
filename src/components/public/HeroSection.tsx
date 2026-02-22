@@ -6,7 +6,7 @@ import { ChevronRight, ArrowDown } from "lucide-react";
 
 function Box3D() {
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center scale-[0.92] md:scale-[0.9]">
       {/* Main 3D Box */}
       <div className="relative animate-float-slow" style={{ perspective: "1200px" }}>
         <div
@@ -19,7 +19,7 @@ function Box3D() {
             style={{
               background: "linear-gradient(145deg, #C4973B 0%, #A67B1E 50%, #8B6914 100%)",
               transform: "translateZ(60px)",
-              boxShadow: "0 20px 60px rgba(139, 105, 20, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+              boxShadow: "0 14px 40px rgba(139, 105, 20, 0.22), inset 0 1px 0 rgba(255,255,255,0.16)",
             }}
           >
             {/* Corrugated texture lines */}
@@ -77,7 +77,7 @@ function Box3D() {
 
           {/* Shadow */}
           <div
-            className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[80%] h-8 rounded-[50%] bg-black/10 blur-xl"
+            className="absolute -bottom-7 left-1/2 -translate-x-1/2 w-[78%] h-7 rounded-[50%] bg-black/10 blur-lg"
             style={{ transform: "translateX(-50%) translateZ(-20px)" }}
           />
         </div>
@@ -87,23 +87,23 @@ function Box3D() {
       <motion.div
         animate={{ y: [-8, 8, -8], rotate: [0, 5, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[15%] right-[5%] w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-kraft-light/20 to-kraft/10 border border-kraft/10 backdrop-blur-sm flex items-center justify-center"
+        className="absolute top-[15%] right-[5%] w-14 h-14 md:w-18 md:h-18 rounded-xl bg-gradient-to-br from-kraft-light/20 to-kraft/10 border border-kraft/10 backdrop-blur-sm flex items-center justify-center"
       >
-        <span className="text-[10px] font-bold text-kraft tracking-wider">3-PLY</span>
+        <span className="text-[9px] md:text-[10px] font-bold text-kraft tracking-wider">3-PLY</span>
       </motion.div>
       <motion.div
         animate={{ y: [8, -8, 8], rotate: [0, -3, 0] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute bottom-[20%] left-[2%] w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-br from-forest/10 to-forest-light/10 border border-forest/10 backdrop-blur-sm flex items-center justify-center"
+        className="absolute bottom-[20%] left-[2%] w-14 h-14 md:w-18 md:h-18 rounded-xl bg-gradient-to-br from-forest/10 to-forest-light/10 border border-forest/10 backdrop-blur-sm flex items-center justify-center"
       >
-        <span className="text-[10px] font-bold text-forest tracking-wider">5-PLY</span>
+        <span className="text-[9px] md:text-[10px] font-bold text-forest tracking-wider">5-PLY</span>
       </motion.div>
       <motion.div
         animate={{ y: [-6, 6, -6], rotate: [0, 2, 0] }}
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        className="absolute top-[60%] right-[8%] w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-kraft/10 to-forest/10 border border-kraft/10 backdrop-blur-sm flex items-center justify-center"
+        className="absolute top-[60%] right-[8%] w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-kraft/10 to-forest/10 border border-kraft/10 backdrop-blur-sm flex items-center justify-center"
       >
-        <span className="text-[10px] font-bold text-forest tracking-wider">7-PLY</span>
+        <span className="text-[9px] md:text-[10px] font-bold text-forest tracking-wider">7-PLY</span>
       </motion.div>
     </div>
   );
@@ -121,7 +121,7 @@ export default function HeroSection() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-screen flex items-center overflow-hidden bg-offwhite"
+      className="relative min-h-[90vh] flex items-center overflow-hidden bg-offwhite"
     >
       {/* Background layers */}
       <motion.div style={{ y: bgY }} className="absolute inset-0">
@@ -139,30 +139,29 @@ export default function HeroSection() {
       </div>
 
       <motion.div style={{ opacity }} className="relative z-10 w-full">
-        <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-28 pb-16">
-          <div className="grid lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-8 items-center min-h-[calc(100vh-200px)]">
+        <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-20 md:pt-24 pb-14 md:pb-16">
+          <div className="grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-8 items-center min-h-[calc(90vh-180px)]">
             {/* Left: Content */}
-            <div className="flex flex-col gap-8 max-w-xl">
+            <div className="flex flex-col gap-6 max-w-xl">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-forest/5 border border-forest/10 rounded-full mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-forest/5 border border-forest/10 rounded-full mb-6">
                   <div className="w-1.5 h-1.5 rounded-full bg-kraft animate-pulse" />
                   <span className="text-xs font-medium text-forest tracking-wide">
-                    Trusted by 500+ manufacturers worldwide
+                    Trusted by quality-certified partner factories
                   </span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[68px] font-bold leading-[1.05] tracking-tight text-charcoal">
-                  Packaging{" "}
-                  <span className="relative">
-                    <span className="gradient-text">built</span>
-                  </span>{" "}
-                  for{" "}
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-[1.08] tracking-tight text-charcoal">
+                  Scalable corrugated packaging
                   <br className="hidden sm:block" />
-                  global scale
+                  <span className="relative">
+                    <span className="gradient-text">sourced</span>
+                  </span>{" "}
+                  from Asia's leading factories
                 </h1>
               </motion.div>
 
@@ -170,55 +169,34 @@ export default function HeroSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
-                className="text-base md:text-lg text-warm-gray leading-relaxed max-w-md"
+                className="text-base md:text-xl text-warm-gray leading-relaxed max-w-xl"
               >
-                Premium corrugated boxes and sheets engineered for strength, 
-                sustainability, and seamless supply chain integration.
+                We connect businesses with quality-certified corrugated packaging
+                manufacturers across India and Asia, ensuring strength, reliability,
+                and seamless global supply.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.7 }}
-                className="flex flex-col sm:flex-row gap-4 mt-2"
+                className="flex flex-col sm:flex-row gap-3 mt-3"
               >
                 <a
                   href="#contact"
-                  className="group inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-xl shadow-forest/20 hover:shadow-2xl hover:shadow-forest/30 text-sm"
+                  className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/15 hover:shadow-xl hover:shadow-forest/20 text-sm"
                 >
-                  Request a Quote
+                  Source Packaging Now
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </a>
                 <a
                   href="#products"
-                  className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-white text-charcoal font-semibold rounded-full border border-charcoal/10 hover:border-kraft/30 hover:bg-kraft-pale/50 transition-all duration-300 text-sm"
+                  className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-white text-charcoal font-semibold rounded-full border border-charcoal/10 hover:border-kraft/30 hover:bg-kraft-pale/40 transition-all duration-300 text-sm"
                 >
                   View Products
                 </a>
               </motion.div>
 
-              {/* Trust badges */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 1 }}
-                className="flex items-center gap-8 mt-4 pt-8 border-t border-charcoal/5"
-              >
-                <div>
-                  <div className="text-2xl font-bold text-charcoal">15+</div>
-                  <div className="text-xs text-warm-gray mt-0.5">Years Experience</div>
-                </div>
-                <div className="w-px h-10 bg-charcoal/10" />
-                <div>
-                  <div className="text-2xl font-bold text-charcoal">50M+</div>
-                  <div className="text-xs text-warm-gray mt-0.5">Boxes Delivered</div>
-                </div>
-                <div className="w-px h-10 bg-charcoal/10" />
-                <div>
-                  <div className="text-2xl font-bold text-charcoal">30+</div>
-                  <div className="text-xs text-warm-gray mt-0.5">Countries</div>
-                </div>
-              </motion.div>
             </div>
 
             {/* Right: 3D Box */}
@@ -226,7 +204,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="relative h-[400px] md:h-[500px] lg:h-[600px]"
+              className="relative h-[360px] md:h-[460px] lg:h-[540px]"
             >
               <Box3D />
             </motion.div>

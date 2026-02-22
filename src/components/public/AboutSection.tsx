@@ -5,10 +5,10 @@ import { motion, useInView } from "framer-motion";
 import { Factory, Globe, Shield, Award } from "lucide-react";
 
 const stats = [
-  { icon: Factory, label: "Production Capacity", value: "200K+ sqft", desc: "Manufacturing facility" },
-  { icon: Globe, label: "Global Reach", value: "30+", desc: "Countries served" },
-  { icon: Shield, label: "Quality Certified", value: "ISO 9001", desc: "Certified processes" },
-  { icon: Award, label: "Industry Awards", value: "12+", desc: "Excellence awards" },
+  { icon: Factory, label: "20+ Years", value: "Experience", desc: "Combined partner expertise" },
+  { icon: Globe, label: "5000+ Orders", value: "Fulfilled", desc: "Through trusted facilities" },
+  { icon: Shield, label: "Australia Focused", value: "Supply", desc: "Dedicated local support" },
+  { icon: Award, label: "Quality Verified", value: "Checks", desc: "Pre-dispatch oversight" },
 ];
 
 export default function AboutSection() {
@@ -36,35 +36,36 @@ export default function AboutSection() {
               </span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-charcoal leading-[1.1] tracking-tight">
-              Engineering packaging
+              Building global
               <br />
-              <span className="text-forest">since 2009</span>
+              <span className="text-forest">packaging partnerships</span>
             </h2>
 
             <div className="mt-10 flex flex-col gap-4">
               <p className="text-warm-gray leading-relaxed">
-                AM Global Packaging Solutions is a vertically integrated corrugated packaging 
-                manufacturer with state-of-the-art production facilities. We combine precision 
-                engineering with sustainable practices to deliver packaging that protects, 
-                performs, and endures.
+                AM Global Packaging Solutions is a packaging sourcing and supply company serving
+                businesses across Australia.
               </p>
               <p className="text-warm-gray leading-relaxed">
-                From raw kraft paper to finished custom packaging, every step of our process 
-                is optimized for quality, speed, and environmental responsibility.
+                We collaborate with experienced, quality-vetted corrugated box manufacturers
+                across India and Asia to deliver scalable, cost-efficient packaging solutions.
+              </p>
+              <p className="text-warm-gray leading-relaxed">
+                Our sourcing model ensures consistency, competitive pricing, and reliable bulk
+                supply without compromising on quality.
+              </p>
+              <ul className="text-warm-gray leading-relaxed space-y-2 list-disc pl-5">
+                <li>Carefully vetted and audited manufacturing partners</li>
+                <li>Coordinated production and quality oversight</li>
+                <li>Competitive global sourcing with local support</li>
+                <li>Reliable bulk supply tailored to Australian businesses</li>
+              </ul>
+              <p className="text-warm-gray/80 text-sm leading-relaxed">
+                Strategically sourcing corrugated packaging for retail, e-commerce, industrial,
+                and food sectors across Australia.
               </p>
             </div>
 
-            {/* Certifications */}
-            <div className="mt-10 flex items-center gap-6 flex-wrap">
-              {["ISO 9001", "FSC", "ISTA", "BRC"].map((cert) => (
-                <div
-                  key={cert}
-                  className="px-4 py-2 bg-cream/60 border border-kraft/10 rounded-lg text-xs font-semibold text-forest tracking-wider"
-                >
-                  {cert}
-                </div>
-              ))}
-            </div>
           </motion.div>
 
           {/* Right: Visual + Stats */}
@@ -78,9 +79,15 @@ export default function AboutSection() {
               <div className="absolute inset-0 corrugated-pattern opacity-40" />
               <div className="absolute inset-0 bg-gradient-to-t from-forest/80 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="text-offwhite/60 text-xs tracking-widest uppercase mb-2">Our Facility</div>
-                <div className="text-offwhite text-xl font-bold">200,000+ sq ft Production Floor</div>
-                <div className="text-offwhite/70 text-sm mt-1">Automated corrugation lines with precision die-cutting</div>
+                <div className="text-offwhite/60 text-xs tracking-widest uppercase mb-2">Our Network</div>
+                <div className="text-offwhite text-xl font-bold">
+                  Backed by 20+ years of manufacturing expertise across trusted partner factories
+                  in India and Asia.
+                </div>
+                <div className="text-offwhite/70 text-sm mt-1">
+                  Coordinated sourcing, quality checks, and reliable bulk supply for Australian
+                  businesses.
+                </div>
               </div>
               {/* Abstract factory illustration */}
               <div className="absolute top-8 right-8 opacity-20">

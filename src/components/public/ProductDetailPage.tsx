@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { SearchableSelect } from "@/components/ui/select";
 import {
   ChevronRight,
   ArrowRight,
@@ -562,11 +561,11 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                 <div className="h-px bg-kraft/10 my-8" />
 
                 {/* Quote CTA */}
-                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-6 md:p-8 text-offwhite">
+                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-5 md:p-8 text-offwhite">
                   <h3 className="text-lg font-bold mb-4">
                     Request a Quote for {product.shortName}
                   </h3>
-                  <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
                     <div>
                       <label className="text-offwhite/50 text-xs mb-1.5 block">
                         Quantity (units)
@@ -576,7 +575,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                         value={quantity}
                         onChange={(e) => setQuantity(e.target.value)}
                         min={parseInt(product.moq)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm placeholder:text-offwhite/30 focus:outline-none focus:border-kraft-light/50"
+                        className="w-full px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm placeholder:text-offwhite/30 focus:outline-none focus:border-kraft-light/50"
                         placeholder={`Min. ${product.moq}`}
                       />
                     </div>
@@ -584,21 +583,29 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                       <label className="text-offwhite/50 text-xs mb-1.5 block">
                         Preferred Ply
                       </label>
-                      <SearchableSelect
-                        value={plyPreference}
-                        onChange={(value) => setPlyPreference(value)}
-                        options={product.plyOptions.map((ply) => ({ value: ply, label: ply }))}
-                        placeholder="Select ply"
-                        className="text-offwhite"
-                        buttonClassName="bg-white/10 border border-white/15 text-offwhite"
-                        listClassName="bg-white"
-                      />
+                      <div className="relative">
+                        <select
+                          value={plyPreference}
+                          onChange={(e) => setPlyPreference(e.target.value)}
+                          className="w-full px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 border border-white/20 rounded-xl text-offwhite text-sm focus:outline-none focus:border-kraft-light/50 appearance-none"
+                        >
+                          {product.plyOptions.map((ply) => (
+                            <option key={ply} value={ply} className="text-charcoal">
+                              {ply}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/60 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 
-                  <button className="w-full py-3.5 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-4">
+                  <Link
+                    href="/contact"
+                    className="w-full inline-flex items-center justify-center py-3 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-4"
+                  >
                     Request Quote
-                  </button>
+                  </Link>
 
                   <div className="flex items-center justify-center gap-6 text-offwhite/40 text-xs">
                     <div className="flex items-center gap-1.5">

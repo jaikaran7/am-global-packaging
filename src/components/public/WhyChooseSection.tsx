@@ -82,7 +82,7 @@ export default function WhyChooseSection() {
         </motion.div>
 
         {/* Reasons Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8">
           {reasons.map((reason, i) => (
             <motion.div
               key={reason.title}

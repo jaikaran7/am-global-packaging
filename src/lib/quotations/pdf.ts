@@ -52,53 +52,145 @@ function wrapText(text: string, maxWidth: number, fontSize: number) {
   return lines;
 }
 
+function getLetterheadPath() {
+  return path.join(process.cwd(), "src", "components", "admin", "quotations", "letter head.png");
+}
+
+async function drawLetterhead(page: any, pdfDoc: PDFDocument) {
+  const { width, height } = page.getSize();
+  const imgPath = getLetterheadPath();
+  if (!fs.existsSync(imgPath)) return;
+  const imgBytes = fs.readFileSync(imgPath);
+  const png = await pdfDoc.embedPng(imgBytes);
+  page.drawImage(png, {
+    x: 0,
+    y: 0,
+    width,
+    height,
+  });
+}
+
+function drawBulletedTerms(
+  page: any,
+  terms: string,
+  startX: number,
+  startY: number,
+  maxWidth: number,
+  font: any,
+  fontBold: any
+) {
+  const lines = terms.split(/\r?\n/);
+  let y = startY;
+  const bulletIndent = 10;
+  const lineHeight = 12;
+  const sectionGap = 8;
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) {
+      y -= sectionGap;
+      return;
+    }
+    const isHeading = line.endsWith(":");
+    if (isHeading) {
+      page.drawText(line, {
+        x: startX,
+        y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.2, 0.24, 0.28),
+      });
+      y -= lineHeight;
+      return;
+    }
+    page.drawText("•", {
+      x: startX,
+      y,
+      size: 9,
+      font,
+      color: rgb(0.3, 0.34, 0.38),
+    });
+    const wrapped = wrapText(line, maxWidth - bulletIndent, 9);
+    wrapped.forEach((w, i) => {
+      page.drawText(w, {
+        x: startX + bulletIndent,
+        y: y - i * lineHeight,
+        size: 9,
+        font,
+        color: rgb(0.3, 0.34, 0.38),
+      });
+    });
+    y -= lineHeight * wrapped.length;
+  });
+}
+
 export async function generateQuotationPdf(data: QuoteData) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
-  const margin = 40;
+  const margin = 50;
+  const contentTop = height - 170;
+  const contentBottom = 120;
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Header
-  page.drawText("AM Global Packaging Solutions", {
-    x: margin,
-    y: height - margin - 10,
-    size: 16,
-    font: fontBold,
-    color: rgb(0.15, 0.18, 0.2),
-  });
-  page.drawText("Quotation", {
-    x: width - margin - 90,
-    y: height - margin - 10,
-    size: 14,
-    font: fontBold,
-    color: rgb(1, 0.48, 0.18),
+  await drawLetterhead(page, pdfDoc);
+
+  // Quote metadata (tabular)
+  const metaY = contentTop;
+  const metaRowHeight = 18;
+  const hasValidUntil = Boolean(data.valid_until);
+  const metaCols = hasValidUntil ? 3 : 2;
+  const metaColWidth = (width - margin * 2) / metaCols;
+  const metaLabels = ["Quotation #", "Date"];
+  if (hasValidUntil) metaLabels.push("Valid Until");
+  const metaValues = [
+    data.quote_number,
+    new Date(data.created_at).toLocaleDateString("en-AU"),
+    ...(hasValidUntil ? [String(data.valid_until)] : []),
+  ];
+
+  metaLabels.forEach((label, i) => {
+    page.drawText(label, {
+      x: margin + i * metaColWidth,
+      y: metaY,
+      size: 9,
+      font: fontBold,
+      color: rgb(0.2, 0.24, 0.28),
+    });
+    page.drawText(metaValues[i], {
+      x: margin + i * metaColWidth,
+      y: metaY - 12,
+      size: 10,
+      font,
+      color: rgb(0.35, 0.4, 0.45),
+    });
   });
 
-  // Quote metadata
-  const metaY = height - margin - 40;
-  page.drawText(`Quote #: ${data.quote_number}`, {
-    x: margin,
-    y: metaY,
-    size: 11,
-    font: fontBold,
+  // Meta table borders
+  page.drawLine({
+    start: { x: margin, y: metaY + 6 },
+    end: { x: width - margin, y: metaY + 6 },
+    thickness: 0.6,
+    color: rgb(0.85, 0.86, 0.88),
   });
-  page.drawText(`Date: ${new Date(data.created_at).toLocaleDateString("en-AU")}`, {
-    x: margin + 220,
-    y: metaY,
-    size: 11,
-    font,
+  page.drawLine({
+    start: { x: margin, y: metaY - metaRowHeight },
+    end: { x: width - margin, y: metaY - metaRowHeight },
+    thickness: 0.6,
+    color: rgb(0.85, 0.86, 0.88),
   });
-  page.drawText(`Valid Until: ${data.valid_until ?? "-"}`, {
-    x: margin + 420,
-    y: metaY,
-    size: 11,
-    font,
-  });
+  for (let i = 1; i < metaCols; i += 1) {
+    page.drawLine({
+      start: { x: margin + i * metaColWidth, y: metaY + 6 },
+      end: { x: margin + i * metaColWidth, y: metaY - metaRowHeight },
+      thickness: 0.6,
+      color: rgb(0.9, 0.9, 0.92),
+    });
+  }
 
   // Customer block
-  const customerY = metaY - 30;
+  const customerY = metaY - 48;
   page.drawText("Customer", { x: margin, y: customerY, size: 11, font: fontBold });
   const customerLines = [
     data.customer.name,
@@ -118,59 +210,142 @@ export async function generateQuotationPdf(data: QuoteData) {
   });
 
   // Items table
-  const tableTop = customerY - 100;
-  const colX = [margin, margin + 210, margin + 330, margin + 390, margin + 460];
-  page.drawText("Item", { x: colX[0], y: tableTop, size: 10, font: fontBold });
-  page.drawText("Variant", { x: colX[1], y: tableTop, size: 10, font: fontBold });
-  page.drawText("Qty", { x: colX[2], y: tableTop, size: 10, font: fontBold });
-  page.drawText("Unit", { x: colX[3], y: tableTop, size: 10, font: fontBold });
-  page.drawText("Subtotal", { x: colX[4], y: tableTop, size: 10, font: fontBold });
+  const tableTop = customerY - 90;
+  const tableWidth = width - margin * 2;
+  const colWidths = [190, 150, 50, 70, 85];
+  const colX = [
+    margin,
+    margin + colWidths[0],
+    margin + colWidths[0] + colWidths[1],
+    margin + colWidths[0] + colWidths[1] + colWidths[2],
+    margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3],
+  ];
+  const cellPadding = 6;
+  const baseRowHeight = 20;
 
-  let rowY = tableTop - 18;
+  function drawItemsHeader(targetPage: any, y: number) {
+    targetPage.drawRectangle({
+      x: margin,
+      y: y - 16,
+      width: tableWidth,
+      height: 20,
+      color: rgb(0.95, 0.96, 0.97),
+    });
+    targetPage.drawText("Item", { x: colX[0] + cellPadding, y, size: 10, font: fontBold });
+    targetPage.drawText("Variant", { x: colX[1] + cellPadding, y, size: 10, font: fontBold });
+    targetPage.drawText("Qty", { x: colX[2] + cellPadding, y, size: 10, font: fontBold });
+    targetPage.drawText("Unit", { x: colX[3] + cellPadding, y, size: 10, font: fontBold });
+    targetPage.drawText("Subtotal", { x: colX[4] + cellPadding, y, size: 10, font: fontBold });
+    targetPage.drawLine({
+      start: { x: margin, y: y - 6 },
+      end: { x: margin + tableWidth, y: y - 6 },
+      thickness: 0.6,
+      color: rgb(0.85, 0.86, 0.88),
+    });
+    for (let i = 1; i < colX.length; i += 1) {
+      targetPage.drawLine({
+        start: { x: colX[i], y: y + 4 },
+        end: { x: colX[i], y: y - 16 },
+        thickness: 0.4,
+        color: rgb(0.9, 0.9, 0.92),
+      });
+    }
+  }
+
+  let rowY = tableTop - 22;
+  drawItemsHeader(page, tableTop);
+
+  let currentPage = page;
   for (const item of data.items) {
-    const itemLabel = item.product_title;
-    const variantLabel = item.variant_name;
-    page.drawText(itemLabel, { x: colX[0], y: rowY, size: 9, font });
-    page.drawText(variantLabel, { x: colX[1], y: rowY, size: 9, font });
-    page.drawText(String(item.quantity), { x: colX[2], y: rowY, size: 9, font });
-    page.drawText(`$${item.unit_price.toFixed(2)}`, {
-      x: colX[3],
+    const itemLines = wrapText(item.product_title, colWidths[0] - cellPadding * 2, 9);
+    const variantLines = wrapText(item.variant_name, colWidths[1] - cellPadding * 2, 9);
+    const rowLines = Math.max(itemLines.length, variantLines.length, 1);
+    const rowHeight = baseRowHeight + (rowLines - 1) * 12;
+
+    if (rowY - rowHeight < contentBottom + 80) {
+      currentPage = pdfDoc.addPage([595.28, 841.89]);
+      await drawLetterhead(currentPage, pdfDoc);
+      rowY = contentTop - 24;
+      drawItemsHeader(currentPage, contentTop - 6);
+    }
+    // Row box
+    currentPage.drawRectangle({
+      x: margin,
+      y: rowY - rowHeight + 4,
+      width: tableWidth,
+      height: rowHeight,
+      borderColor: rgb(0.9, 0.9, 0.92),
+      borderWidth: 0.4,
+    });
+    for (let i = 1; i < colX.length; i += 1) {
+      currentPage.drawLine({
+        start: { x: colX[i], y: rowY + 4 },
+        end: { x: colX[i], y: rowY - rowHeight + 4 },
+        thickness: 0.4,
+        color: rgb(0.9, 0.9, 0.92),
+      });
+    }
+
+    itemLines.forEach((line, i) => {
+      currentPage.drawText(line, {
+        x: colX[0] + cellPadding,
+        y: rowY - i * 12,
+        size: 9,
+        font,
+      });
+    });
+    variantLines.forEach((line, i) => {
+      currentPage.drawText(line, {
+        x: colX[1] + cellPadding,
+        y: rowY - i * 12,
+        size: 9,
+        font,
+      });
+    });
+    currentPage.drawText(String(item.quantity), {
+      x: colX[2] + cellPadding,
       y: rowY,
       size: 9,
       font,
     });
-    page.drawText(`$${item.subtotal.toFixed(2)}`, {
-      x: colX[4],
+    currentPage.drawText(`$${item.unit_price.toFixed(2)}`, {
+      x: colX[3] + cellPadding,
       y: rowY,
       size: 9,
       font,
     });
-    rowY -= 16;
+    currentPage.drawText(`$${item.subtotal.toFixed(2)}`, {
+      x: colX[4] + cellPadding,
+      y: rowY,
+      size: 9,
+      font,
+    });
+    rowY -= rowHeight + 2;
   }
 
   // Totals
-  const totalsY = rowY - 10;
-  page.drawText(`Subtotal`, { x: colX[3], y: totalsY, size: 10, font });
-  page.drawText(`$${data.subtotal.toFixed(2)}`, {
+  const totalsY = Math.max(rowY - 10, contentBottom + 60);
+  currentPage.drawText(`Subtotal`, { x: colX[3], y: totalsY, size: 10, font });
+  currentPage.drawText(`$${data.subtotal.toFixed(2)}`, {
     x: colX[4],
     y: totalsY,
     size: 10,
     font: fontBold,
   });
-  page.drawText(`GST (${data.gst_percent.toFixed(2)}%)`, {
+  currentPage.drawText(`GST (${data.gst_percent.toFixed(2)}%)`, {
     x: colX[3],
     y: totalsY - 14,
     size: 10,
     font,
   });
-  page.drawText(`$${data.tax.toFixed(2)}`, {
+  currentPage.drawText(`$${data.tax.toFixed(2)}`, {
     x: colX[4],
     y: totalsY - 14,
     size: 10,
     font: fontBold,
   });
-  page.drawText("Total", { x: colX[3], y: totalsY - 30, size: 11, font: fontBold });
-  page.drawText(`$${data.total.toFixed(2)}`, {
+  currentPage.drawText("Total", { x: colX[3], y: totalsY - 30, size: 11, font: fontBold });
+  currentPage.drawText(`$${data.total.toFixed(2)}`, {
     x: colX[4],
     y: totalsY - 30,
     size: 11,
@@ -182,11 +357,11 @@ export async function generateQuotationPdf(data: QuoteData) {
   const notesText = data.notes?.trim();
   if (notesText) {
     const notesLines = wrapText(notesText, width - margin * 2, 9);
-    page.drawText("Notes:", { x: margin, y: totalsY - 60, size: 10, font: fontBold });
+    currentPage.drawText("Notes:", { x: margin, y: totalsY - 52, size: 10, font: fontBold });
     notesLines.forEach((line, i) => {
-      page.drawText(line, {
+      currentPage.drawText(line, {
         x: margin,
-        y: totalsY - 74 - i * 12,
+        y: totalsY - 66 - i * 12,
         size: 9,
         font,
         color: rgb(0.35, 0.4, 0.45),
@@ -196,43 +371,24 @@ export async function generateQuotationPdf(data: QuoteData) {
 
   // Terms page
   const termsPage = pdfDoc.addPage([595.28, 841.89]);
+  await drawLetterhead(termsPage, pdfDoc);
   const terms = (data.terms_text?.trim() || DEFAULT_QUOTE_TERMS).trim();
   termsPage.drawText("Terms & Conditions", {
     x: margin,
-    y: height - margin - 10,
-    size: 14,
+    y: contentTop,
+    size: 12,
     font: fontBold,
+    color: rgb(0.15, 0.18, 0.2),
   });
-  const termsLines = wrapText(terms, width - margin * 2, 9);
-  termsLines.forEach((line, i) => {
-    termsPage.drawText(line, {
-      x: margin,
-      y: height - margin - 34 - i * 12,
-      size: 9,
-      font,
-      color: rgb(0.3, 0.34, 0.38),
-    });
-  });
-
-  // Optional terms image overlay
-  try {
-    const imgPath = path.join(process.cwd(), "assets", "c__Users_aruka_AppData_Roaming_Cursor_User_workspaceStorage_40ac7b784cb9c6972dc8107c5366d323_images_image-4e8988eb-f60b-4330-a3cf-228509d179e0.png");
-    if (fs.existsSync(imgPath)) {
-      const imgBytes = fs.readFileSync(imgPath);
-      const png = await pdfDoc.embedPng(imgBytes);
-      const imgWidth = width - margin * 2;
-      const imgHeight = (png.height / png.width) * imgWidth;
-      termsPage.drawImage(png, {
-        x: margin,
-        y: margin,
-        width: imgWidth,
-        height: imgHeight,
-        opacity: 0.15,
-      });
-    }
-  } catch {
-    // ignore image errors
-  }
+  drawBulletedTerms(
+    termsPage,
+    terms,
+    margin,
+    contentTop - 20,
+    width - margin * 2,
+    font,
+    fontBold
+  );
 
   return await pdfDoc.save();
 }
