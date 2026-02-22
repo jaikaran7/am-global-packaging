@@ -72,13 +72,19 @@ export default function OrderItemRow({
 
   const productOptions = [
     ...products.map((p) => ({ value: p.id, label: p.title })),
-    { value: "custom", label: "Custom" },
+    { value: "custom", label: "➕ Custom" },
   ];
 
-  const variantOptions = variants.map((v) => ({
-    value: v.id,
-    label: `${v.name}${v.sku ? ` (${v.sku})` : ""}`,
-  }));
+  const variantOptions = [
+    ...variants.map((v) => ({
+      value: v.id,
+      label: `${v.name}${v.sku ? ` (${v.sku})` : ""}`,
+    })),
+    ...(!isCustom ? [{ value: "custom", label: "➕ Custom" }] : []),
+  ];
+
+  const isCustomVariant = !isCustom && item.variant_id === "custom";
+  const showCustomInputs = isCustom || isCustomVariant;
 
   return (
     <div className="glass rounded-xl p-3 space-y-3">
@@ -90,7 +96,7 @@ export default function OrderItemRow({
             value={item.product_id}
             onChange={(value) => {
               onChange(index, "product_id", value);
-              onChange(index, "variant_id", "");
+              onChange(index, "variant_id", value === "custom" ? "custom" : "");
               onChange(index, "unit_price", 0);
               if (value !== "custom") {
                 onChange(index, "custom_name", "");
@@ -113,9 +119,10 @@ export default function OrderItemRow({
               onChange(index, "variant_id", value);
               const v = variants.find((vr) => vr.id === value);
               if (v) onChange(index, "unit_price", v.price ?? 0);
+              if (value === "custom") onChange(index, "unit_price", 0);
             }}
             options={variantOptions}
-            placeholder={loadingVariants ? "Loading..." : "Select variant..."}
+            placeholder={loadingVariants ? "Loading..." : isCustom ? "Custom product" : "Select variant..."}
             disabled={disabled || loadingVariants || !item.product_id || isCustom}
           />
         </div>
@@ -171,7 +178,7 @@ export default function OrderItemRow({
       </div>
 
       {/* Stock warning */}
-      {selectedVariant && !isCustom && (
+      {selectedVariant && !isCustom && !isCustomVariant && (
         <div className="flex items-center gap-4 text-xs">
           <span className="text-[#9aa6b0]">
             Available: <strong className={available !== null && available <= 0 ? "text-red-500" : "text-[#2b2f33]"}>{available ?? 0}</strong>
@@ -185,11 +192,11 @@ export default function OrderItemRow({
         </div>
       )}
 
-      {isCustom && (
+      {showCustomInputs && (
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label htmlFor={`custom-name-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
-              Custom Name *
+              {isCustom ? "Custom Product Name *" : "Custom Variant Name *"}
             </label>
             <input
               id={`custom-name-${index}`}
@@ -202,7 +209,7 @@ export default function OrderItemRow({
           </div>
           <div>
             <label htmlFor={`custom-spec-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
-              Custom Spec
+              {isCustom ? "Custom Spec" : "Dimensions / Specs"}
             </label>
             <input
               id={`custom-spec-${index}`}

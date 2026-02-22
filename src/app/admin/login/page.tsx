@@ -10,6 +10,41 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/admin/PasswordInput";
 import { Loader2 } from "lucide-react";
 
+const isDev = process.env.NODE_ENV === "development";
+
+function getAuthErrorMessage(authError: { message?: string; status?: number; code?: string }) {
+  const msg = authError.message ?? "";
+  const status = authError.status;
+  const code = authError.code;
+  const lower = msg.toLowerCase();
+
+  if (
+    lower.includes("invalid") ||
+    lower.includes("credentials") ||
+    lower.includes("email not confirmed") ||
+    code === "invalid_grant" ||
+    status === 400
+  ) {
+    return lower.includes("email not confirmed")
+      ? "Please confirm your email first, or use 'Create admin user' to set up."
+      : "Invalid email or password. First time? Try 'Create admin user' below.";
+  }
+
+  if (lower.includes("email auth is disabled")) {
+    return "Email/password sign-in is disabled in Supabase Auth settings.";
+  }
+
+  if (lower.includes("network") || lower.includes("fetch")) {
+    return "Network error. Check your connection and Supabase URL in .env.";
+  }
+
+  if (isDev && status) {
+    return `${msg} (status ${status})`;
+  }
+
+  return msg || "Login failed. Please try again.";
+}
+
 function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,48 +62,50 @@ function AdminLoginForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        const msg = authError.message ?? "";
-        if (
-          msg.toLowerCase().includes("invalid") ||
-          msg.toLowerCase().includes("credentials") ||
-          msg.includes("Email not confirmed")
-        ) {
-          setError(
-            msg.includes("Email not confirmed")
-              ? "Please confirm your email first, or use 'Create admin user' to set up."
-              : "Invalid email or password. First time? Try 'Create admin user' below."
-          );
-        } else if (msg.includes("network") || msg.includes("fetch")) {
-          setError("Network error. Check your connection and Supabase URL in .env.");
-        } else {
-          setError(msg);
-        }
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!trimmedEmail || !password) {
+        setError("Email and password are required.");
         setLoading(false);
         return;
       }
 
-      if (data.user) {
+      const supabase = createClient();
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
+
+      if (authError) {
+        const code = "code" in authError ? authError.code : undefined;
+        setError(
+          getAuthErrorMessage({
+            message: authError.message,
+            status: authError.status,
+            code,
+          })
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (data.session?.user) {
         router.push(redirectTo);
         router.refresh();
+        return;
       }
+
+      setError("Login failed. Please try again.");
+      setLoading(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      setError(
-        message.includes("Invalid") || message.includes("invalid")
-          ? "Invalid email or password. Please try again."
-          : message.includes("fetch") || message.includes("network")
-            ? "Network error. Please check your connection."
-            : process.env.NODE_ENV === "development"
-              ? message
-              : "An unexpected error occurred. Please try again."
-      );
+      const lower = message.toLowerCase();
+      if (lower.includes("invalid")) {
+        setError("Invalid email or password. Please try again.");
+      } else if (lower.includes("fetch") || lower.includes("network")) {
+        setError("Network error. Please check your connection.");
+      } else {
+        setError(isDev ? message : "An unexpected error occurred. Please try again.");
+      }
       setLoading(false);
     }
   }
@@ -88,20 +125,14 @@ function AdminLoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {resetSuccess && (
-              <div
-                className="rounded-md bg-green-500/10 border border-green-500/20 px-3 py-2 text-sm text-green-700 dark:text-green-400"
-                role="status"
-              >
+              <output className="rounded-md bg-green-500/10 border border-green-500/20 px-3 py-2 text-sm text-green-700 dark:text-green-400">
                 Password reset successfully. You can now sign in.
-              </div>
+              </output>
             )}
             {inactivityLogout && (
-              <div
-                className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-400"
-                role="status"
-              >
+              <output className="rounded-md bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
                 You were logged out due to inactivity.
-              </div>
+              </output>
             )}
             {error && (
               <div
