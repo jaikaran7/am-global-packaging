@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight } from "lucide-react";
@@ -47,6 +48,20 @@ const productTabs = [
     subtitle: "Food-Safe & Ventilated",
     description:
       "Australian-standard pizza boxes in a range of sizes from personal to family party. Ventilation slots, lock-tab closure, and food-grade certified materials for delivery and takeaway.",
+    images: [
+      {
+        src: "/pizza-box-closed-emboss.png",
+        alt: "Closed pizza box with embossed AM GLOBAL logo",
+      },
+      {
+        src: "/pizza-box-open-emboss.png",
+        alt: "Open pizza box showing interior corrugated texture",
+      },
+      {
+        src: "/pizza-box-exploded-ply-emboss.png",
+        alt: "Exploded view of pizza box corrugated layers",
+      },
+    ],
     features: ["Ventilation slots", "Lock-tab closure", "Food-grade certified", "Grease-resistant"],
     specs: [
       { label: "Sizes", value: "200mm - 400mm" },
@@ -81,6 +96,26 @@ export default function ProductsSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activeProduct, setActiveProduct] = useState(0);
   const activeTab = productTabs[activeProduct];
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAutoRotation = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const startAutoRotation = useCallback(() => {
+    stopAutoRotation();
+    intervalRef.current = setInterval(() => {
+      setActiveProduct((prev) => (prev + 1) % productTabs.length);
+    }, 3000);
+  }, [stopAutoRotation]);
+
+  useEffect(() => {
+    startAutoRotation();
+    return () => stopAutoRotation();
+  }, [startAutoRotation, stopAutoRotation]);
 
   return (
     <section id="products" className="relative py-32 bg-offwhite overflow-hidden">
@@ -115,7 +150,11 @@ export default function ProductsSection() {
         </motion.div>
 
         {/* Product Toggle */}
-        <div className="flex justify-center mb-16">
+        <div
+          className="flex justify-center mb-16"
+          onMouseEnter={stopAutoRotation}
+          onMouseLeave={startAutoRotation}
+        >
           <div className="inline-flex bg-white rounded-full p-1.5 border border-kraft/10 shadow-sm">
             {productTabs.map((tab, i) => (
               <button
@@ -175,6 +214,28 @@ export default function ProductsSection() {
                   <div className="mt-8 text-center">
                     <div className="text-white/80 text-sm font-medium">Corrugated Sheet Stack</div>
                     <div className="text-white/50 text-xs mt-1">Custom dimensions available</div>
+                  </div>
+                </div>
+              ) : activeTab.id === "pizza" && activeTab.images ? (
+                <div className="grid gap-5 md:gap-6">
+                  {activeTab.images.map((image) => (
+                    <div
+                      key={image.src}
+                      className="relative w-[240px] h-[150px] md:w-[300px] md:h-[190px] rounded-2xl overflow-hidden shadow-xl shadow-black/20 border border-white/20 bg-white/10"
+                    >
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        sizes="(min-width: 1024px) 300px, 240px"
+                        className="object-cover"
+                        priority
+                      />
+                    </div>
+                  ))}
+                  <div className="text-center">
+                    <div className="text-white/80 text-sm font-medium">Small Pizza Box Range</div>
+                    <div className="text-white/50 text-xs mt-1">Closed, open, and ply detail views</div>
                   </div>
                 </div>
               ) : (

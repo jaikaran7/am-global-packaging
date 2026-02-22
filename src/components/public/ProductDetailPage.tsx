@@ -346,7 +346,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
       <section className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-10 pb-20">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-start">
           {/* ── Left: Product gallery ── */}
-          <div className="sticky top-28">
+          <div className="relative md:sticky md:top-28">
             <div className="bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 rounded-3xl overflow-hidden relative min-h-[400px] md:min-h-[500px] flex items-center justify-center">
               <div className="absolute inset-0 corrugated-pattern opacity-20" />
 

@@ -225,7 +225,7 @@ function SearchableSelect({
       : options.filter((opt) => opt.label.toLowerCase().includes(query.trim().toLowerCase()))
 
   return (
-    <Combobox value={value} onChange={onChange} disabled={disabled}>
+    <Combobox value={value} onChange={(nextValue) => onChange(nextValue ?? "")} disabled={disabled}>
       <div className={cn("relative", className)}>
         <Combobox.Button
           className={cn(

@@ -48,7 +48,7 @@ export default function WhyChooseSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="why-us" className="relative py-32 bg-white overflow-hidden">
+    <section id="why-us" className="relative py-12 md:py-32 bg-white overflow-hidden">
       <div className="absolute inset-0 kraft-texture opacity-30" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-kraft/20 to-transparent" />
 
@@ -61,7 +61,7 @@ export default function WhyChooseSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center max-w-2xl mx-auto mb-20"
+          className="text-center max-w-2xl mx-auto mb-10 md:mb-20"
         >
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-8 h-px bg-kraft" />
@@ -82,7 +82,7 @@ export default function WhyChooseSection() {
         </motion.div>
 
         {/* Reasons Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
           {reasons.map((reason, i) => (
             <motion.div
               key={reason.title}
@@ -93,7 +93,7 @@ export default function WhyChooseSection() {
                 delay: 0.1 + i * 0.08,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="group relative p-8 rounded-2xl bg-offwhite border border-transparent hover:border-kraft/15 hover:shadow-xl hover:shadow-kraft/5 transition-all duration-500"
+              className="group relative p-5 md:p-8 rounded-2xl bg-offwhite border border-transparent hover:border-kraft/15 hover:shadow-xl hover:shadow-kraft/5 transition-all duration-500"
             >
               {/* Icon */}
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-forest/10 to-forest-light/10 flex items-center justify-center mb-6 group-hover:from-forest/15 group-hover:to-forest-light/15 transition-all duration-300">
@@ -103,12 +103,12 @@ export default function WhyChooseSection() {
               <h3 className="text-lg font-bold text-charcoal mb-3">
                 {reason.title}
               </h3>
-              <p className="text-sm text-warm-gray leading-relaxed mb-5">
+              <p className="hidden md:block text-sm text-warm-gray leading-relaxed mb-5">
                 {reason.desc}
               </p>
 
               {/* Highlight chip */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-kraft-pale/60 rounded-full">
+              <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 bg-kraft-pale/60 rounded-full">
                 <div className="w-1.5 h-1.5 rounded-full bg-kraft" />
                 <span className="text-[11px] font-semibold text-forest">
                   {reason.highlight}

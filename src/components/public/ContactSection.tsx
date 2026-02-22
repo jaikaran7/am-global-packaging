@@ -3,7 +3,6 @@
 import { useRef, useState, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
 import { Send, Phone, MapPin, Mail, ChevronRight, Loader2, CheckCircle } from "lucide-react";
-import { SearchableSelect } from "@/components/ui/select";
 import { isAustralianPhone } from "@/lib/validation/phone";
 import {
   products,
@@ -68,6 +67,7 @@ export default function ContactSection() {
   const [submitError, setSubmitError] = useState<string>("");
 
   const isCorrugatedSheets = categoryId === CORRUGATED_SHEETS_ID;
+  const isCustomCategory = categoryId === "custom";
   const categoryProducts = useMemo(
     () => (categoryId && !isCorrugatedSheets ? getCategoryProducts(categoryId) : []),
     [categoryId, isCorrugatedSheets]
@@ -275,27 +275,36 @@ export default function ContactSection() {
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
                     Product Category *
                   </label>
-                  <SearchableSelect
+                  <select
                     value={categoryId}
-                    onChange={(value) => {
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setCategoryId(value);
-                      setProductSlug("");
+                      setProductSlug(value === "custom" ? "custom" : "");
                       setPlyPreference("");
                       setCustomName("");
                       setCustomSpec("");
                       setCustomNotes("");
                     }}
-                    options={allCategories.map((cat) => ({ value: cat.id, label: cat.label }))}
-                    placeholder="Select category"
-                  />
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+                  >
+                    <option value="">Select category</option>
+                    <option value="custom">Custom</option>
+                    {allCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
                     Product *
                   </label>
-                  <SearchableSelect
+                  <select
                     value={productSlug}
-                    onChange={(value) => {
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setProductSlug(value);
                       setPlyPreference("");
                       if (value !== "custom") {
@@ -304,18 +313,30 @@ export default function ContactSection() {
                         setCustomNotes("");
                       }
                     }}
-                    options={(isCorrugatedSheets
-                      ? CORRUGATED_SHEETS_OPTIONS.map((s) => ({
-                          value: s.id,
-                          label: s.label,
-                        }))
-                      : categoryProducts.map((p) => ({
-                          value: p.slug,
-                          label: `${p.shortName} — ${p.dimensions}`,
-                        }))
-                    ).concat([{ value: "custom", label: "Custom" }])}
-                    placeholder={getProductPlaceholder()}
-                  />
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+                    disabled={isCustomCategory}
+                  >
+                    <option value="">{getProductPlaceholder()}</option>
+                    {isCustomCategory ? null : (
+                      <>
+                        {(isCorrugatedSheets
+                          ? CORRUGATED_SHEETS_OPTIONS.map((s) => ({
+                              value: s.id,
+                              label: s.label,
+                            }))
+                          : categoryProducts.map((p) => ({
+                              value: p.slug,
+                              label: `${p.shortName} — ${p.dimensions}`,
+                            }))
+                        ).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                    <option value="custom">Custom</option>
+                  </select>
                 </div>
               </div>
 
@@ -337,13 +358,19 @@ export default function ContactSection() {
                   <label className="text-xs font-semibold text-charcoal tracking-wide">
                     Ply Preference
                   </label>
-                  <SearchableSelect
+                  <select
                     value={plyPreference}
-                    onChange={(value) => setPlyPreference(value)}
-                    options={plyOptions.map((ply) => ({ value: ply, label: ply }))}
-                    placeholder={getPlyPlaceholder()}
+                    onChange={(e) => setPlyPreference(e.target.value)}
                     disabled={!hasProductSelection || plyOptions.length === 0}
-                  />
+                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
+                  >
+                    <option value="">{getPlyPlaceholder()}</option>
+                    {plyOptions.map((ply) => (
+                      <option key={ply} value={ply}>
+                        {ply}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -443,20 +470,20 @@ export default function ContactSection() {
                 {
                   icon: Phone,
                   label: "Call Us",
-                  value: "+91 99XXX XXXXX",
-                  sub: "Mon-Sat, 9AM - 7PM IST",
+                  value: "0434 396 360",
+                  sub: "Mon-Fri, 9AM - 5PM AEST",
                 },
                 {
                   icon: Mail,
                   label: "Email",
-                  value: "sales@amglobalpack.com",
+                  value: "Manikantadb963@amglobalpackagingsolutions.com",
                   sub: "We respond within 24 hours",
                 },
                 {
                   icon: MapPin,
                   label: "Factory & Office",
-                  value: "Industrial Area, Sector 63",
-                  sub: "Noida, Uttar Pradesh, India",
+                  value: "148 Bulli Road, Constitution Hill",
+                  sub: "NSW 2145, Australia",
                 },
               ].map((item, i) => (
                 <motion.div
@@ -517,7 +544,7 @@ export default function ContactSection() {
                     Interactive map placeholder
                   </div>
                   <div className="text-[10px] text-warm-gray/60 mt-1">
-                    Noida, UP, India
+                    Constitution Hill, NSW
                   </div>
                 </div>
               </div>

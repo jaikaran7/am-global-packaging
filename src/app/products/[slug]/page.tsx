@@ -49,8 +49,10 @@ export default async function ProductDetailRoute({
     return (
       <main>
         <Navbar />
-        <ProductsPage />
-        <Footer />
+        <div className="pt-20">
+          <ProductsPage />
+          <Footer />
+        </div>
       </main>
     );
   }
@@ -61,10 +63,12 @@ export default async function ProductDetailRoute({
   return (
     <main>
       <Navbar />
-      <Suspense fallback={null}>
-        <ProductDetailPage product={product} />
-      </Suspense>
-      <Footer />
+      <div className="pt-20">
+        <Suspense fallback={null}>
+          <ProductDetailPage product={product} />
+        </Suspense>
+        <Footer />
+      </div>
     </main>
   );
 }

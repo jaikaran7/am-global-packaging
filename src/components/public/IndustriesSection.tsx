@@ -79,7 +79,7 @@ export default function IndustriesSection() {
   return (
     <section
       id="industries"
-      className="relative py-32 bg-forest overflow-hidden"
+      className="relative py-12 md:py-32 bg-forest overflow-hidden"
     >
       {/* Decorative patterns */}
       <div className="absolute inset-0 opacity-[0.03]">
@@ -103,7 +103,7 @@ export default function IndustriesSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center max-w-2xl mx-auto mb-20"
+          className="text-center max-w-2xl mx-auto mb-10 md:mb-20"
         >
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-8 h-px bg-kraft-light" />
@@ -124,7 +124,7 @@ export default function IndustriesSection() {
         </motion.div>
 
         {/* Industries Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-8">
           {industries.map((industry, i) => (
             <motion.div
               key={industry.name}
@@ -135,7 +135,7 @@ export default function IndustriesSection() {
                 delay: 0.1 + i * 0.07,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="group relative p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default"
+              className="group relative p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default min-w-[280px] flex-shrink-0 md:min-w-0"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-kraft/20 to-kraft-light/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 <industry.icon className="w-5 h-5 text-kraft-light" />
@@ -143,7 +143,7 @@ export default function IndustriesSection() {
               <h3 className="text-base font-bold text-offwhite mb-2">
                 {industry.name}
               </h3>
-              <p className="text-sm text-offwhite/40 leading-relaxed">
+              <p className="hidden md:block text-sm text-neutral-400 leading-relaxed">
                 {industry.desc}
               </p>
               {/* Hover glow */}
