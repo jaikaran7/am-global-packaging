@@ -32,6 +32,13 @@ async function fetchStats(): Promise<Stats> {
   return res.json();
 }
 
+type CategoryOption = { id: string; name: string; slug: string };
+async function fetchCategories(): Promise<CategoryOption[]> {
+  const res = await fetch("/api/admin/categories");
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  return res.json();
+}
+
 const kpiPills = [
   { key: "totalProducts" as const, label: "Total Products", icon: CubeIcon, color: "text-amber-700", bg: "bg-amber-50" },
   { key: "activeProducts" as const, label: "Active Products", icon: CheckCircleIcon, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -48,6 +55,12 @@ export default function AdminProductsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const { data: stats } = useQuery({ queryKey: ["admin-products-stats"], queryFn: fetchStats });
+  const { data: categories = [] } = useQuery({ queryKey: ["admin-categories"], queryFn: fetchCategories });
+
+  const categoryOptions = [
+    { value: "", label: "All Categories" },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ];
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
@@ -116,7 +129,7 @@ export default function AdminProductsPage() {
           <SearchableSelect
             value={categoryId ?? ""}
             onChange={(value) => setCategoryId(value || null)}
-            options={[{ value: "", label: "All Categories" }]}
+            options={categoryOptions}
             placeholder="All Categories"
             allowClear={false}
           />

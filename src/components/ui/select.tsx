@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Combobox, Transition } from "@headlessui/react"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
@@ -285,14 +286,97 @@ function SearchableSelectBody({
   onChange,
 }: SearchableSelectBodyProps) {
   const openRef = React.useRef(open)
+  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0, width: 0 })
 
   React.useEffect(() => {
     openRef.current = open
   }, [open])
 
+  React.useLayoutEffect(() => {
+    if (open && buttonRef.current && typeof document !== "undefined") {
+      const updatePosition = () => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect()
+          setDropdownPosition({
+            top: rect.bottom + 8,
+            left: rect.left,
+            width: Math.max(rect.width, 200),
+          })
+        }
+      }
+      updatePosition()
+      window.addEventListener("scroll", updatePosition, true)
+      window.addEventListener("resize", updatePosition)
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true)
+        window.removeEventListener("resize", updatePosition)
+      }
+    }
+  }, [open, buttonRef])
+
   useDropdownManager(open, () => {
     if (openRef.current) onCloseRequest()
   })
+
+  const dropdownContent = (
+    <Transition
+      show={open}
+      as={React.Fragment}
+      enter="transition duration-150 ease-out"
+      enterFrom="opacity-0 scale-95"
+      enterTo="opacity-100 scale-100"
+      leave="transition duration-150 ease-in"
+      leaveFrom="opacity-100 scale-100"
+      leaveTo="opacity-0 scale-95"
+    >
+      <Combobox.Options
+        static
+        className={cn(
+          "fixed z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
+          listClassName
+        )}
+        style={{
+          top: dropdownPosition.top,
+          left: dropdownPosition.left,
+          width: dropdownPosition.width || 200,
+        }}
+      >
+        <div className="p-2 border-b border-slate-100">
+          <Combobox.Input
+            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 text-sm outline-none text-slate-900 placeholder:text-slate-400"
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={searchPlaceholder}
+          />
+        </div>
+        <div className="max-h-56 overflow-y-auto">
+          {filtered.length === 0 && (
+            <div className="p-3 text-center text-xs text-slate-400">No results</div>
+          )}
+          {filtered.map((opt) => (
+            <Combobox.Option
+              key={opt.value}
+              value={opt.value}
+              disabled={opt.disabled}
+              className={({ active, selected: isSelected }) =>
+                cn(
+                  "px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors",
+                  active && "bg-slate-100 text-slate-900",
+                  isSelected && "bg-slate-100 text-slate-900 font-medium"
+                )
+              }
+            >
+              {({ selected: isSelected }) => (
+                <>
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && <CheckIcon className="w-4 h-4 text-[#ff7a2d] shrink-0" />}
+                </>
+              )}
+            </Combobox.Option>
+          ))}
+        </div>
+      </Combobox.Options>
+    </Transition>
+  )
 
   return (
     <div className={cn("relative inline-block w-full overflow-visible", className)}>
@@ -324,64 +408,9 @@ function SearchableSelectBody({
         </button>
       ) : null}
       <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9aa6b0] pointer-events-none" />
-      <Transition appear show={open} as="div" className="contents">
-        <Transition.Child
-          as="div"
-          enter="transition duration-150 ease-out"
-          enterFrom="opacity-0 scale-95"
-          enterTo="opacity-100 scale-100"
-          leave="transition duration-150 ease-in"
-          leaveFrom="opacity-100 scale-100"
-          leaveTo="opacity-0 scale-95"
-        >
-          <Combobox.Options
-            static
-            className={cn(
-              "absolute top-full left-0 mt-2 w-full z-[70] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
-              listClassName
-            )}
-          >
-            <div className="p-2 border-b border-slate-100">
-              <Combobox.Input
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 text-sm outline-none text-slate-900 placeholder:text-slate-400"
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-              />
-            </div>
-            <div className="max-h-56 overflow-y-auto">
-              {filtered.length === 0 && (
-                <div className="p-3 text-center text-xs text-slate-400">No results</div>
-              )}
-              {filtered.map((opt) => (
-                <Combobox.Option
-                  key={opt.value}
-                  value={opt.value}
-                  disabled={opt.disabled}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onChange(opt.value)
-                    onCloseRequest()
-                  }}
-                  className={({ active, selected: isSelected }) =>
-                    cn(
-                      "px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors pointer-events-auto",
-                      active && "bg-slate-100 text-slate-900",
-                      isSelected && "bg-slate-100 text-slate-900 font-medium"
-                    )
-                  }
-                >
-                  {({ selected: isSelected }) => (
-                    <>
-                      <span className="truncate">{opt.label}</span>
-                      {isSelected && <CheckIcon className="w-4 h-4 text-[#ff7a2d]" />}
-                    </>
-                  )}
-                </Combobox.Option>
-              ))}
-            </div>
-          </Combobox.Options>
-        </Transition.Child>
-      </Transition>
+      {typeof document !== "undefined"
+        ? createPortal(dropdownContent, document.body)
+        : null}
     </div>
   )
 }

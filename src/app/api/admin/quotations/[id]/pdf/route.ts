@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateQuotationPdf } from "@/lib/quotations/pdf";
+import { renderQuotationPdf } from "@/lib/pdf";
 import { DEFAULT_QUOTE_TERMS } from "@/lib/quotation-terms";
 
 export async function GET(
@@ -23,10 +23,10 @@ export async function GET(
 
     const { data: items } = await supabase
       .from("quotation_items")
-      .select("*, product:products(id,title), variant:product_variants(id,name)")
+      .select("*, product:products(id,title), variant:product_variants(id,name,dimensions)")
       .eq("quotation_id", id);
 
-    const pdfBytes = await generateQuotationPdf({
+    const pdfBytes = await renderQuotationPdf({
       quote_number: quote.quote_number,
       status: quote.status,
       created_at: quote.created_at,
@@ -48,6 +48,7 @@ export async function GET(
         product_title: item.product?.title ?? item.custom_name ?? "Custom",
         variant_name: item.variant?.name ?? item.custom_spec ?? "Custom Spec",
         description: item.description ?? item.custom_notes ?? null,
+        dimensions_mm: item.variant?.dimensions ?? null,
         quantity: item.quantity,
         unit_price: Number(item.unit_price ?? 0),
         subtotal: Number(item.subtotal ?? 0),
