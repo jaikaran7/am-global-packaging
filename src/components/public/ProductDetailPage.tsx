@@ -523,41 +523,6 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   </div>
                 </div>
 
-                {/* Pricing */}
-                {(product.priceAud || product.pricingTiers) && (
-                  <div className="mb-8 bg-kraft-pale/30 rounded-2xl border border-kraft/10 p-6">
-                    <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-4">
-                      Pricing
-                    </h3>
-                    {product.priceAud && (
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-forest">
-                          ${product.priceAud.toFixed(2)}
-                        </span>
-                        <span className="text-sm text-warm-gray">AUD / unit</span>
-                      </div>
-                    )}
-                    {product.pricingTiers && (
-                      <div className="space-y-3">
-                        {product.pricingTiers.map((tier) => (
-                          <div
-                            key={tier.label}
-                            className="flex items-center justify-between py-2 border-b border-kraft/8 last:border-0"
-                          >
-                            <span className="text-sm text-warm-gray">{tier.label}</span>
-                            <span className="text-lg font-bold text-forest">
-                              ${tier.priceAud.toFixed(2)}
-                              <span className="text-xs font-normal text-warm-gray ml-1">
-                                / unit
-                              </span>
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 <div className="h-px bg-kraft/10 my-8" />
 
                 {/* Quote CTA */}
@@ -632,7 +597,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                     Call Sales
                   </a>
                   <a
-                    href="mailto:sales@amglobal.com.au"
+                    href="mailto:enquiries@amglobalpackagingsolutions.com"
                     className="inline-flex items-center gap-1.5 text-forest font-medium hover:text-kraft transition-colors"
                   >
                     <Mail className="w-3.5 h-3.5" />

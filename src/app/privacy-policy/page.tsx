@@ -115,7 +115,7 @@ export default function PrivacyPolicyPage() {
                   You may request access to or correction of your personal information by
                   contacting us at:
                 </p>
-                <p className="mt-3">hello@amglobalpack.com</p>
+                <p className="mt-3">info@amglobalpackagingsolutions.com</p>
               </div>
 
               <div>
@@ -124,7 +124,7 @@ export default function PrivacyPolicyPage() {
                 </h2>
                 <p>AM Global Packaging Solutions</p>
                 <p>Melbourne, Australia</p>
-                <p>Email: hello@amglobalpack.com</p>
+                <p>Email: info@amglobalpackagingsolutions.com</p>
               </div>
             </div>
           </div>

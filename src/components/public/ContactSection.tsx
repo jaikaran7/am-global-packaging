@@ -251,7 +251,7 @@ export default function ContactSection() {
                       Our team will review your details and contact you within 24 hours.
                     </p>
                     <p className="mt-2 text-xs text-warm-gray/70">
-                      For urgent inquiries, email hello@amglobalpack.com
+                      For urgent inquiries, email info@amglobalpackagingsolutions.com
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -581,7 +581,7 @@ export default function ContactSection() {
                 {
                   icon: Mail,
                   label: "Email",
-                  value: "Manikantadb963@amglobalpackagingsolutions.com",
+                  value: "enquiries@amglobalpackagingsolutions.com",
                   sub: "We respond within 24 hours",
                 },
                 {
@@ -668,10 +668,10 @@ export default function ContactSection() {
               </p>
             </div>
             <a
-              href="mailto:enterprise@amglobalpack.com"
+              href="mailto:sales@amglobalpackagingsolutions.com"
               className="inline-flex items-center gap-2.5 px-6 py-3 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-all duration-300 shadow-lg shadow-black/20 hover:shadow-xl whitespace-nowrap text-sm"
             >
-              enterprise@amglobalpack.com
+              sales@amglobalpackagingsolutions.com
               <ChevronRight className="w-4 h-4" />
             </a>
           </div>

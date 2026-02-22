@@ -156,28 +156,7 @@ function Box3D({
   );
 }
 
-function PriceTag({ product }: { product: Product }) {
-  if (product.priceAud) {
-    return (
-      <span className="text-sm font-bold text-forest">
-        ${product.priceAud.toFixed(2)}
-        <span className="text-[10px] font-normal text-warm-gray ml-0.5">/ unit</span>
-      </span>
-    );
-  }
-  if (product.pricingTiers && product.pricingTiers.length > 0) {
-    const lowest = Math.min(...product.pricingTiers.map((t) => t.priceAud));
-    return (
-      <span className="text-sm font-bold text-forest">
-        From ${lowest.toFixed(2)}
-        <span className="text-[10px] font-normal text-warm-gray ml-0.5">/ unit</span>
-      </span>
-    );
-  }
-  return null;
-}
-
-/** Full detailed product card — Product Image, Category Label, Name, Description, Dimension/Ply badges, Price, View Details */
+/** Full detailed product card — Product Image, Category Label, Name, Description, Dimension/Ply badges, View Details */
 function ProductCard({
   product,
   hovered,
@@ -231,8 +210,8 @@ function ProductCard({
             {product.tagline}
           </p>
           <div className="mt-3">
-            <div className="w-full">
-              <span className="px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10 whitespace-nowrap">
+            <div className="w-full flex justify-center md:justify-start">
+              <span className="w-fit px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10 whitespace-nowrap">
                 {product.dimensions}
               </span>
             </div>
@@ -255,8 +234,7 @@ function ProductCard({
               MOQ: {product.moq}
             </p>
           )}
-          <div className="mt-4 pt-4 border-t border-kraft/8 flex items-center justify-between">
-            <PriceTag product={product} />
+          <div className="mt-4 pt-4 border-t border-kraft/8 flex justify-end">
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest group-hover:text-kraft transition-colors">
               View Details
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -626,8 +604,8 @@ export default function ProductsPage() {
                             {cat.description}
                           </p>
                           <div className="mt-3">
-                            <div className="w-full">
-                              <span className="px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10 whitespace-nowrap">
+                            <div className="w-full flex justify-center md:justify-start">
+                              <span className="w-fit px-3 py-1.5 bg-kraft-pale/60 text-charcoal/80 text-xs font-medium rounded-lg border border-kraft/10 whitespace-nowrap">
                                 Multiple Sizes Available
                               </span>
                             </div>

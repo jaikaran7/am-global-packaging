@@ -89,7 +89,7 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Mail className="w-4 h-4 text-offwhite/30" />
-                  hello@amglobalpack.com
+                  info@amglobalpackagingsolutions.com
                 </li>
               </ul>
             </div>
@@ -170,7 +170,7 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Mail className="w-4 h-4 text-offwhite/30" />
-                  hello@amglobalpack.com
+                  info@amglobalpackagingsolutions.com
                 </li>
               </ul>
             </div>

@@ -156,12 +156,12 @@ export default function HeroSection() {
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-[1.08] tracking-tight text-charcoal">
-                  Scalable corrugated packaging
+                  High-performance corrugated
                   <br className="hidden sm:block" />
                   <span className="relative">
-                    <span className="gradient-text">sourced</span>
+                    <span className="gradient-text">packaging</span>
                   </span>{" "}
-                  from Asia's leading factories
+                  for growing Australian businesses
                 </h1>
               </motion.div>
 
@@ -171,9 +171,8 @@ export default function HeroSection() {
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="text-base md:text-xl text-warm-gray leading-relaxed max-w-xl"
               >
-                We connect businesses with quality-certified corrugated packaging
-                manufacturers across India and Asia, ensuring strength, reliability,
-                and seamless global supply.
+                From pizza boxes to heavy-duty export cartons — built for strength,
+                consistency, and scalable supply.
               </motion.p>
 
               <motion.div
