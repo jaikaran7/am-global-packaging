@@ -331,6 +331,7 @@ function SearchableSelectBody({
     >
       <Combobox.Options
         static
+        modal={false}
         className={cn(
           "fixed z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
           listClassName
