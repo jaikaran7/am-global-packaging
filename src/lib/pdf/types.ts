@@ -6,6 +6,10 @@ export type QuoteCustomer = {
   phone?: string | null;
   company?: string | null;
   address?: string | null;
+  /** Contact person (e.g. "Mr. John Matthews") */
+  contact_person?: string | null;
+  /** Account number or short identifier */
+  account_number?: string | null;
 };
 
 export type QuoteItem = {

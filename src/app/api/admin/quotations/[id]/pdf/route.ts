@@ -43,6 +43,8 @@ export async function GET(
         phone: quote.customer?.phone ?? null,
         company: quote.customer?.company ?? null,
         address: quote.customer?.address ?? null,
+        contact_person: (quote.customer as { contact_person?: string })?.contact_person ?? null,
+        account_number: (quote.customer as { account_number?: string })?.account_number ?? null,
       },
       items: (items ?? []).map((item) => ({
         product_title: item.product?.title ?? item.custom_name ?? "Custom",

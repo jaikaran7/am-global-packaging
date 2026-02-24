@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import Topbar from '@/components/admin/layout/Topbar'
 import KPIGrid from '@/components/admin/dashboard/KPIGrid'
@@ -65,12 +66,18 @@ export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: 
         transition={{ delay: 0.5 }}
         className="flex flex-wrap items-center gap-4 pt-2"
       >
-        <button className="admin-btn-primary px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200">
+        <Link
+          href="/admin/quotations/new"
+          className="admin-btn-primary inline-block px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 text-center"
+        >
           Generate Quotation
-        </button>
-        <button className="admin-btn-secondary px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200">
+        </Link>
+        <Link
+          href="/admin/stock"
+          className="admin-btn-secondary inline-block px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 text-center"
+        >
           Manage Inventory
-        </button>
+        </Link>
       </motion.div>
     </div>
   )
