@@ -8,7 +8,8 @@ export async function GET(req: Request) {
     const category = searchParams.get("category");
     const stockStatus = searchParams.get("status"); // in_stock, low_stock, out_of_stock
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
-    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "20")));
+    const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "20"));
+    const limit = Math.min(2000, requestedLimit);
     const offset = (page - 1) * limit;
 
     const supabase = createAdminClient();

@@ -37,6 +37,9 @@ interface OrderData {
   customer_id: string | null;
   customer: { id: string; name: string; email: string | null; phone: string | null; company: string | null } | null;
   status: string;
+  source_quote_id?: string | null;
+  source_quote_version?: number | null;
+  quotation_id?: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -81,6 +84,7 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const { data: order } = useQuery<OrderData>({
     queryKey: ["admin-order", orderId],
@@ -131,7 +135,9 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
 
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
   const total = subtotal + tax;
-  const isReadOnly = order?.status === "delivered";
+  const isReadOnly = ["confirmed", "in_production", "shipped", "delivered"].includes(
+    order?.status ?? ""
+  );
   const currentStatus = (order?.status ?? "draft") as OrderStatus;
 
   const handleItemChange = (index: number, field: string, value: string | number) => {
@@ -167,19 +173,28 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
 
     setSaving(true);
     try {
+      // Normalize items: custom rows must send product_id/variant_id "custom"; schema expects UUID or "custom", not ""
+      const normalizedItems = validItems.map((i) => {
+        const isCustom = i.product_id === "custom" || Boolean(i.custom_name?.trim());
+        if (isCustom) {
+          return { ...i, product_id: "custom" as const, variant_id: "custom" as const };
+        }
+        return i;
+      });
+
       const payload: Record<string, unknown> = {
-        items: validItems,
-        notes,
+        items: normalizedItems,
+        notes: notes ?? "",
         tax,
-        shipping_provider: shippingProvider,
-        tracking_id: trackingId,
-        shipped_date: shippedDate,
+        shipping_provider: shippingProvider ?? "",
+        tracking_id: trackingId ?? "",
+        shipped_date: shippedDate ?? "",
       };
 
       if (showNewCustomer && newCustomer.name) {
         payload.new_customer = newCustomer;
       } else {
-        payload.customer_id = customerId;
+        payload.customer_id = customerId && customerId.trim() ? customerId : null;
       }
 
       const url = isEdit ? `/api/admin/orders/${orderId}` : "/api/admin/orders";
@@ -192,8 +207,14 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to save order");
+        const data = await res.json().catch(() => ({}));
+        const errMsg =
+          typeof data?.error === "string"
+            ? data.error
+            : data?.error && typeof data.error === "object"
+              ? "Validation failed. Check required fields."
+              : "Failed to save order";
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
@@ -208,10 +229,37 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
         toast.success("Order updated");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save");
-      toast.error("Failed to save order");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to save. Please check your input." : msg);
+      toast.error(msg === "[object Object]" ? "Failed to save order" : msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDuplicateOrder = async () => {
+    if (!orderId) return;
+    setDuplicating(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/duplicate`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const errMsg =
+          typeof data?.error === "string" ? data.error : "Failed to duplicate order";
+        throw new Error(errMsg);
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+      router.push(`/admin/orders/${data.id}`);
+      toast.success("New order created (draft). Edit and confirm when ready.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to create new version." : msg);
+      toast.error("Failed to create new version");
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -232,16 +280,19 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Status update failed");
+        const data = await res.json().catch(() => ({}));
+        const errMsg =
+          typeof data?.error === "string" ? data.error : "Status update failed";
+        throw new Error(errMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
       toast.success("Order status updated");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update status");
-      toast.error("Failed to update status");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Status update failed." : msg);
+      toast.error(msg === "[object Object]" ? "Failed to update status" : msg);
     } finally {
       setStatusUpdating(false);
     }
@@ -249,8 +300,19 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
 
   const nextStatuses = VALID_TRANSITIONS[currentStatus] ?? [];
 
+  // Client-side: can we ship? (Server re-checks and blocks if insufficient)
+  const canShip =
+    !order?.items?.length ||
+    order.items.every((line) => {
+      if (!line.variant_id) return true;
+      const v = line.variant as { stock?: number } | null | undefined;
+      const available = v?.stock ?? 0;
+      return available >= line.quantity;
+    });
+  const showShipWarning = currentStatus === "in_production" && nextStatuses.includes("shipped") && !canShip;
+
   return (
-    <div className="max-w-[1100px] mx-auto space-y-6">
+    <div className="w-full max-w-none space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -265,8 +327,17 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
               {isEdit ? `Order ${order?.order_number ?? ""}` : "New Order"}
             </h1>
             {isEdit && order && (
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <OrderStatusBadge status={order.status} size="md" />
+                {(order.source_quote_id || order.quotation_id) && (
+                  <a
+                    href={`/admin/quotations/${order.source_quote_id ?? order.quotation_id}`}
+                    className="text-xs text-[#ff7a2d] hover:underline"
+                  >
+                    From quote
+                    {order.source_quote_version != null ? ` (v${order.source_quote_version})` : ""}
+                  </a>
+                )}
                 {order.created_at && (
                   <span className="text-xs text-[#9aa6b0]">
                     Created {new Date(order.created_at).toLocaleDateString("en-AU")}
@@ -292,26 +363,50 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
         <div className="glass rounded-2xl p-4">
           <OrderStatusTimeline currentStatus={currentStatus} />
           {nextStatuses.length > 0 && (
-            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100/50">
-              <span className="text-xs text-[#9aa6b0] font-medium">Move to:</span>
-              {nextStatuses.map((ns) => {
-                const conf = ORDER_STATUS_CONFIG[ns];
-                return (
-                  <button
-                    key={ns}
-                    onClick={() => handleStatusChange(ns)}
-                    disabled={statusUpdating}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:scale-105"
-                    style={{
-                      color: conf.color,
-                      backgroundColor: conf.bgColor,
-                      border: `1px solid ${conf.borderColor}`,
-                    }}
-                  >
-                    {conf.label}
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-100/50">
+              {showShipWarning && (
+                <p className="text-xs text-amber-600 font-medium">
+                  Cannot ship. Insufficient stock. Please add stock first.
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#9aa6b0] font-medium">Move to:</span>
+                {nextStatuses.map((ns) => {
+                  const conf = ORDER_STATUS_CONFIG[ns];
+                  const isShipped = ns === "shipped";
+                  const disableShipped = isShipped && !canShip;
+                  return (
+                    <button
+                      key={ns}
+                      onClick={() => handleStatusChange(ns)}
+                      disabled={statusUpdating || disableShipped}
+                      title={disableShipped ? "Insufficient stock. Add stock before shipping." : undefined}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:scale-105"
+                      style={{
+                        color: conf.color,
+                        backgroundColor: conf.bgColor,
+                        border: `1px solid ${conf.borderColor}`,
+                        opacity: disableShipped ? 0.6 : 1,
+                      }}
+                    >
+                      {conf.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {(currentStatus === "confirmed" || currentStatus === "in_production") && (
+            <div className="mt-4 pt-3 border-t border-gray-100/50">
+              <p className="text-xs text-[#9aa6b0] mb-2">Order is locked. To make changes, create a new version.</p>
+              <button
+                type="button"
+                onClick={handleDuplicateOrder}
+                disabled={duplicating}
+                className="admin-btn-secondary inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl"
+              >
+                {duplicating ? "Creating…" : "Create new version"}
+              </button>
             </div>
           )}
         </div>

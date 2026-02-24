@@ -86,11 +86,14 @@ export default function OrderItemRow({
   const isCustomVariant = !isCustom && item.variant_id === "custom";
   const showCustomInputs = isCustom || isCustomVariant;
 
+  const compactSelectClass = "text-xs py-1.5 px-2.5 rounded-lg min-h-8 h-8";
+  const compactInputClass = "admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs min-h-8";
+
   return (
     <div className="glass rounded-xl p-3 space-y-3">
-      <div className="grid grid-cols-12 gap-3 items-start">
+      <div className="grid grid-cols-12 gap-2 items-end min-w-0">
         {/* Product */}
-        <div className="col-span-4">
+        <div className="col-span-3 min-w-0">
           <label className="block text-xs font-medium text-[#9aa6b0] mb-1">Product</label>
           <SearchableSelect
             value={item.product_id}
@@ -107,11 +110,12 @@ export default function OrderItemRow({
             options={productOptions}
             placeholder="Select product..."
             disabled={disabled}
+            buttonClassName={compactSelectClass}
           />
         </div>
 
         {/* Variant */}
-        <div className="col-span-3">
+        <div className="col-span-3 min-w-0">
           <label className="block text-xs font-medium text-[#9aa6b0] mb-1">Variant</label>
           <SearchableSelect
             value={item.variant_id}
@@ -124,11 +128,12 @@ export default function OrderItemRow({
             options={variantOptions}
             placeholder={loadingVariants ? "Loading..." : isCustom ? "Custom product" : "Select variant..."}
             disabled={disabled || loadingVariants || !item.product_id || isCustom}
+            buttonClassName={compactSelectClass}
           />
         </div>
 
-        {/* Quantity */}
-        <div className="col-span-1">
+        {/* Quantity — wide enough for 3–5 digits */}
+        <div className="col-span-2 min-w-[5rem]">
           <label className="block text-xs font-medium text-[#9aa6b0] mb-1">Qty</label>
           <input
             type="number"
@@ -136,15 +141,15 @@ export default function OrderItemRow({
             value={item.quantity}
             onChange={(e) => onChange(index, "quantity", Math.max(1, Number(e.target.value)))}
             disabled={disabled}
-            className="admin-btn-secondary w-full py-2 px-2 rounded-xl text-sm text-center"
+            className={`${compactInputClass} text-center`}
           />
         </div>
 
         {/* Unit Price */}
-        <div className="col-span-2">
+        <div className="col-span-2 min-w-0">
           <label className="block text-xs font-medium text-[#9aa6b0] mb-1">Unit Price</label>
           <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#9aa6b0]">$</span>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#9aa6b0]">$</span>
             <input
               type="number"
               min={0}
@@ -152,16 +157,16 @@ export default function OrderItemRow({
               value={item.unit_price}
               onChange={(e) => onChange(index, "unit_price", Number(e.target.value))}
               disabled={disabled}
-              className="admin-btn-secondary w-full py-2 pl-6 pr-2 rounded-xl text-sm"
+              className={`${compactInputClass} pl-5`}
             />
           </div>
         </div>
 
         {/* Subtotal + Remove */}
-        <div className="col-span-2 flex items-end gap-2">
-          <div className="flex-1">
+        <div className="col-span-2 flex items-end gap-1 min-w-0">
+          <div className="flex-1 min-w-0">
             <label className="block text-xs font-medium text-[#9aa6b0] mb-1">Subtotal</label>
-            <div className="py-2 px-2.5 rounded-xl bg-gray-50/50 text-sm font-medium text-[#2b2f33]">
+            <div className="py-1.5 px-2 rounded-lg bg-gray-50/50 text-xs font-medium text-[#2b2f33] truncate">
               ${subtotal.toFixed(2)}
             </div>
           </div>
@@ -169,7 +174,7 @@ export default function OrderItemRow({
             <button
               type="button"
               onClick={() => onRemove(index)}
-              className="p-2 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors mb-0.5"
+              className="p-1.5 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors shrink-0"
             >
               <TrashIcon className="w-4 h-4" />
             </button>
@@ -177,16 +182,19 @@ export default function OrderItemRow({
         </div>
       </div>
 
-      {/* Stock warning */}
+      {/* Stock warning: Available, Required, Short by (planning view; shipping blocked server-side when insufficient) */}
       {selectedVariant && !isCustom && !isCustomVariant && (
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-4 text-xs flex-wrap">
           <span className="text-[#9aa6b0]">
             Available: <strong className={available !== null && available <= 0 ? "text-red-500" : "text-[#2b2f33]"}>{available ?? 0}</strong>
+          </span>
+          <span className="text-[#9aa6b0]">
+            Required: <strong className="text-[#2b2f33]">{item.quantity}</strong>
           </span>
           {isInsufficient && (
             <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
               <ExclamationTriangleIcon className="w-3.5 h-3.5" />
-              Insufficient stock: need {item.quantity - (available ?? 0)} more units
+              Short by {item.quantity - (available ?? 0)} units
             </span>
           )}
         </div>

@@ -7,7 +7,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = stockAdjustSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const err = parsed.error.flatten();
+      const msg =
+        (Array.isArray(err.formErrors) && err.formErrors[0]) ||
+        Object.values(err.fieldErrors ?? {}).flat().find(Boolean) ||
+        "Validation failed";
+      return NextResponse.json({ error: String(msg) }, { status: 400 });
     }
 
     const { variant_id, type, quantity, reason } = parsed.data;

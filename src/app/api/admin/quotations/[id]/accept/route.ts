@@ -13,6 +13,7 @@ export async function PATCH(
       .from("quotations")
       .select("*, customer:customers(*)")
       .eq("id", id)
+      .is("deleted_at", null)
       .single();
 
     if (!quote) {
@@ -24,17 +25,20 @@ export async function PATCH(
 
     const { data: items } = await supabase
       .from("quotation_items")
-      .select("*")
+      .select("*, product:products(id,title), variant:product_variants(id,name)")
       .eq("quotation_id", id);
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "Quotation has no items" }, { status: 400 });
     }
 
-    const orderNotes = quote.notes
-      ? `Converted from quote ${quote.quote_number} — ${quote.notes}`
-      : `Converted from quote ${quote.quote_number}`;
+    const quoteVersion = Number(quote.version ?? 1);
 
+    const orderNotes = quote.notes
+      ? `Converted from quote ${quote.quote_number} (v${quoteVersion}) — ${quote.notes}`
+      : `Converted from quote ${quote.quote_number} (v${quoteVersion})`;
+
+    // Order created as Draft (admin finalizes then moves to Confirmed; stock deducts only on Shipped)
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert([
@@ -46,6 +50,8 @@ export async function PATCH(
           tax: quote.tax,
           total: quote.total,
           quotation_id: quote.id,
+          source_quote_id: quote.id,
+          source_quote_version: quoteVersion,
         },
       ])
       .select()
@@ -55,17 +61,23 @@ export async function PATCH(
       return NextResponse.json({ error: orderErr.message }, { status: 500 });
     }
 
-    const orderItems = items.map((item) => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      variant_id: item.variant_id,
-      custom_name: (item as { custom_name?: string }).custom_name ?? null,
-      custom_spec: (item as { custom_spec?: string }).custom_spec ?? null,
-      custom_notes: (item as { custom_notes?: string }).custom_notes ?? null,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      subtotal: item.subtotal,
-    }));
+    const orderItems = items.map((item) => {
+      const product = item.product as { id: string; title: string } | null;
+      const variant = item.variant as { id: string; name: string } | null;
+      return {
+        order_id: order.id,
+        product_id: item.product_id,
+        variant_id: item.variant_id,
+        custom_name: (item as { custom_name?: string }).custom_name ?? null,
+        custom_spec: (item as { custom_spec?: string }).custom_spec ?? null,
+        custom_notes: (item as { custom_notes?: string }).custom_notes ?? null,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.subtotal,
+        product_title_snapshot: product?.title ?? (item as { custom_name?: string }).custom_name ?? null,
+        variant_name_snapshot: variant?.name ?? (item as { custom_spec?: string }).custom_spec ?? null,
+      };
+    });
 
     const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
     if (itemsErr) {

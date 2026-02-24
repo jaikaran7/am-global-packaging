@@ -59,10 +59,10 @@ export default function AdminStockPage() {
   const [showBulk, setShowBulk] = useState(false);
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="w-full max-w-full space-y-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight">
+        <h1 className="text-xl font-semibold text-[#2b2f33] tracking-tight">
           Stock Management
         </h1>
         <div className="flex items-center gap-2">

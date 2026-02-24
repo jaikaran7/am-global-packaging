@@ -40,10 +40,13 @@ const bottomItems: NavItem[] = [
 interface SidebarProps {
   collapsed: boolean
   setCollapsed: (v: boolean) => void
+  hydrated?: boolean
+  width?: number
 }
 
-export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarProps>) {
+export default function Sidebar({ collapsed, setCollapsed, hydrated = true, width: widthProp }: Readonly<SidebarProps>) {
   const pathname = usePathname()
+  const width = widthProp ?? (collapsed ? 76 : 240)
 
   const isActive = (href: string) => {
     if (href === '/admin/dashboard') return pathname === '/admin/dashboard' || pathname === '/admin'
@@ -51,11 +54,9 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
   }
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 76 : 240 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="admin-sidebar flex flex-col h-screen sticky top-0 z-30 overflow-hidden rounded-r-[20px]"
+    <aside
+      style={{ width }}
+      className="admin-sidebar fixed left-0 top-0 bottom-0 z-30 flex flex-col h-screen overflow-hidden rounded-r-[20px] transition-[width] duration-200 ease-out"
     >
       {/* Logo */}
       <div className="p-4 flex items-center gap-3 min-h-[68px]">
@@ -177,6 +178,6 @@ export default function Sidebar({ collapsed, setCollapsed }: Readonly<SidebarPro
           </AnimatePresence>
         </button>
       </div>
-    </motion.aside>
+    </aside>
   )
 }

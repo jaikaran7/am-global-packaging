@@ -11,8 +11,8 @@ export default async function AdminEnquiriesPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight">
+    <div className="w-full max-w-full space-y-4">
+      <h1 className="text-xl font-semibold text-[#2b2f33] tracking-tight">
         Enquiries
       </h1>
       <EnquiriesTable />

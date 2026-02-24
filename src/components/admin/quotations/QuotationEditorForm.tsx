@@ -33,6 +33,8 @@ type QuotationItem = {
 interface QuoteData {
   id: string;
   quote_number: string;
+  version?: number;
+  parent_quote_id?: string | null;
   customer_id: string | null;
   customer: { id: string; name: string; email: string | null; phone: string | null; company: string | null } | null;
   status: string;
@@ -76,6 +78,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [creatingRevision, setCreatingRevision] = useState(false);
 
   const { data: quote } = useQuery<QuoteData>({
     queryKey: ["admin-quote", quoteId],
@@ -126,7 +129,9 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
   const tax = subtotal * (gstPercent / 100);
   const total = subtotal + tax;
-  const isLocked = quote?.status === "accepted" || quote?.status === "rejected" || quote?.status === "expired";
+  const isLocked = ["accepted", "rejected", "expired", "revised", "locked", "cancelled"].includes(
+    quote?.status ?? ""
+  );
 
   const handleItemChange = (index: number, field: string, value: string | number) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
@@ -161,8 +166,17 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
 
     setSaving(true);
     try {
+      // Normalize items for API: custom rows must send product_id/variant_id "custom" (schema expects UUID or "custom", not "")
+      const normalizedItems = validItems.map((i) => {
+        const isCustom = i.product_id === "custom" || Boolean(i.custom_name?.trim());
+        if (isCustom) {
+          return { ...i, product_id: "custom" as const, variant_id: "custom" as const };
+        }
+        return i;
+      });
+
       const payload: Record<string, unknown> = {
-        items: validItems,
+        items: normalizedItems,
         notes,
         terms_text: termsText,
         valid_until: validUntil,
@@ -172,7 +186,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
       if (showNewCustomer && newCustomer.name) {
         payload.new_customer = newCustomer;
       } else {
-        payload.customer_id = customerId;
+        payload.customer_id = customerId && String(customerId).trim() ? customerId : null;
       }
 
       const url = isEdit ? `/api/admin/quotations/${quoteId}` : "/api/admin/quotations";
@@ -185,8 +199,14 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to save quotation");
+        const data = await res.json().catch(() => ({}));
+        const errMsg =
+          typeof data?.error === "string"
+            ? data.error
+            : data?.error && typeof data.error === "object"
+              ? "Validation failed. Check required fields."
+              : "Failed to save quotation";
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
@@ -201,8 +221,9 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
         toast.success("Quotation created");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save");
-      toast.error("Failed to save quotation");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to save. Please check your input." : msg);
+      toast.error(msg === "[object Object]" ? "Failed to save quotation" : msg);
     } finally {
       setSaving(false);
     }
@@ -215,15 +236,17 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
     try {
       const res = await fetch(`/api/admin/quotations/${quoteId}/send`, { method: "PATCH" });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to send quote");
+        const data = await res.json().catch(() => ({}));
+        const errMsg = typeof data?.error === "string" ? data.error : "Failed to send quote";
+        throw new Error(errMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["admin-quote", quoteId] });
       queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
       queryClient.invalidateQueries({ queryKey: ["admin-quotations-stats"] });
       toast.success("Quotation sent");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to send");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to send." : msg);
       toast.error("Failed to send quotation");
     } finally {
       setSending(false);
@@ -236,19 +259,45 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
     setError("");
     try {
       const res = await fetch(`/api/admin/quotations/${quoteId}/accept`, { method: "PATCH" });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error ?? "Failed to accept quote");
+        const errMsg = typeof data?.error === "string" ? data.error : "Failed to accept quote";
+        throw new Error(errMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["admin-quote", quoteId] });
       queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
       router.push(`/admin/orders/${data.order_id}`);
       toast.success("Quotation accepted and converted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to accept");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to accept." : msg);
       toast.error("Failed to accept quotation");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleCreateRevision = async () => {
+    if (!quoteId) return;
+    setCreatingRevision(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/quotations/${quoteId}/revision`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const errMsg = typeof data?.error === "string" ? data.error : "Failed to create revision";
+        throw new Error(errMsg);
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-quotations-stats"] });
+      router.push(`/admin/quotations/${data.id}`);
+      toast.success("Revision created (draft). Edit and send to client.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to create revision." : msg);
+      toast.error("Failed to create revision");
+    } finally {
+      setCreatingRevision(false);
     }
   };
 
@@ -259,14 +308,16 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
     try {
       const res = await fetch(`/api/admin/quotations/${quoteId}/reject`, { method: "PATCH" });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to reject");
+        const data = await res.json().catch(() => ({}));
+        const errMsg = typeof data?.error === "string" ? data.error : "Failed to reject";
+        throw new Error(errMsg);
       }
       queryClient.invalidateQueries({ queryKey: ["admin-quote", quoteId] });
       queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
       toast.success("Quotation rejected");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to reject");
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg === "[object Object]" ? "Failed to reject." : msg);
       toast.error("Failed to reject quotation");
     } finally {
       setSending(false);
@@ -281,7 +332,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   }
 
   return (
-    <div className="max-w-[1100px] mx-auto space-y-6">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push("/admin/quotations")} className="admin-btn-secondary p-2 rounded-xl">
@@ -292,8 +343,11 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
               {isEdit ? `Quote ${quote?.quote_number ?? ""}` : "New Quotation"}
             </h1>
             {isEdit && quote && (
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <QuotationStatusBadge status={quote.status} size="md" />
+                {quote.version != null && quote.version > 1 && (
+                  <span className="text-xs text-[#9aa6b0]">v{quote.version}</span>
+                )}
                 {quote.created_at && (
                   <span className="text-xs text-[#9aa6b0]">
                     Created {new Date(quote.created_at).toLocaleDateString("en-AU")}
@@ -536,6 +590,16 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
                 >
                   <XCircleIcon className="w-4 h-4 text-red-600" /> Mark Rejected
                 </button>
+                {(quote?.status === "accepted" || quote?.status === "sent" || quote?.status === "revised" || quote?.status === "locked") && (
+                  <button
+                    type="button"
+                    onClick={handleCreateRevision}
+                    disabled={creatingRevision}
+                    className="admin-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
+                  >
+                    {creatingRevision ? "Creating…" : "Create Revision (v" + ((quote?.version ?? 1) + 1) + ")"}
+                  </button>
+                )}
               </div>
             </div>
           )}

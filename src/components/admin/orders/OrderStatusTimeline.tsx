@@ -3,7 +3,7 @@
 import { ORDER_STATUS_CONFIG, type OrderStatus } from "@/lib/schemas/order";
 import { CheckIcon } from "@heroicons/react/24/solid";
 
-const STEPS: OrderStatus[] = ["draft", "confirmed", "in_production", "shipped", "delivered"];
+const STEPS: OrderStatus[] = ["draft", "pending_confirmation", "confirmed", "in_production", "shipped", "delivered"];
 
 interface OrderStatusTimelineProps {
   currentStatus: OrderStatus;
@@ -15,6 +15,15 @@ export default function OrderStatusTimeline({ currentStatus }: OrderStatusTimeli
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-100">
         <span className="w-2 h-2 rounded-full bg-red-500" />
         <span className="text-sm font-medium text-red-600">Order Cancelled</span>
+      </div>
+    );
+  }
+
+  if (currentStatus === "obsolete") {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+        <span className="w-2 h-2 rounded-full bg-slate-500" />
+        <span className="text-sm font-medium text-slate-600">Order superseded by new version</span>
       </div>
     );
   }

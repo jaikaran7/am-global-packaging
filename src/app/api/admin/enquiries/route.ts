@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     let query = supabase
       .from("enquiries")
-      .select("*", { count: "exact" })
+      .select("*, enquiry_items(*)", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

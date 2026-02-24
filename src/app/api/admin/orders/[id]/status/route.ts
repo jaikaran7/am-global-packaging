@@ -15,7 +15,16 @@ export async function PATCH(
     const body = await req.json();
     const parsed = orderStatusSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const err = parsed.error.flatten();
+      const message =
+        (Array.isArray(err.formErrors) && typeof err.formErrors[0] === "string"
+          ? err.formErrors[0]
+          : null) ??
+        (err.fieldErrors && typeof err.fieldErrors === "object"
+          ? Object.values(err.fieldErrors).flat().find(Boolean)
+          : undefined) ??
+        "Invalid status update";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -45,8 +54,13 @@ export async function PATCH(
       .select("*")
       .eq("order_id", id);
 
-    // Stock reservation logic
-    if (currentStatus === "draft" && newStatus === "confirmed") {
+    // Reserve only when moving to Confirmed (draft or pending_confirmation). No stock deduction.
+    const toConfirmedOrInProd =
+      newStatus === "confirmed" || newStatus === "in_production";
+    if (
+      (currentStatus === "draft" || currentStatus === "pending_confirmation") &&
+      toConfirmedOrInProd
+    ) {
       for (const item of items ?? []) {
         if (!item.variant_id) continue;
         await supabase.from("stock_movements").insert({
@@ -70,10 +84,15 @@ export async function PATCH(
       }
     }
 
-    if (
+    // Release reservation when order is cancelled or obsoleted (confirmed/in_production -> cancelled/obsolete); never shipped
+    const releaseReserved =
       (currentStatus === "confirmed" || currentStatus === "in_production") &&
-      newStatus === "cancelled"
-    ) {
+      (newStatus === "cancelled" || newStatus === "obsolete");
+    if (releaseReserved) {
+      const noteSuffix =
+        newStatus === "cancelled"
+          ? `Released reservation for cancelled order ${order.order_number}`
+          : `Released reservation for obsoleted order ${order.order_number}`;
       for (const item of items ?? []) {
         if (!item.variant_id) continue;
         await supabase.from("stock_movements").insert({
@@ -83,7 +102,7 @@ export async function PATCH(
           qty: 0,
           reference_type: "order",
           reference_id: id,
-          note: `Released reservation for cancelled order ${order.order_number}`,
+          note: noteSuffix,
         });
         const { data: variant } = await supabase
           .from("product_variants")
@@ -99,10 +118,29 @@ export async function PATCH(
       }
     }
 
+    // Stock control point: deduct ONLY when moving to Shipped. Re-check availability; block if insufficient.
     if (currentStatus === "in_production" && newStatus === "shipped") {
-      for (const item of items ?? []) {
+      const orderItems = items ?? [];
+      for (const item of orderItems) {
         if (!item.variant_id) continue;
-        // Deduct from available stock via ledger
+        const { data: variant } = await supabase
+          .from("product_variants")
+          .select("id, stock, name")
+          .eq("id", item.variant_id)
+          .single();
+        const available = variant?.stock ?? 0;
+        if (available < item.quantity) {
+          const variantName = (variant as { name?: string })?.name ?? "variant";
+          return NextResponse.json(
+            {
+              error: `Cannot ship. Insufficient stock for ${variantName}. Required: ${item.quantity}, Available: ${available}. Please add stock first.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+      for (const item of orderItems) {
+        if (!item.variant_id) continue;
         await supabase.from("stock_movements").insert({
           product_id: item.product_id,
           variant_id: item.variant_id,
@@ -112,7 +150,6 @@ export async function PATCH(
           reference_id: id,
           note: `Shipped ${item.quantity} units for order ${order.order_number}`,
         });
-        // Release reservation
         const { data: variant } = await supabase
           .from("product_variants")
           .select("reserved_stock")
@@ -135,6 +172,7 @@ export async function PATCH(
     }
     if (newStatus === "delivered") {
       statusUpdate.delivered_date = new Date().toISOString().split("T")[0];
+      // TODO: create revenue entry / close order for accounting (e.g. debit AR, credit revenue)
     }
 
     const { error } = await supabase.from("orders").update(statusUpdate).eq("id", id);

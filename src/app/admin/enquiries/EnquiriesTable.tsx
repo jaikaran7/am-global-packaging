@@ -16,6 +16,17 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
+export type EnquiryItemRow = {
+  id: string;
+  product_category: string;
+  product: string;
+  quantity: number | null;
+  ply_preference: string | null;
+  custom_name: string | null;
+  custom_spec: string | null;
+  custom_notes: string | null;
+};
+
 export type EnquiryRow = {
   id: string;
   full_name: string;
@@ -29,6 +40,8 @@ export type EnquiryRow = {
   project_details: string | null;
   status: string;
   created_at: string;
+  converted_to_quotation_id?: string | null;
+  enquiry_items?: EnquiryItemRow[];
 };
 
 type StatusCounts = {
@@ -158,24 +171,35 @@ export default function EnquiriesTable() {
     setPage(1);
   }
 
-  async function handleUpdateStatus(id: string, status: EnquiryStatus) {
-    if (status === "successful") {
-      const proceed = window.confirm(
-        "Mark this enquiry as Successful? You will be redirected to create a quotation."
-      );
-      if (!proceed) return;
-    }
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
+  async function handleConvertToQuotation(id: string) {
+    setConvertingId(id);
+    try {
+      const res = await fetch(`/api/admin/enquiries/${id}/convert-to-quotation`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        window.alert(data?.error ?? "Failed to create quotation");
+        return;
+      }
+      setDetailId(null);
+      fetchEnquiries();
+      fetchCounts();
+      router.push(`/admin/quotations/${data.quotation_id}`);
+    } finally {
+      setConvertingId(null);
+    }
+  }
+
+  async function handleUpdateStatus(id: string, status: EnquiryStatus) {
     setUpdatingId(id);
     await updateEnquiryStatus(id, status);
     setUpdatingId(null);
     setDetailId(null);
     fetchEnquiries();
     fetchCounts();
-
-    if (status === "successful") {
-      router.push(`/admin/quotations?from_enquiry=${id}`);
-    }
   }
 
   const selected = detailId ? enquiries.find((e) => e.id === detailId) : null;
@@ -270,8 +294,16 @@ export default function EnquiriesTable() {
                           {row.email}
                         </a>
                       </td>
-                      <td className="py-3 px-4 text-[#6b7280]">{row.product}</td>
-                      <td className="py-3 px-4 text-[#6b7280]">{row.quantity ?? "—"}</td>
+                      <td className="py-3 px-4 text-[#6b7280]">
+                        {row.enquiry_items && row.enquiry_items.length > 1
+                          ? `${row.enquiry_items.length} products`
+                          : row.product}
+                      </td>
+                      <td className="py-3 px-4 text-[#6b7280]">
+                        {row.enquiry_items && row.enquiry_items.length > 1
+                          ? row.enquiry_items.map((i) => i.quantity ?? "—").join(", ")
+                          : (row.quantity ?? "—")}
+                      </td>
                       <td className="py-3 px-4">
                         <StatusPill status={row.status} />
                       </td>
@@ -331,31 +363,76 @@ export default function EnquiriesTable() {
             <p><span className="text-[#6b7280]">Company:</span> {selected.company_name}</p>
             <p><span className="text-[#6b7280]">Email:</span> <a href={`mailto:${selected.email}`} className="text-[#ff7a2d]">{selected.email}</a></p>
             <p><span className="text-[#6b7280]">Phone:</span> {selected.phone ?? "—"}</p>
-            <p><span className="text-[#6b7280]">Category:</span> {selected.product_category}</p>
-            <p><span className="text-[#6b7280]">Product:</span> {selected.product}</p>
-            <p><span className="text-[#6b7280]">Quantity:</span> {selected.quantity ?? "—"}</p>
-            <p><span className="text-[#6b7280]">Ply:</span> {selected.ply_preference ?? "—"}</p>
+          </div>
+          <div className="mt-4">
+            <h4 className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide mb-2">Products</h4>
+            {(selected.enquiry_items && selected.enquiry_items.length > 0
+              ? selected.enquiry_items
+              : [
+                  {
+                    id: selected.id,
+                    product_category: selected.product_category,
+                    product: selected.product,
+                    quantity: selected.quantity,
+                    ply_preference: selected.ply_preference,
+                    custom_name: null,
+                    custom_spec: null,
+                    custom_notes: null,
+                  },
+                ]
+            ).map((item, idx) => (
+              <div key={item.id} className="py-2 px-3 rounded-lg bg-white/50 text-sm mb-1">
+                <span className="font-medium text-[#2b2f33]">{item.product_category}</span>
+                {" — "}
+                <span className="text-[#2b2f33]">{item.product}</span>
+                {item.quantity != null && <span className="text-[#6b7280]"> · Qty: {item.quantity}</span>}
+                {item.ply_preference && <span className="text-[#6b7280]"> · {item.ply_preference}</span>}
+                {item.custom_name && <span className="text-[#6b7280]"> · Custom: {item.custom_name}</span>}
+              </div>
+            ))}
           </div>
           {selected.project_details && (
             <p className="mt-4 text-sm"><span className="text-[#6b7280]">Details:</span><br />{selected.project_details}</p>
           )}
           <div className="mt-6 flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-[#6b7280] mr-1">Set status:</span>
-            {ENQUIRY_STATUSES.filter((s) => s !== normalizeEnquiryStatus(selected.status)).map((status) => {
-              const config = ENQUIRY_STATUS_CONFIG[status];
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  disabled={updatingId === selected.id}
-                  onClick={() => handleUpdateStatus(selected.id, status)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-60 ${config.pillClass} border-current/20 hover:opacity-90`}
+            {selected.converted_to_quotation_id ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#6b7280]">Converted to quote.</span>
+                <a
+                  href={`/admin/quotations/${selected.converted_to_quotation_id}`}
+                  className="text-xs font-medium text-[#ff7a2d] hover:underline"
                 >
-                  <EnquiryStatusIcon status={status} />
-                  {config.label}
+                  Open quotation →
+                </a>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={convertingId === selected.id}
+                  onClick={() => handleConvertToQuotation(selected.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-60"
+                >
+                  {convertingId === selected.id ? "Creating…" : "Confirm & Create Quote"}
                 </button>
-              );
-            })}
+                <span className="text-xs text-[#6b7280] mr-2">or set status:</span>
+                {ENQUIRY_STATUSES.filter((s) => s !== normalizeEnquiryStatus(selected.status)).map((status) => {
+                  const config = ENQUIRY_STATUS_CONFIG[status];
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      disabled={updatingId === selected.id}
+                      onClick={() => handleUpdateStatus(selected.id, status)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-60 ${config.pillClass} border-current/20 hover:opacity-90`}
+                    >
+                      <EnquiryStatusIcon status={status} />
+                      {config.label}
+                    </button>
+                  );
+                })}
+              </>
+            )}
             {updatingId === selected.id && <span className="text-xs text-[#6b7280]">Updating…</span>}
           </div>
         </div>

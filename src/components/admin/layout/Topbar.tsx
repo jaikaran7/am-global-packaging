@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -14,7 +13,7 @@ const kpiPills = [
   { label: 'New Enquiries', valueKey: 'newEnquiries' as const, color: 'bg-orange-50 text-[#ff7a2d]', iconBg: 'bg-orange-100', href: '/admin/enquiries?status=new' },
   { label: 'Pending Orders', valueKey: 'pendingOrders' as const, color: 'bg-amber-50 text-amber-600', iconBg: 'bg-amber-100', href: '/admin/orders' },
   { label: 'Low Stock Alerts', valueKey: 'lowStock' as const, color: 'bg-emerald-50 text-emerald-600', iconBg: 'bg-emerald-100', href: '/admin/stock' },
-  { label: 'Upcoming Loads', valueKey: 'upcomingLoads' as const, color: 'bg-violet-50 text-violet-600', iconBg: 'bg-violet-100', href: '#' },
+  { label: 'Upcoming Loads', valueKey: 'upcomingLoads' as const, color: 'bg-violet-50 text-violet-600', iconBg: 'bg-violet-100', href: '/admin/stock' },
 ]
 
 const pillIcons = [
@@ -26,42 +25,36 @@ const pillIcons = [
 
 interface TopbarProps {
   newEnquiriesCount?: number
+  pendingOrders?: number
+  lowStock?: number
+  upcomingLoads?: number
 }
 
-export default function Topbar({ newEnquiriesCount }: Readonly<TopbarProps>) {
-  const [liveCounts, setLiveCounts] = useState({ pendingOrders: 0, lowStock: 0 })
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/orders/stats').then(r => r.ok ? r.json() : null),
-      fetch('/api/admin/stock/stats').then(r => r.ok ? r.json() : null),
-    ]).then(([orderStats, stockStats]) => {
-      setLiveCounts({
-        pendingOrders: (orderStats?.draft ?? 0) + (orderStats?.confirmed ?? 0) + (orderStats?.in_production ?? 0),
-        lowStock: (stockStats?.low_stock ?? 0) + (stockStats?.out_of_stock ?? 0),
-      })
-    }).catch(() => {})
-  }, [])
-
+export default function Topbar({
+  newEnquiriesCount = 0,
+  pendingOrders = 0,
+  lowStock = 0,
+  upcomingLoads = 0,
+}: Readonly<TopbarProps>) {
   const counts = {
-    newEnquiries: newEnquiriesCount ?? 0,
-    pendingOrders: liveCounts.pendingOrders,
-    lowStock: liveCounts.lowStock,
-    upcomingLoads: 0,
+    newEnquiries: newEnquiriesCount,
+    pendingOrders,
+    lowStock,
+    upcomingLoads,
   }
 
   return (
-    <div className="admin-topbar px-6 py-3 flex items-center gap-4">
+    <div className="admin-topbar px-4 py-2 flex items-center gap-3">
       {/* KPI pills */}
-      <div className="flex items-center gap-3 flex-1 overflow-x-auto">
+      <div className="flex items-center gap-2 flex-1 overflow-x-auto">
         {kpiPills.map((pill, idx) => {
           const content = (
             <>
-              <div className={`w-8 h-8 rounded-xl ${pill.iconBg} flex items-center justify-center shadow-sm`}>
+              <div className={`w-7 h-7 rounded-lg ${pill.iconBg} flex items-center justify-center shadow-sm`}>
                 <span className={pill.color.split(' ')[1]}>{pillIcons[idx]}</span>
               </div>
-              <span className="text-sm text-[#6b7280] font-medium whitespace-nowrap">{pill.label}</span>
-              <span className="text-lg font-bold text-[#ff7a2d]">{counts[pill.valueKey]}</span>
+              <span className="text-xs text-[#6b7280] font-medium whitespace-nowrap">{pill.label}</span>
+              <span className="text-base font-bold text-[#ff7a2d]">{counts[pill.valueKey]}</span>
             </>
           )
           return (
@@ -85,19 +78,19 @@ export default function Topbar({ newEnquiriesCount }: Readonly<TopbarProps>) {
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Messages">
-          <EnvelopeIcon className="w-[18px] h-[18px] text-[#6b7280]" />
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <button className="w-8 h-8 rounded-lg bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_6px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Messages">
+          <EnvelopeIcon className="w-4 h-4 text-[#6b7280]" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm relative" aria-label="Notifications">
-          <BellIcon className="w-[18px] h-[18px] text-[#6b7280]" />
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#ff7a2d] rounded-full border-2 border-white shadow-sm" />
+        <button className="w-8 h-8 rounded-lg bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_6px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm relative" aria-label="Notifications">
+          <BellIcon className="w-4 h-4 text-[#6b7280]" />
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#ff7a2d] rounded-full border-2 border-white shadow-sm" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Settings">
-          <Cog6ToothIcon className="w-[18px] h-[18px] text-[#6b7280]" />
+        <button className="w-8 h-8 rounded-lg bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_6px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Settings">
+          <Cog6ToothIcon className="w-4 h-4 text-[#6b7280]" />
         </button>
-        <button className="w-9 h-9 rounded-xl bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Logout">
-          <ArrowRightStartOnRectangleIcon className="w-[18px] h-[18px] text-[#6b7280]" />
+        <button className="w-8 h-8 rounded-lg bg-white/60 hover:bg-white/80 flex items-center justify-center transition-all shadow-[0_2px_6px_rgba(16,18,20,0.04)] border border-white/50 backdrop-blur-sm" aria-label="Logout">
+          <ArrowRightStartOnRectangleIcon className="w-4 h-4 text-[#6b7280]" />
         </button>
       </div>
     </div>

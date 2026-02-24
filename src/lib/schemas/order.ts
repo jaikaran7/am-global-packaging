@@ -58,11 +58,13 @@ export const orderSchema = z.object({
 export const orderStatusSchema = z.object({
   status: z.enum([
     "draft",
+    "pending_confirmation",
     "confirmed",
     "in_production",
     "shipped",
     "delivered",
     "cancelled",
+    "obsolete",
   ]),
   shipping_provider: z.string().optional(),
   tracking_id: z.string().optional(),
@@ -84,11 +86,13 @@ export type StockAdjustInput = z.infer<typeof stockAdjustSchema>;
 
 export const ORDER_STATUSES = [
   "draft",
+  "pending_confirmation",
   "confirmed",
   "in_production",
   "shipped",
   "delivered",
   "cancelled",
+  "obsolete",
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -102,6 +106,12 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#6b7280",
     bgColor: "rgba(107,114,128,0.1)",
     borderColor: "rgba(107,114,128,0.3)",
+  },
+  pending_confirmation: {
+    label: "Pending confirmation",
+    color: "#d97706",
+    bgColor: "rgba(217,119,6,0.1)",
+    borderColor: "rgba(217,119,6,0.3)",
   },
   confirmed: {
     label: "Confirmed",
@@ -133,13 +143,21 @@ export const ORDER_STATUS_CONFIG: Record<
     bgColor: "rgba(239,68,68,0.1)",
     borderColor: "rgba(239,68,68,0.3)",
   },
+  obsolete: {
+    label: "Obsolete",
+    color: "#64748b",
+    bgColor: "rgba(100,116,139,0.1)",
+    borderColor: "rgba(100,116,139,0.3)",
+  },
 };
 
 export const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  draft: ["confirmed", "cancelled"],
-  confirmed: ["in_production", "cancelled"],
-  in_production: ["shipped", "cancelled"],
+  draft: ["confirmed", "cancelled", "obsolete"],
+  pending_confirmation: ["confirmed", "in_production", "cancelled", "obsolete"],
+  confirmed: ["in_production", "cancelled", "obsolete"],
+  in_production: ["shipped", "cancelled", "obsolete"],
   shipped: ["delivered"],
   delivered: [],
   cancelled: [],
+  obsolete: [],
 };

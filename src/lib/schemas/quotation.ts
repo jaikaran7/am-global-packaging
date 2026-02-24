@@ -40,12 +40,12 @@ export const quotationSchema = z.object({
   valid_until: z.string().optional().or(z.literal("")),
   gst_percent: z.number().min(0).max(100).optional(),
   status: z
-    .enum(["draft", "sent", "accepted", "rejected", "expired"])
+    .enum(["draft", "sent", "accepted", "rejected", "expired", "revised", "locked", "cancelled"])
     .optional(),
 });
 
 export const quotationStatusSchema = z.object({
-  status: z.enum(["draft", "sent", "accepted", "rejected", "expired"]),
+  status: z.enum(["draft", "sent", "accepted", "rejected", "expired", "revised", "locked", "cancelled"]),
 });
 
 export type QuotationInput = z.infer<typeof quotationSchema>;

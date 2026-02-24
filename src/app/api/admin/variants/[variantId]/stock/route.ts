@@ -33,17 +33,50 @@ export async function POST(
       return NextResponse.json({ error: "Variant not found" }, { status: 404 });
     }
 
+    const movementType = parsed.data.movement_type;
+    const absQty = Math.abs(parsed.data.qty);
+
+    // Incoming: does NOT affect Available; only increases incoming_stock until approved/received
+    if (movementType === "incoming") {
+      const { data: v } = await supabase
+        .from("product_variants")
+        .select("incoming_stock")
+        .eq("id", variantId)
+        .single();
+      const newIncoming = (v?.incoming_stock ?? 0) + absQty;
+      const { error: updErr } = await supabase
+        .from("product_variants")
+        .update({ incoming_stock: newIncoming })
+        .eq("id", variantId);
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
+      await supabase.from("stock_movements").insert({
+        variant_id: variantId,
+        product_id: variant.product_id,
+        movement_type: "incoming",
+        qty: 0,
+        reference_type: parsed.data.reference_type ?? "manual",
+        note: parsed.data.note ?? `Added ${absQty} to incoming (pending receive)`,
+      });
+      return NextResponse.json({
+        variant_id: variantId,
+        movement_type: "incoming",
+        incoming_stock: newIncoming,
+      });
+    }
+
     const qty =
-      parsed.data.movement_type === "outgoing" || parsed.data.movement_type === "order_reserved"
-        ? -Math.abs(parsed.data.qty)
-        : Math.abs(parsed.data.qty);
+      movementType === "outgoing" || movementType === "order_reserved"
+        ? -absQty
+        : absQty;
 
     const { data, error } = await supabase
       .from("stock_movements")
       .insert([{
         variant_id: variantId,
         product_id: variant.product_id,
-        movement_type: parsed.data.movement_type,
+        movement_type: movementType,
         qty,
         reference_type: parsed.data.reference_type ?? "manual",
         note: parsed.data.note ?? null,

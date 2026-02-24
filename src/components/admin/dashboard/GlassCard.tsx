@@ -21,7 +21,7 @@ export default function GlassCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
       whileHover={hover ? { y: -2, transition: { duration: 0.2 } } : undefined}
-      className={`glass glass--soft p-5 rounded-[16px] admin-card-warm ${className}`}
+      className={`glass glass--soft p-4 rounded-xl admin-card-warm ${className}`}
       {...props}
     >
       {children}

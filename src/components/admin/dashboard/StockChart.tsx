@@ -1,59 +1,42 @@
 'use client'
 
-import React from 'react'
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
 import GlassCard from './GlassCard'
-import { SearchableSelect } from '@/components/ui/select'
 
-const data = [
-  { day: 'Mon', available: 8, reserved: 4, incoming: 6, shipped: 12 },
-  { day: 'Tue', available: 14, reserved: 8, incoming: 10, shipped: 22 },
-  { day: 'Wed', available: 10, reserved: 5, incoming: 7, shipped: 15 },
-  { day: 'Thu', available: 12, reserved: 6, incoming: 9, shipped: 18 },
-  { day: 'Fri', available: 16, reserved: 10, incoming: 8, shipped: 20 },
-  { day: 'Sat', available: 6, reserved: 3, incoming: 4, shipped: 8 },
-  { day: 'Sun', available: 4, reserved: 2, incoming: 3, shipped: 5 },
-]
+type StockSummary = { available: number; reserved: number; incoming: number }
 
-const legendItems = [
+interface StockChartProps {
+  stockSummary?: StockSummary | null
+}
+
+const LEGEND_ITEMS = [
   { color: '#ffb380', label: 'Available' },
   { color: '#6ee7a0', label: 'Reserved' },
   { color: '#ff7a2d', label: 'Incoming' },
-  { color: '#9aa6b0', label: 'Shipped' },
 ]
 
-export default function StockChart() {
-  const [range, setRange] = React.useState('May 2024')
+export default function StockChart({ stockSummary }: Readonly<StockChartProps>) {
+  const available = stockSummary?.available ?? 0
+  const reserved = stockSummary?.reserved ?? 0
+  const incoming = stockSummary?.incoming ?? 0
+  const data = [{ name: 'Stock', available, reserved, incoming }]
+
   return (
-    <GlassCard className="p-6 h-full" delay={0.3}>
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-semibold text-[#2b2f33]">Stock Overview</h3>
-        <div className="min-w-[140px]">
-          <SearchableSelect
-            value={range}
-            onChange={(value) => setRange(value)}
-            options={[
-              { value: 'May 2024', label: 'May 2024' },
-              { value: 'Jun 2024', label: 'Jun 2024' },
-              { value: 'Jul 2024', label: 'Jul 2024' },
-            ]}
-            allowClear={false}
-          />
-        </div>
+    <GlassCard className="p-4 h-full" delay={0.3}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-[#2b2f33]">Stock Overview</h3>
       </div>
 
-      {/* Custom legend */}
-      <div className="flex items-center gap-4 mb-4">
-        {legendItems.map((item) => (
+      <div className="flex items-center gap-3 mb-3">
+        {LEGEND_ITEMS.map((item) => (
           <div key={item.label} className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
             <span className="text-[11px] text-[#6b7280]">{item.label}</span>
@@ -61,12 +44,12 @@ export default function StockChart() {
         ))}
       </div>
 
-      <div style={{ width: '100%', height: 195 }}>
+      <div style={{ width: '100%', height: 160 }}>
         <ResponsiveContainer>
-          <BarChart data={data} barGap={2} barCategoryGap="25%" margin={{ top: 0, right: 5, left: -15, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 0, right: 5, left: -15, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,18,20,0.06)" vertical={false} />
             <XAxis
-              dataKey="day"
+              dataKey="name"
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 11, fill: '#9aa6b0' }}
@@ -85,11 +68,9 @@ export default function StockChart() {
                 fontSize: '13px',
               }}
             />
-            <Legend content={() => null} />
             <Bar dataKey="available" stackId="a" fill="#ffb380" radius={[0, 0, 0, 0]} />
             <Bar dataKey="reserved" stackId="a" fill="#6ee7a0" />
-            <Bar dataKey="incoming" stackId="a" fill="#ff7a2d" />
-            <Bar dataKey="shipped" stackId="a" fill="#9aa6b0" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="incoming" stackId="a" fill="#ff7a2d" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
