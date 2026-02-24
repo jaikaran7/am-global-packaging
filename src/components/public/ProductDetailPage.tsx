@@ -18,6 +18,7 @@ import {
   Phone,
   Mail,
   ChevronDown,
+  ChevronLeft,
 } from "lucide-react";
 import type { Product } from "@/data/products";
 import { getRelatedProducts, getCategoryProducts } from "@/data/products";
@@ -219,17 +220,15 @@ function ProductTypeCard({
       .replace(/Carton/i, "")
       .replace(/Box/i, "")
       .trim() || product.shortName;
-  const className = `flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-center transition-all duration-300 ${
-    isActive
-      ? "border-forest bg-forest/5 shadow-md"
-      : "border-kraft/15 bg-white hover:border-kraft/30 hover:bg-kraft-pale/20"
-  }`;
+  const className = `flex shrink-0 w-[130px] md:w-auto snap-center flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 text-center transition-all duration-300 h-full ${isActive
+    ? "border-forest bg-forest/5 shadow-md"
+    : "border-kraft/15 bg-white hover:border-kraft/30 hover:bg-kraft-pale/20"
+    }`;
   const content = (
     <>
       <span
-        className={`text-[11px] font-bold leading-tight ${
-          isActive ? "text-forest" : "text-charcoal/70"
-        }`}
+        className={`text-[11px] font-bold leading-tight ${isActive ? "text-forest" : "text-charcoal/70"
+          }`}
       >
         {label}
       </span>
@@ -268,9 +267,8 @@ function AccordionSpecs({ specs }: { specs: { label: string; value: string }[] }
         {visible.map((spec, i) => (
           <div
             key={spec.label}
-            className={`flex items-center justify-between py-3.5 ${
-              i < visible.length - 1 ? "border-b border-kraft/8" : ""
-            }`}
+            className={`flex items-center justify-between py-3.5 ${i < visible.length - 1 ? "border-b border-kraft/8" : ""
+              }`}
           >
             <span className="text-sm text-warm-gray">{spec.label}</span>
             <span className="text-sm font-semibold text-charcoal">{spec.value}</span>
@@ -311,7 +309,9 @@ export default function ProductDetailPage({ product: initialProduct }: { product
   const [quantity, setQuantity] = useState(product.moq.replace(/\D/g, ""));
   const [plyPreference, setPlyPreference] = useState(product.plyOptions[0] ?? "");
   const relatedProducts = getRelatedProducts(product.relatedSlugs);
-  const viewOptions = ["Closed", "Open", "Ply Layers"];
+  const viewOptions = product.images
+    ? ["Closed", "Open", "Layers", "Stack", "Two Sides"].slice(0, product.images.length)
+    : ["Closed", "Open", "Ply Layers"];
 
   // Reset view when product changes in "from=all" mode
   const handleProductSwitch = (slug: string) => {
@@ -345,8 +345,8 @@ export default function ProductDetailPage({ product: initialProduct }: { product
       <section className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-10 pb-20">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-start">
           {/* ── Left: Product gallery ── */}
-          <div className="relative md:sticky md:top-28">
-            <div className="bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 rounded-3xl overflow-hidden relative min-h-[400px] md:min-h-[500px] flex items-center justify-center">
+          <div className="relative md:sticky md:top-28 w-full min-w-0">
+            <div className="bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 rounded-3xl overflow-hidden relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
               <div className="absolute inset-0 corrugated-pattern opacity-20" />
 
               <AnimatePresence mode="wait">
@@ -356,39 +356,102 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.4 }}
-                  className="w-full h-full flex items-center justify-center min-h-[400px]"
+                  drag={product.images && product.images.length > 1 ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, { offset }) => {
+                    const swipe = offset.x;
+                    if (swipe < -40 && product.images) {
+                      setActiveView((prev) => (prev === product.images!.length - 1 ? 0 : prev + 1));
+                    } else if (swipe > 40 && product.images) {
+                      setActiveView((prev) => (prev === 0 ? product.images!.length - 1 : prev - 1));
+                    }
+                  }}
+                  className="w-full h-full flex items-center justify-center min-h-[300px] touch-pan-y"
                 >
-                  <DetailBox3D
-                    size={product.dimensionDetail}
-                    activeView={activeView}
-                  />
+                  {product.images ? (
+                    <div className="relative w-full h-full flex items-center justify-center p-6 md:p-8">
+                      <img
+                        src={product.images[activeView] || product.images[0]}
+                        alt={`${product.name} view ${activeView + 1}`}
+                        className="max-w-full max-h-[360px] object-contain drop-shadow-2xl"
+                      />
+                    </div>
+                  ) : (
+                    <DetailBox3D
+                      size={product.dimensionDetail}
+                      activeView={activeView}
+                    />
+                  )}
                 </motion.div>
               </AnimatePresence>
 
-              {/* Small Closed / Open / Ply Layers toggle — always present */}
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center bg-white/90 backdrop-blur-md rounded-full p-1 border border-kraft/10 shadow-md">
-                {viewOptions.map((label, i) => (
+              {/* Left/Right swipe arrows */}
+              {product.images && product.images.length > 1 && (
+                <>
                   <button
-                    key={label}
-                    onClick={() => setActiveView(i)}
-                    className={`px-4 py-2 text-[11px] font-semibold rounded-full transition-all duration-300 ${
-                      activeView === i
-                        ? "bg-forest text-offwhite shadow-sm"
-                        : "text-warm-gray hover:text-charcoal"
-                    }`}
+                    onClick={() => setActiveView((prev) => (prev === 0 ? product.images!.length - 1 : prev - 1))}
+                    className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center text-[#e85d04] hover:text-[#d05000] hover:scale-110 transition-all z-20"
+                    aria-label="Previous image"
                   >
-                    {label}
+                    <ChevronLeft className="w-8 h-8" strokeWidth={2.5} />
                   </button>
-                ))}
-              </div>
+                  <button
+                    onClick={() => setActiveView((prev) => (prev === product.images!.length - 1 ? 0 : prev + 1))}
+                    className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center text-[#e85d04] hover:text-[#d05000] hover:scale-110 transition-all z-20"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="w-8 h-8" strokeWidth={2.5} />
+                  </button>
+                </>
+              )}
+
+              {/* Pagination Dots (Mobile) */}
+              {product.images && product.images.length > 1 && (
+                <div className="md:hidden absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-20">
+                  {product.images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveView(idx)}
+                      role="tab"
+                      aria-selected={activeView === idx}
+                      aria-label={`Go to slide ${idx + 1}`}
+                      className={`h-2 rounded-full transition-all ${activeView === idx ? "bg-charcoal w-4 scale-100 opacity-90" : "bg-charcoal/30 w-2 scale-90"
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Size badge */}
-              <div className="absolute top-5 right-5 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full border border-kraft/10">
+              <div className="absolute top-5 right-5 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full border border-kraft/10 z-20">
                 <span className="text-[10px] font-bold text-kraft tracking-wide">
                   {product.dimensions}
                 </span>
               </div>
             </div>
+
+            {/* Thumbnail row */}
+            {product.images && product.images.length > 0 && (
+              <div className="hidden md:flex mt-4 gap-3 overflow-x-auto pb-2 scrollbar-none">
+                {product.images.map((imgSrc, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveView(idx)}
+                    className={`relative w-[70px] h-[70px] flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200 bg-white shadow-sm flex items-center justify-center ${activeView === idx
+                      ? "border-[#e85d04] opacity-100"
+                      : "border-kraft/15 opacity-60 hover:opacity-100"
+                      }`}
+                  >
+                    <img
+                      src={imgSrc}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="w-full h-full object-contain p-1"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* ── Category product cards — always show (same UI whether from All Products or category/direct) ── */}
             <div className="mt-4">
@@ -396,9 +459,8 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                 {product.categoryLabel} — Select Type
               </p>
               <div
-                className={`grid gap-2 ${
-                  categoryProducts.length <= 3 ? "grid-cols-3" : "grid-cols-4"
-                }`}
+                className={`flex overflow-x-auto pb-4 gap-3 snap-x scrollbar-none md:grid md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 max-w-[100vw] ${categoryProducts.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4"
+                  }`}
               >
                 {categoryProducts.map((p) => {
                   const isActive = p.slug === activeProductSlug;
@@ -587,7 +649,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                 </div>
 
                 {/* Direct contact */}
-                <div className="flex items-center gap-6 mt-6 text-sm text-warm-gray">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-6 text-sm text-warm-gray">
                   <span>Need help?</span>
                   <a
                     href="tel:+611234567890"

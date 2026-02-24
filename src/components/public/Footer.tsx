@@ -85,7 +85,7 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Phone className="w-4 h-4 text-offwhite/30" />
-                  +61 XXX XXX XXX
+                  +61 0434 396 360
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Mail className="w-4 h-4 text-offwhite/30" />
@@ -154,7 +154,7 @@ export default function Footer() {
                 </span>
               </div>
             </a>
-           
+
             <div className="mt-8 mb-6">
               <div className="text-[11px] font-semibold tracking-[0.22em] text-offwhite/30 uppercase mb-3">
                 Contact

@@ -8,13 +8,13 @@ export interface Product {
   dimensionDetail: { length: number; width: number; height: number };
   /** Internal category key — used for filtering */
   category:
-    | "pizza-boxes"
-    | "specialty"
-    | "books"
-    | "ecommerce"
-    | "general-purpose"
-    | "vegetable-boxes"
-    | "poultry-boxes";
+  | "pizza-boxes"
+  | "specialty"
+  | "books"
+  | "ecommerce"
+  | "general-purpose"
+  | "vegetable-boxes"
+  | "poultry-boxes";
   categoryLabel: string;
   useCases: string[];
   plyOptions: string[];
@@ -28,6 +28,7 @@ export interface Product {
   relatedSlugs: string[];
   priceAud?: number;
   pricingTiers?: { label: string; priceAud: number }[];
+  images?: string[];
 }
 
 export const products: Product[] = [
@@ -41,6 +42,7 @@ export const products: Product[] = [
       "Precision-engineered small pizza box designed for 7–8 inch personal pizzas. Features optimized ventilation slots to maintain crispness during delivery, with a lock-tab closure system for secure transit. Ideal for single-serve portions, quick-service restaurants, and cloud kitchens.",
     dimensions: "200 × 200 × 40 mm",
     dimensionDetail: { length: 200, width: 200, height: 40 },
+    images: ["/assets/products/pizza-boxes/pizza-box-1-closed-transparent.png", "/assets/products/pizza-boxes/pizza-box-2-open-transparent.png", "/assets/products/pizza-boxes/pizza-box-3-layered-transparent.png", "/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png", "/assets/products/pizza-boxes/pizza-box-small-side-dims-transparent.png", "/assets/products/pizza-boxes/pizza-box-6-side-transparent.png", "/assets/products/pizza-boxes/pizza-box-open-close-combo-transparent.png"],
     category: "pizza-boxes",
     categoryLabel: "Pizza Boxes",
     useCases: [
@@ -82,6 +84,7 @@ export const products: Product[] = [
       "Our medium pizza box accommodates 9–10 inch pizzas with precision fit. Engineered with reinforced corner joints and optimal flute structure for superior stacking strength. The go-to choice for dine-in, takeaway, and delivery operations across Australia.",
     dimensions: "250 × 250 × 45 mm",
     dimensionDetail: { length: 250, width: 250, height: 45 },
+    images: ["/assets/products/pizza-boxes/pizza-box-1-closed-transparent.png", "/assets/products/pizza-boxes/pizza-box-2-open-transparent.png", "/assets/products/pizza-boxes/pizza-box-3-layered-transparent.png", "/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png", "/assets/products/pizza-boxes/pizza-box-medium-side-dims-transparent.png", "/assets/products/pizza-boxes/pizza-box-6-side-transparent.png", "/assets/products/pizza-boxes/pizza-box-open-close-combo-transparent.png"],
     category: "pizza-boxes",
     categoryLabel: "Pizza Boxes",
     useCases: [
@@ -123,6 +126,7 @@ export const products: Product[] = [
       "The industry standard large pizza box for 11–12 inch pizzas. This is the most commonly ordered size across Australia, engineered for high-volume operations. Features a robust double-wall option for heavy toppings and enhanced thermal retention during delivery.",
     dimensions: "300 × 300 × 45 mm",
     dimensionDetail: { length: 300, width: 300, height: 45 },
+    images: ["/assets/products/pizza-boxes/pizza-box-1-closed-transparent.png", "/assets/products/pizza-boxes/pizza-box-2-open-transparent.png", "/assets/products/pizza-boxes/pizza-box-3-layered-transparent.png", "/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png", "/assets/products/pizza-boxes/pizza-box-large-side-dims-transparent.png", "/assets/products/pizza-boxes/pizza-box-6-side-transparent.png", "/assets/products/pizza-boxes/pizza-box-open-close-combo-transparent.png"],
     category: "pizza-boxes",
     categoryLabel: "Pizza Boxes",
     useCases: [
@@ -164,6 +168,7 @@ export const products: Product[] = [
       "Designed for 13–14 inch extra-large pizzas, this box delivers premium structural integrity for gourmet and specialty pizza brands. Reinforced fluting provides superior protection against crushing, while the expanded surface area offers maximum branding real estate.",
     dimensions: "330 × 330 × 45 mm",
     dimensionDetail: { length: 330, width: 330, height: 45 },
+    images: ["/assets/products/pizza-boxes/pizza-box-1-closed-transparent.png", "/assets/products/pizza-boxes/pizza-box-2-open-transparent.png", "/assets/products/pizza-boxes/pizza-box-3-layered-transparent.png", "/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png", "/assets/products/pizza-boxes/pizza-box-xl-side-dims-transparent.png", "/assets/products/pizza-boxes/pizza-box-6-side-transparent.png", "/assets/products/pizza-boxes/pizza-box-open-close-combo-transparent.png"],
     category: "pizza-boxes",
     categoryLabel: "Pizza Boxes",
     useCases: [
@@ -205,6 +210,7 @@ export const products: Product[] = [
       "Our largest pizza box, purpose-built for 15–16 inch family and party-sized pizzas. Heavy-duty 7-ply construction ensures no sagging or deformation during transport. Double-scored fold lines allow for effortless assembly at scale.",
     dimensions: "400 × 400 × 50 mm",
     dimensionDetail: { length: 400, width: 400, height: 50 },
+    images: ["/assets/products/pizza-boxes/pizza-box-1-closed-transparent.png", "/assets/products/pizza-boxes/pizza-box-2-open-transparent.png", "/assets/products/pizza-boxes/pizza-box-3-layered-transparent.png", "/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png", "/assets/products/pizza-boxes/pizza-box-family-side-dims-transparent.png", "/assets/products/pizza-boxes/pizza-box-6-side-transparent.png", "/assets/products/pizza-boxes/pizza-box-open-close-combo-transparent.png"],
     category: "pizza-boxes",
     categoryLabel: "Pizza Boxes",
     useCases: [
