@@ -331,6 +331,7 @@ function SearchableSelectBody({
     >
       <Combobox.Options
         static
+        modal={false}
         className={cn(
           "fixed z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
           listClassName
@@ -344,6 +345,7 @@ function SearchableSelectBody({
         <div className="p-2 border-b border-slate-100">
           <Combobox.Input
             className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 text-sm outline-none text-slate-900 placeholder:text-slate-400"
+            displayValue={() => selected?.label ?? ""}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={searchPlaceholder}
           />
