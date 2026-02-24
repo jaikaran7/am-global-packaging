@@ -121,11 +121,10 @@ export default function ProductsSection() {
               <button
                 key={tab.id}
                 onClick={() => setActiveProduct(i)}
-                className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
-                  activeProduct === i
-                    ? "bg-forest text-offwhite shadow-lg shadow-forest/20"
-                    : "text-warm-gray hover:text-charcoal"
-                }`}
+                className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${activeProduct === i
+                  ? "bg-forest text-offwhite shadow-lg shadow-forest/20"
+                  : "text-warm-gray hover:text-charcoal"
+                  }`}
               >
                 {tab.label}
               </button>
@@ -175,6 +174,38 @@ export default function ProductsSection() {
                   <div className="mt-8 text-center">
                     <div className="text-white/80 text-sm font-medium">Corrugated Sheet Stack</div>
                     <div className="text-white/50 text-xs mt-1">Custom dimensions available</div>
+                  </div>
+                </div>
+              ) : activeTab.id === "pizza" ? (
+                <div className="relative w-full h-[320px] md:h-[360px] flex items-center justify-center z-10">
+                  <div className="relative">
+                    <img
+                      src="/assets/products/pizza-boxes/pizza-box-4-stack-transparent.png"
+                      alt="Pizza Boxes Stack"
+                      className="max-w-full max-h-[300px] object-contain drop-shadow-2xl"
+                    />
+
+                    {/* Size Overlay Labels */}
+                    <div className="absolute top-[8%] -right-4 md:-right-12 flex items-center gap-2">
+                      <span className="text-[9px] font-bold bg-white/90 text-charcoal px-2 py-0.5 rounded-sm shadow-sm border border-kraft/20 tracking-wider">PERSONAL</span>
+                      <div className="w-4 h-px bg-kraft/40" />
+                    </div>
+                    <div className="absolute top-[28%] -right-4 md:-right-12 flex items-center gap-2">
+                      <span className="text-[9px] font-bold bg-white/90 text-charcoal px-2 py-0.5 rounded-sm shadow-sm border border-kraft/20 tracking-wider">SMALL</span>
+                      <div className="w-8 h-px bg-kraft/40" />
+                    </div>
+                    <div className="absolute top-[48%] -right-4 md:-right-12 flex items-center gap-2">
+                      <span className="text-[9px] font-bold bg-white/90 text-charcoal px-2 py-0.5 rounded-sm shadow-sm border border-kraft/20 tracking-wider">MEDIUM</span>
+                      <div className="w-12 h-px bg-kraft/40" />
+                    </div>
+                    <div className="absolute bottom-[28%] -right-4 md:-right-12 flex items-center gap-2">
+                      <span className="text-[9px] font-bold bg-white/90 text-charcoal px-2 py-0.5 rounded-sm shadow-sm border border-kraft/20 tracking-wider">LARGE</span>
+                      <div className="w-16 h-px bg-kraft/40" />
+                    </div>
+                    <div className="absolute bottom-[2%] -right-4 md:-right-12 flex items-center gap-2">
+                      <span className="text-[9px] font-bold bg-white/90 text-charcoal px-2 py-0.5 rounded-sm shadow-sm border border-kraft/20 tracking-wider">X-LARGE</span>
+                      <div className="w-20 h-px bg-kraft/40" />
+                    </div>
                   </div>
                 </div>
               ) : (
