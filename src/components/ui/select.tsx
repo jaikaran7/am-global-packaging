@@ -1,15 +1,54 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import * as SelectPrimitive from "@radix-ui/react-select"
+import { Combobox, Transition } from "@headlessui/react"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { XMarkIcon } from "@heroicons/react/24/outline"
 
 import { cn } from "@/lib/utils"
+import { useDropdownManager } from "@/components/ui/use-dropdown-manager"
+
+const SelectOpenContext = React.createContext<{
+  open: boolean
+  setOpen: (open: boolean) => void
+} | null>(null)
 
 function Select({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  const isControlled = openProp !== undefined
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(
+    defaultOpen ?? false
+  )
+  const open = isControlled ? openProp : uncontrolledOpen
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!isControlled) setUncontrolledOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [isControlled, onOpenChange]
+  )
+
+  useDropdownManager(Boolean(open), () => handleOpenChange(false))
+
+  return (
+    <SelectOpenContext.Provider
+      value={{ open: Boolean(open), setOpen: handleOpenChange }}
+    >
+      <SelectPrimitive.Root
+        data-slot="select"
+        open={open}
+        onOpenChange={handleOpenChange}
+        {...props}
+      />
+    </SelectOpenContext.Provider>
+  )
 }
 
 function SelectGroup({
@@ -56,14 +95,20 @@ function SelectContent({
   position = "popper",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  const select = React.useContext(SelectOpenContext)
+
   return (
     <SelectPrimitive.Portal>
+      <div
+        data-slot="select-backdrop"
+        data-state={select?.open ? "open" : "closed"}
+        onClick={() => select?.setOpen(false)}
+        className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-[1px] transition-opacity duration-150 data-[state=closed]:opacity-0 data-[state=open]:opacity-100 data-[state=closed]:pointer-events-none"
+      />
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md",
-          position === "popper" &&
-            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+          "bg-white text-slate-900 pointer-events-auto data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-[60] max-h-(--radix-select-content-available-height) min-w-[10rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg border border-slate-200 shadow-xl duration-150",
           className
         )}
         position={position}
@@ -107,7 +152,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "data-[highlighted]:bg-slate-100 data-[highlighted]:text-slate-900 data-[state=checked]:bg-slate-100 data-[state=checked]:text-slate-900 [&_svg:not([class*='text-'])]:text-slate-500 relative flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-sm outline-hidden select-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
@@ -183,3 +228,244 @@ export {
   SelectTrigger,
   SelectValue,
 }
+
+type SelectOption = {
+  value: string
+  label: string
+  disabled?: boolean
+}
+
+type SearchableSelectProps = {
+  options: SelectOption[]
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  searchPlaceholder?: string
+  allowClear?: boolean
+  disabled?: boolean
+  className?: string
+  buttonClassName?: string
+  listClassName?: string
+}
+
+type SearchableSelectBodyProps = {
+  open: boolean
+  buttonRef: React.RefObject<HTMLButtonElement | null>
+  onCloseRequest: () => void
+  query: string
+  setQuery: (value: string) => void
+  selected: SelectOption | null
+  filtered: SelectOption[]
+  allowClear: boolean
+  value: string
+  placeholder: string
+  searchPlaceholder: string
+  disabled?: boolean
+  className?: string
+  buttonClassName?: string
+  listClassName?: string
+  onChange: (value: string) => void
+}
+
+function SearchableSelectBody({
+  open,
+  buttonRef,
+  onCloseRequest,
+  query,
+  setQuery,
+  selected,
+  filtered,
+  allowClear,
+  value,
+  placeholder,
+  searchPlaceholder,
+  disabled,
+  className,
+  buttonClassName,
+  listClassName,
+  onChange,
+}: SearchableSelectBodyProps) {
+  const openRef = React.useRef(open)
+  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0, width: 0 })
+
+  React.useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  React.useLayoutEffect(() => {
+    if (open && buttonRef.current && typeof document !== "undefined") {
+      const updatePosition = () => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect()
+          setDropdownPosition({
+            top: rect.bottom + 8,
+            left: rect.left,
+            width: Math.max(rect.width, 200),
+          })
+        }
+      }
+      updatePosition()
+      window.addEventListener("scroll", updatePosition, true)
+      window.addEventListener("resize", updatePosition)
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true)
+        window.removeEventListener("resize", updatePosition)
+      }
+    }
+  }, [open, buttonRef])
+
+  useDropdownManager(open, () => {
+    if (openRef.current) onCloseRequest()
+  })
+
+  const dropdownContent = (
+    <Transition
+      show={open}
+      as={React.Fragment}
+      enter="transition duration-150 ease-out"
+      enterFrom="opacity-0 scale-95"
+      enterTo="opacity-100 scale-100"
+      leave="transition duration-150 ease-in"
+      leaveFrom="opacity-100 scale-100"
+      leaveTo="opacity-0 scale-95"
+    >
+      <Combobox.Options
+        static
+        modal={false}
+        className={cn(
+          "fixed z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
+          listClassName
+        )}
+        style={{
+          top: dropdownPosition.top,
+          left: dropdownPosition.left,
+          width: dropdownPosition.width || 200,
+        }}
+      >
+        <div className="p-2 border-b border-slate-100">
+          <Combobox.Input
+            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 text-sm outline-none text-slate-900 placeholder:text-slate-400"
+            displayValue={() => selected?.label ?? ""}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={searchPlaceholder}
+          />
+        </div>
+        <div className="max-h-56 overflow-y-auto">
+          {filtered.length === 0 && (
+            <div className="p-3 text-center text-xs text-slate-400">No results</div>
+          )}
+          {filtered.map((opt) => (
+            <Combobox.Option
+              key={opt.value}
+              value={opt.value}
+              disabled={opt.disabled}
+              className={({ active, selected: isSelected }) =>
+                cn(
+                  "px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors",
+                  active && "bg-slate-100 text-slate-900",
+                  isSelected && "bg-slate-100 text-slate-900 font-medium"
+                )
+              }
+            >
+              {({ selected: isSelected }) => (
+                <>
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && <CheckIcon className="w-4 h-4 text-[#ff7a2d] shrink-0" />}
+                </>
+              )}
+            </Combobox.Option>
+          ))}
+        </div>
+      </Combobox.Options>
+    </Transition>
+  )
+
+  return (
+    <div className={cn("relative inline-block w-full overflow-visible", className)}>
+      <Combobox.Button
+        ref={buttonRef}
+        className={cn(
+          "admin-btn-secondary w-full py-2 px-3 rounded-xl text-sm flex items-center justify-between gap-2",
+          disabled && "opacity-60 cursor-not-allowed",
+          buttonClassName
+        )}
+      >
+        <span className={cn("truncate", !selected && "text-[#9aa6b0]")}>
+          {selected?.label ?? placeholder}
+        </span>
+      </Combobox.Button>
+      {allowClear && value ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onChange("")
+            setQuery("")
+          }}
+          className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-white/70"
+          aria-label="Clear selection"
+        >
+          <XMarkIcon className="w-4 h-4 text-[#9aa6b0]" />
+        </button>
+      ) : null}
+      <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9aa6b0] pointer-events-none" />
+      {typeof document !== "undefined"
+        ? createPortal(dropdownContent, document.body)
+        : null}
+    </div>
+  )
+}
+
+function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder = "Select...",
+  searchPlaceholder = "Search...",
+  allowClear = true,
+  disabled,
+  className,
+  buttonClassName,
+  listClassName,
+}: Readonly<SearchableSelectProps>) {
+  const [query, setQuery] = React.useState("")
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  const selected = options.find((o) => o.value === value) ?? null
+  const filtered =
+    query.trim().length === 0
+      ? options
+      : options.filter((opt) => opt.label.toLowerCase().includes(query.trim().toLowerCase()))
+
+  return (
+    <Combobox
+      value={value}
+      onChange={(nextValue) => onChange(nextValue ?? "")}
+      onClose={() => setQuery("")}
+      disabled={disabled}
+    >
+      {({ open }) => (
+        <SearchableSelectBody
+          open={open}
+          buttonRef={buttonRef}
+          onCloseRequest={() => buttonRef.current?.click()}
+          query={query}
+          setQuery={setQuery}
+          selected={selected}
+          filtered={filtered}
+          allowClear={allowClear}
+          value={value}
+          placeholder={placeholder}
+          searchPlaceholder={searchPlaceholder}
+          disabled={disabled}
+          className={className}
+          buttonClassName={buttonClassName}
+          listClassName={listClassName}
+          onChange={onChange}
+        />
+      )}
+    </Combobox>
+  )
+}
+
+export { SearchableSelect }
