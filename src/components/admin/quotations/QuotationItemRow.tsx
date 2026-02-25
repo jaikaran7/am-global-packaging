@@ -147,8 +147,26 @@ export default function QuotationItemRow({
             id={`qty-${index}`}
             type="number"
             min={1}
-            value={item.quantity}
-            onChange={(e) => onChange(index, "quantity", Math.max(1, Number(e.target.value)))}
+            value={item.quantity || ""}
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                onChange(index, "quantity", 0);
+                return;
+              }
+              const next = Number(raw);
+              if (!Number.isNaN(next)) {
+                onChange(index, "quantity", next);
+              }
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value;
+              const next = Number(raw);
+              if (Number.isNaN(next) || next < 1) {
+                onChange(index, "quantity", 1);
+              }
+            }}
             disabled={disabled}
             className={`${compactInputClass} text-center`}
           />
