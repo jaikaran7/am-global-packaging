@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Send, Phone, MapPin, Mail, ChevronRight, Loader2, CheckCircle } from "lucide-react";
 import { isAustralianPhone } from "@/lib/validation/phone";
@@ -10,19 +10,41 @@ import {
   getCategoryProducts,
 } from "@/data/products";
 
+type ProductRow = {
+  categoryId: string;
+  productSlug: string;
+  plyPreference: string;
+  quantity: string;
+  customName: string;
+  customSpec: string;
+  customNotes: string;
+};
+
+const defaultProductRow = (): ProductRow => ({
+  categoryId: "",
+  productSlug: "",
+  plyPreference: "",
+  quantity: "",
+  customName: "",
+  customSpec: "",
+  customNotes: "",
+});
+
 async function submitEnquiry(payload: {
   full_name: string;
   company_name?: string | null;
   email: string;
   phone?: string;
-  product_category: string;
-  product: string;
-  quantity?: number | null;
-  ply_preference?: string | null;
   project_details?: string | null;
-  custom_name?: string | null;
-  custom_spec?: string | null;
-  custom_notes?: string | null;
+  items: Array<{
+    product_category: string;
+    product: string;
+    quantity?: number | null;
+    ply_preference?: string | null;
+    custom_name?: string | null;
+    custom_spec?: string | null;
+    custom_notes?: string | null;
+  }>;
 }) {
   const res = await fetch("/api/enquiries", {
     method: "POST",
@@ -57,50 +79,24 @@ export default function ContactSection() {
   const formRef = useRef<HTMLFormElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [productSlug, setProductSlug] = useState<string>("");
-  const [plyPreference, setPlyPreference] = useState<string>("");
-  const [quantity, setQuantity] = useState<string>("");
-  const [customName, setCustomName] = useState<string>("");
-  const [customSpec, setCustomSpec] = useState<string>("");
-  const [customNotes, setCustomNotes] = useState<string>("");
+  const [productRows, setProductRows] = useState<ProductRow[]>([defaultProductRow()]);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [submitError, setSubmitError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [successVisible, setSuccessVisible] = useState<boolean>(false);
 
-  const isCorrugatedSheets = categoryId === CORRUGATED_SHEETS_ID;
-  const isCustomCategory = categoryId === "custom";
-  const categoryProducts = useMemo(
-    () => (categoryId && !isCorrugatedSheets ? getCategoryProducts(categoryId) : []),
-    [categoryId, isCorrugatedSheets]
-  );
-  const selectedProduct = useMemo(
-    () => (categoryId && !isCorrugatedSheets ? products.find((p) => p.slug === productSlug) : undefined),
-    [categoryId, productSlug, isCorrugatedSheets]
-  );
-  const selectedSheetOption = useMemo(
-    () => (isCorrugatedSheets ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === productSlug) : undefined),
-    [isCorrugatedSheets, productSlug]
-  );
-  const plyOptions = selectedProduct?.plyOptions ?? selectedSheetOption?.plyOptions ?? [];
-  const hasProductSelection = selectedProduct !== undefined || selectedSheetOption !== undefined;
-  function getProductPlaceholder(): string {
-    if (categoryId === "") return "Select category first";
-    if (isCorrugatedSheets) return "Select sheet type";
-    return "Select product";
+  function setRow(index: number, field: keyof ProductRow, value: string) {
+    setProductRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
   }
-  function getPlyPlaceholder(): string {
-    if (!hasProductSelection) return "Select product first";
-    if (plyOptions.length === 0) return "No ply options";
-    return "Select ply type";
+  function addRow() {
+    setProductRows((prev) => [...prev, defaultProductRow()]);
   }
-
-  const productCategoryLabel = allCategories.find((c) => c.id === categoryId)?.label ?? categoryId;
-  const productLabel = selectedProduct
-    ? `${selectedProduct.shortName} — ${selectedProduct.dimensions}`
-    : selectedSheetOption?.label ?? productSlug;
-  const isCustomProduct = productSlug === "custom";
+  function removeRow(index: number) {
+    if (productRows.length <= 1) return;
+    setProductRows((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function validatePhone(value: string): string {
     if (!value) return "";
@@ -143,16 +139,39 @@ export default function ContactSection() {
       setPhoneError(phoneValidation);
       return;
     }
-    if (!categoryId || !productSlug) {
-      setSubmitStatus("error");
-      setSubmitError("Please select Product Category and Product.");
-      return;
+    for (let i = 0; i < productRows.length; i++) {
+      const row = productRows[i];
+      if (!row.categoryId || !row.productSlug) {
+        setSubmitStatus("error");
+        setSubmitError(`Product ${i + 1}: Please select Category and Product.`);
+        return;
+      }
+      if (row.productSlug === "custom" && !row.customName.trim()) {
+        setSubmitStatus("error");
+        setSubmitError(`Product ${i + 1}: Please enter a custom product name.`);
+        return;
+      }
     }
-    if (isCustomProduct && !customName.trim()) {
-      setSubmitStatus("error");
-      setSubmitError("Please enter a custom product name.");
-      return;
-    }
+
+    const items = productRows.map((row) => {
+      const catLabel = allCategories.find((c) => c.id === row.categoryId)?.label ?? row.categoryId;
+      const isCorr = row.categoryId === CORRUGATED_SHEETS_ID;
+      const isCustomCat = row.categoryId === "custom";
+      const prod = !isCorr && !isCustomCat ? products.find((p) => p.slug === row.productSlug) : undefined;
+      const sheet = isCorr ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === row.productSlug) : undefined;
+      const productLabel = prod
+        ? `${prod.shortName} — ${prod.dimensions}`
+        : sheet?.label ?? (row.productSlug === "custom" ? "Custom" : row.productSlug);
+      return {
+        product_category: catLabel,
+        product: row.productSlug === "custom" ? "Custom" : productLabel,
+        quantity: row.quantity ? Number(row.quantity) || null : null,
+        ply_preference: row.plyPreference || null,
+        custom_name: row.productSlug === "custom" ? row.customName || null : null,
+        custom_spec: row.productSlug === "custom" ? row.customSpec || null : null,
+        custom_notes: row.productSlug === "custom" ? row.customNotes || null : null,
+      };
+    });
 
     setSubmitStatus("loading");
     try {
@@ -161,14 +180,8 @@ export default function ContactSection() {
         company_name: companyNameValue,
         email,
         phone,
-        product_category: productCategoryLabel,
-        product: isCustomProduct ? "Custom" : productLabel,
-        quantity: quantity ? Number(quantity) || null : null,
-        ply_preference: plyPreference || null,
-        project_details: project_details || null,
-        custom_name: isCustomProduct ? customName || null : null,
-        custom_spec: isCustomProduct ? customSpec || null : null,
-        custom_notes: isCustomProduct ? customNotes || null : null,
+        project_details: project_details || undefined,
+        items,
       });
       setSubmitStatus("success");
     } catch (err) {
@@ -263,13 +276,7 @@ export default function ContactSection() {
                         setSubmitError("");
                         setPhoneError("");
                         formRef.current?.reset();
-                        setCategoryId("");
-                        setProductSlug("");
-                        setPlyPreference("");
-                        setQuantity("");
-                        setCustomName("");
-                        setCustomSpec("");
-                        setCustomNotes("");
+                        setProductRows([defaultProductRow()]);
                       }}
                       className="inline-flex items-center justify-center gap-2.5 px-6 py-3 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 text-sm"
                     >
@@ -372,150 +379,169 @@ export default function ContactSection() {
                     </div>
                   </div>
 
-              <div className="grid sm:grid-cols-2 gap-5 mt-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-charcoal tracking-wide">
-                    Product Category *
-                  </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setCategoryId(value);
-                      setProductSlug(value === "custom" ? "custom" : "");
-                      setPlyPreference("");
-                      setCustomName("");
-                      setCustomSpec("");
-                      setCustomNotes("");
-                    }}
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+              <div className="mt-5 space-y-6">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-charcoal tracking-wide">Products *</label>
+                  <button
+                    type="button"
+                    onClick={addRow}
+                    className="text-xs font-medium text-forest hover:underline"
                   >
-                    <option value="">Select category</option>
-                    <option value="custom">Custom</option>
-                    {allCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
+                    + Add another product
+                  </button>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-charcoal tracking-wide">
-                    Product *
-                  </label>
-                  <select
-                    value={productSlug}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProductSlug(value);
-                      setPlyPreference("");
-                      if (value !== "custom") {
-                        setCustomName("");
-                        setCustomSpec("");
-                        setCustomNotes("");
-                      }
-                    }}
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
-                    disabled={isCustomCategory}
-                  >
-                    <option value="">{getProductPlaceholder()}</option>
-                    {isCustomCategory ? null : (
-                      <>
-                        {(isCorrugatedSheets
-                          ? CORRUGATED_SHEETS_OPTIONS.map((s) => ({
-                              value: s.id,
-                              label: s.label,
-                            }))
-                          : categoryProducts.map((p) => ({
-                              value: p.slug,
-                              label: `${p.shortName} — ${p.dimensions}`,
-                            }))
-                        ).map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
+                {productRows.map((row, index) => {
+                  const isCorrugatedSheets = row.categoryId === CORRUGATED_SHEETS_ID;
+                  const isCustomCategory = row.categoryId === "custom";
+                  const categoryProducts = row.categoryId && !isCorrugatedSheets ? getCategoryProducts(row.categoryId) : [];
+                  const selectedProduct = row.categoryId && !isCorrugatedSheets ? products.find((p) => p.slug === row.productSlug) : undefined;
+                  const selectedSheetOption = isCorrugatedSheets ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === row.productSlug) : undefined;
+                  const plyOptions = selectedProduct?.plyOptions ?? selectedSheetOption?.plyOptions ?? [];
+                  const hasProductSelection = selectedProduct !== undefined || selectedSheetOption !== undefined;
+                  const getProductPlaceholder = () => {
+                    if (row.categoryId === "") return "Select category first";
+                    if (isCorrugatedSheets) return "Select sheet type";
+                    return "Select product";
+                  };
+                  const getPlyPlaceholder = () => {
+                    if (!hasProductSelection) return "Select product first";
+                    if (plyOptions.length === 0) return "No ply options";
+                    return "Select ply type";
+                  };
+                  const isCustomProduct = row.productSlug === "custom";
+                  return (
+                    <div key={index} className="space-y-4">
+                      {productRows.length > 1 && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => removeRow(index)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Remove product
+                          </button>
+                        </div>
+                      )}
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide">Product Category *</label>
+                          <select
+                            value={row.categoryId}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setRow(index, "categoryId", value);
+                              setRow(index, "productSlug", value === "custom" ? "custom" : "");
+                              setRow(index, "plyPreference", "");
+                              setRow(index, "customName", "");
+                              setRow(index, "customSpec", "");
+                              setRow(index, "customNotes", "");
+                            }}
+                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
+                          >
+                            <option value="">Select category</option>
+                            <option value="custom">Custom</option>
+                            {allCategories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>{cat.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide">Product *</label>
+                          <select
+                            value={row.productSlug}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setRow(index, "productSlug", value);
+                              setRow(index, "plyPreference", "");
+                              if (value !== "custom") {
+                                setRow(index, "customName", "");
+                                setRow(index, "customSpec", "");
+                                setRow(index, "customNotes", "");
+                              }
+                            }}
+                            disabled={isCustomCategory}
+                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
+                          >
+                            <option value="">{getProductPlaceholder()}</option>
+                            {!isCustomCategory && (
+                              <>
+                                {(isCorrugatedSheets
+                                  ? CORRUGATED_SHEETS_OPTIONS.map((s) => ({ value: s.id, label: s.label }))
+                                  : categoryProducts.map((p) => ({ value: p.slug, label: `${p.shortName} — ${p.dimensions}` }))
+                                ).map((opt) => (
+                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                                <option value="custom">Custom</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide">Quantity</label>
+                          <input
+                            type="number"
+                            min={1}
+                            placeholder="e.g. 5000"
+                            value={row.quantity}
+                            onChange={(e) => setRow(index, "quantity", e.target.value)}
+                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide">Ply Preference</label>
+                          <select
+                            value={row.plyPreference}
+                            onChange={(e) => setRow(index, "plyPreference", e.target.value)}
+                            disabled={!hasProductSelection || plyOptions.length === 0}
+                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
+                          >
+                            <option value="">{getPlyPlaceholder()}</option>
+                            {plyOptions.map((ply) => (
+                              <option key={ply} value={ply}>{ply}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {isCustomProduct && (
+                        <div className="grid sm:grid-cols-3 gap-4 pt-2">
+                          <div className="flex flex-col gap-2">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">Custom Product Name *</label>
+                            <input
+                              type="text"
+                              value={row.customName}
+                              onChange={(e) => setRow(index, "customName", e.target.value)}
+                              placeholder="Enter custom product"
+                              className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">Custom Spec</label>
+                            <input
+                              type="text"
+                              value={row.customSpec}
+                              onChange={(e) => setRow(index, "customSpec", e.target.value)}
+                              placeholder="Size/spec"
+                              className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">Custom Notes</label>
+                            <input
+                              type="text"
+                              value={row.customNotes}
+                              onChange={(e) => setRow(index, "customNotes", e.target.value)}
+                              placeholder="Optional notes"
+                              className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-5 mt-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-charcoal tracking-wide">
-                    Quantity
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="e.g. 5000"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-charcoal tracking-wide">
-                    Ply Preference
-                  </label>
-                  <select
-                    value={plyPreference}
-                    onChange={(e) => setPlyPreference(e.target.value)}
-                    disabled={!hasProductSelection || plyOptions.length === 0}
-                    className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
-                  >
-                    <option value="">{getPlyPlaceholder()}</option>
-                    {plyOptions.map((ply) => (
-                      <option key={ply} value={ply}>
-                        {ply}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {isCustomProduct && (
-                <div className="grid sm:grid-cols-3 gap-5 mt-5">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-charcoal tracking-wide">
-                      Custom Product Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={customName}
-                      onChange={(e) => setCustomName(e.target.value)}
-                      className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
-                      placeholder="Enter custom product"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-charcoal tracking-wide">
-                      Custom Spec
-                    </label>
-                    <input
-                      type="text"
-                      value={customSpec}
-                      onChange={(e) => setCustomSpec(e.target.value)}
-                      className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
-                      placeholder="Size/spec"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-charcoal tracking-wide">
-                      Custom Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={customNotes}
-                      onChange={(e) => setCustomNotes(e.target.value)}
-                      className="px-4 py-3.5 bg-offwhite rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
-                      placeholder="Optional notes"
-                    />
-                  </div>
-                </div>
-              )}
 
               <div className="flex flex-col gap-2 mt-5">
                 <label className="text-xs font-semibold text-charcoal tracking-wide">

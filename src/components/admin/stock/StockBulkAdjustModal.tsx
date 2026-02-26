@@ -19,14 +19,18 @@ interface StockBulkAdjustModalProps {
   onSuccess: () => void;
 }
 
+type BulkMode = "same" | "per_item";
+
 export default function StockBulkAdjustModal({
   onClose,
   onSuccess,
 }: Readonly<StockBulkAdjustModalProps>) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [mode, setMode] = useState<"same" | "per_item">("same");
   const [action, setAction] = useState("add");
   const [quantity, setQuantity] = useState(1);
+  const [perItemQty, setPerItemQty] = useState<Record<string, number>>({});
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -59,31 +63,52 @@ export default function StockBulkAdjustModal({
     );
   };
 
+  const setQtyForId = (id: string, value: number) => {
+    setPerItemQty((prev) => ({ ...prev, [id]: Math.max(0, value) }));
+  };
+
   const handleSubmit = async () => {
     setError("");
     if (selectedIds.length === 0) {
       setError("Select at least one variant.");
       return;
     }
-    if (quantity < 1) {
-      setError("Quantity must be at least 1.");
-      return;
+    if (mode === "same") {
+      if (quantity < 1) {
+        setError("Quantity must be at least 1.");
+        return;
+      }
+    } else {
+      const itemsWithQty = selectedIds.filter((id) => (perItemQty[id] ?? 0) > 0);
+      if (itemsWithQty.length === 0) {
+        setError("Enter at least one quantity for selected items.");
+        return;
+      }
     }
     setSaving(true);
     try {
+      const body =
+        mode === "per_item"
+          ? {
+              items: selectedIds
+                .map((id) => ({ variant_id: id, quantity: perItemQty[id] ?? 0 }))
+                .filter((i) => i.quantity > 0),
+              reason: reason.trim() || undefined,
+            }
+          : {
+              variant_ids: selectedIds,
+              action,
+              quantity,
+              reason: reason.trim() || undefined,
+            };
       const res = await fetch("/api/admin/stock/bulk-adjust", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          variant_ids: selectedIds,
-          action,
-          quantity,
-          reason: reason.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Bulk update failed");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data?.error === "string" ? data.error : "Bulk update failed");
       }
       queryClient.invalidateQueries({ queryKey: ["admin-stock"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stock-stats"] });
@@ -123,37 +148,52 @@ export default function StockBulkAdjustModal({
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-wrap gap-4 items-center">
           <div>
-            <label htmlFor="bulk-action" className="block text-sm font-medium text-[#6b7280] mb-1">
-              Action
-            </label>
+            <span className="block text-sm font-medium text-[#6b7280] mb-1">Mode</span>
             <SearchableSelect
-              value={action}
-              onChange={(value) => setAction(value)}
+              value={mode}
+              onChange={(value) => setMode(value as BulkMode)}
               options={[
-                { value: "add", label: "Add Stock" },
-                { value: "remove", label: "Remove Stock" },
-                { value: "set", label: "Set Stock" },
+                { value: "same", label: "Same quantity for all" },
+                { value: "per_item", label: "Different quantity per item" },
               ]}
               allowClear={false}
             />
-            <input id="bulk-action" className="sr-only" readOnly value={action} />
           </div>
-          <div>
-            <label htmlFor="bulk-quantity" className="block text-sm font-medium text-[#6b7280] mb-1">
-              Quantity
-            </label>
-            <input
-              id="bulk-quantity"
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-              className="admin-btn-secondary w-full py-2 px-3 rounded-xl text-sm"
-            />
-          </div>
-          <div>
+          {mode === "same" && (
+            <>
+              <div>
+                <label htmlFor="bulk-action" className="block text-sm font-medium text-[#6b7280] mb-1">
+                  Action
+                </label>
+                <SearchableSelect
+                  value={action}
+                  onChange={(value) => setAction(value)}
+                  options={[
+                    { value: "add", label: "Add Stock" },
+                    { value: "remove", label: "Remove Stock" },
+                    { value: "set", label: "Set Stock" },
+                  ]}
+                  allowClear={false}
+                />
+              </div>
+              <div>
+                <label htmlFor="bulk-quantity" className="block text-sm font-medium text-[#6b7280] mb-1">
+                  Quantity
+                </label>
+                <input
+                  id="bulk-quantity"
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                  className="admin-btn-secondary w-full min-w-[100px] py-2 px-3 rounded-xl text-sm"
+                />
+              </div>
+            </>
+          )}
+          <div className="min-w-[180px]">
             <label htmlFor="bulk-reason" className="block text-sm font-medium text-[#6b7280] mb-1">
               Reason (optional)
             </label>
@@ -185,17 +225,20 @@ export default function StockBulkAdjustModal({
         <div className="max-h-64 overflow-y-auto border border-white/60 rounded-xl">
           {(filtered ?? []).map((item) => {
             const checked = selectedIds.includes(item.id);
+            const qty = perItemQty[item.id] ?? (mode === "per_item" ? 0 : quantity);
             return (
-              <label
+              <div
                 key={item.id}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-white/60 cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 hover:bg-white/60"
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleId(item.id)}
-                />
-                <div className="flex-1">
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleId(item.id)}
+                  />
+                </label>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm text-[#2b2f33]">
                     {item.product_title} — {item.variant_name}
                   </p>
@@ -203,7 +246,25 @@ export default function StockBulkAdjustModal({
                     Available: {item.available} {item.sku ? `• ${item.sku}` : ""}
                   </p>
                 </div>
-              </label>
+                {mode === "per_item" && (
+                  <div className="shrink-0 w-24">
+                    <label htmlFor={`qty-${item.id}`} className="sr-only">
+                      Quantity for {item.variant_name}
+                    </label>
+                    <input
+                      id={`qty-${item.id}`}
+                      type="number"
+                      min={0}
+                      value={checked ? (perItemQty[item.id] ?? "") : ""}
+                      onChange={(e) =>
+                        setQtyForId(item.id, Number(e.target.value) || 0)
+                      }
+                      placeholder="0"
+                      className="admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-sm text-center"
+                    />
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

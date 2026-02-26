@@ -48,13 +48,22 @@ const MOVEMENT_LABELS: Record<string, { label: string; color: string }> = {
   reserved: { label: "Reserved", color: "text-amber-600" },
   released: { label: "Released", color: "text-blue-600" },
   adjustment: { label: "Adjustment", color: "text-purple-600" },
+  purchase_in: { label: "Received (Purchase)", color: "text-emerald-600" },
+  production_in: { label: "Received (Production)", color: "text-emerald-600" },
 };
 
-export default function StockDetailDrawer({ variant, onClose }: StockDetailDrawerProps) {
+interface StockDetailDrawerPropsWithRefresh extends StockDetailDrawerProps {
+  onRefresh?: () => void;
+}
+
+export default function StockDetailDrawer({ variant, onClose, onRefresh }: StockDetailDrawerPropsWithRefresh) {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [receiveQty, setReceiveQty] = useState("");
+  const [receiving, setReceiving] = useState(false);
+  const [receiveError, setReceiveError] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -115,6 +124,77 @@ export default function StockDetailDrawer({ variant, onClose }: StockDetailDrawe
             <span className="text-sm text-[#6b7280]">Low Stock Threshold</span>
             <span className="text-sm font-semibold text-[#2b2f33]">{variant.threshold}</span>
           </div>
+
+          {/* Receive Incoming Stock */}
+          {variant.incoming > 0 && (
+            <div className="glass rounded-xl p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-[#2b2f33]">Receive Incoming Stock</h3>
+              <p className="text-xs text-[#9aa6b0]">
+                {variant.incoming} unit(s) pending. When goods are received, approve to move into Available.
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div>
+                  <label htmlFor="receive-qty" className="block text-xs text-[#6b7280] mb-1">Quantity to receive</label>
+                  <input
+                    id="receive-qty"
+                    type="number"
+                    min={1}
+                    max={variant.incoming}
+                    value={receiveQty}
+                    onChange={(e) => {
+                      setReceiveQty(e.target.value);
+                      setReceiveError("");
+                    }}
+                    placeholder={`Max ${variant.incoming}`}
+                    className="admin-btn-secondary w-28 py-1.5 px-2 rounded-lg text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={receiving || !receiveQty || Number(receiveQty) < 1 || Number(receiveQty) > variant.incoming}
+                  onClick={async () => {
+                    const qty = Number(receiveQty);
+                    if (Number.isNaN(qty) || qty < 1 || qty > variant.incoming) return;
+                    setReceiving(true);
+                    setReceiveError("");
+                    try {
+                      const res = await fetch(`/api/admin/variants/${variant.id}/stock/receive`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ quantity: qty, movement_type: "purchase_in" }),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        setReceiveError(typeof data?.error === "string" ? data.error : "Failed to receive stock");
+                        return;
+                      }
+                      setReceiveQty("");
+                      onRefresh?.();
+                      setMovements((prev) => [
+                        {
+                          id: "",
+                          movement_type: "purchase_in",
+                          qty,
+                          reference_type: "receive",
+                          reference_id: null,
+                          note: `Received ${qty} units`,
+                          created_by: null,
+                          created_at: new Date().toISOString(),
+                        },
+                        ...prev,
+                      ]);
+                    } finally {
+                      setReceiving(false);
+                    }
+                  }}
+                  className="admin-btn-primary py-1.5 px-4 rounded-lg text-sm font-medium disabled:opacity-50"
+                >
+                  {receiving ? "Receiving..." : "Approve / Receive"}
+                </button>
+              </div>
+              {receiveError && <p className="text-xs text-red-600">{receiveError}</p>}
+            </div>
+          )}
 
           {/* Movement History */}
           <div>

@@ -87,50 +87,59 @@ export default function QuotationItemRow({
   const isCustomVariant = !isCustom && item.variant_id === "custom";
   const showCustomInputs = isCustom || isCustomVariant;
 
+  const compactSelectClass = "text-xs py-1.5 px-2.5 rounded-lg min-h-8 h-8";
+  const compactInputClass = "admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs min-h-8";
+
   return (
     <div className="glass rounded-xl p-3 space-y-3">
-      <div className="grid grid-cols-12 gap-3 items-start">
-        <div className="col-span-4">
+      <div className="grid grid-cols-12 gap-2 items-end min-w-0">
+        <div className="col-span-12 sm:col-span-3 min-w-0">
           <label htmlFor={`product-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Product
           </label>
-          <SearchableSelect
-            value={item.product_id}
-            onChange={(value) => {
-              onChange(index, "product_id", value);
-              onChange(index, "variant_id", value === "custom" ? "custom" : "");
-              onChange(index, "unit_price", 0);
-              if (value !== "custom") {
-                onChange(index, "custom_name", "");
-                onChange(index, "custom_spec", "");
-                onChange(index, "custom_notes", "");
-              }
-            }}
-            options={productOptions}
-            placeholder="Select product..."
-            disabled={disabled}
-          />
+          <div className="min-w-0">
+            <SearchableSelect
+              value={item.product_id}
+              onChange={(value) => {
+                onChange(index, "product_id", value);
+                onChange(index, "variant_id", value === "custom" ? "custom" : "");
+                onChange(index, "unit_price", 0);
+                if (value !== "custom") {
+                  onChange(index, "custom_name", "");
+                  onChange(index, "custom_spec", "");
+                  onChange(index, "custom_notes", "");
+                }
+              }}
+              options={productOptions}
+              placeholder="Select product..."
+              disabled={disabled}
+              buttonClassName={compactSelectClass}
+            />
+          </div>
         </div>
 
-        <div className="col-span-3">
+        <div className="col-span-12 sm:col-span-3 min-w-0">
           <label htmlFor={`variant-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Variant
           </label>
-          <SearchableSelect
-            value={item.variant_id}
-            onChange={(value) => {
-              onChange(index, "variant_id", value);
-              const v = variants.find((vr) => vr.id === value);
-              if (v) onChange(index, "unit_price", v.price ?? 0);
-              if (value === "custom") onChange(index, "unit_price", 0);
-            }}
-            options={variantOptions}
-            placeholder={loadingVariants ? "Loading..." : isCustom ? "Custom product" : "Select variant..."}
-            disabled={disabled || loadingVariants || !item.product_id || isCustom}
-          />
+          <div className="min-w-0 [&_[data-slot=trigger]]:min-w-0 [&_[data-slot=trigger]]:truncate">
+            <SearchableSelect
+              value={item.variant_id}
+              onChange={(value) => {
+                onChange(index, "variant_id", value);
+                const v = variants.find((vr) => vr.id === value);
+                if (v) onChange(index, "unit_price", v.price ?? 0);
+                if (value === "custom") onChange(index, "unit_price", 0);
+              }}
+              options={variantOptions}
+              placeholder={loadingVariants ? "Loading..." : isCustom ? "Custom product" : "Select variant..."}
+              disabled={disabled || loadingVariants || !item.product_id || isCustom}
+              buttonClassName={compactSelectClass}
+            />
+          </div>
         </div>
 
-        <div className="col-span-1">
+        <div className="col-span-6 sm:col-span-2 min-w-[5.5rem]">
           <label htmlFor={`qty-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Qty
           </label>
@@ -141,18 +150,16 @@ export default function QuotationItemRow({
             value={item.quantity}
             onChange={(e) => onChange(index, "quantity", Math.max(1, Number(e.target.value)))}
             disabled={disabled}
-            className="admin-btn-secondary w-full min-w-[96px] py-2 px-2 rounded-xl text-sm text-center"
+            className={`${compactInputClass} text-center`}
           />
         </div>
 
-        <div className="col-span-2">
+        <div className="col-span-6 sm:col-span-2 min-w-0">
           <label htmlFor={`price-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Unit Price
           </label>
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#9aa6b0]">
-              $
-            </span>
+          <div className="relative w-full min-w-0">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#9aa6b0]">$</span>
             <input
               id={`price-${index}`}
               type="number"
@@ -161,15 +168,15 @@ export default function QuotationItemRow({
               value={item.unit_price}
               onChange={(e) => onChange(index, "unit_price", Number(e.target.value))}
               disabled={disabled}
-              className="admin-btn-secondary w-full py-2 pl-6 pr-2 rounded-xl text-sm"
+              className={`${compactInputClass} pl-5`}
             />
           </div>
         </div>
 
-        <div className="col-span-2 flex items-end gap-2">
-          <div className="flex-1">
+        <div className="col-span-12 sm:col-span-2 flex items-end gap-1 flex-wrap min-w-0">
+          <div className="flex-1 min-w-0">
             <span className="block text-xs font-medium text-[#9aa6b0] mb-1">Subtotal</span>
-            <div className="py-2 px-2.5 rounded-xl bg-gray-50/50 text-sm font-medium text-[#2b2f33]">
+            <div className="py-1.5 px-2 rounded-lg bg-gray-50/50 text-xs font-medium text-[#2b2f33] truncate">
               ${subtotal.toFixed(2)}
             </div>
           </div>
@@ -177,7 +184,7 @@ export default function QuotationItemRow({
             <button
               type="button"
               onClick={() => onRemove(index)}
-              className="p-2 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors mb-0.5"
+              className="p-1.5 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors shrink-0"
             >
               <TrashIcon className="w-4 h-4" />
             </button>

@@ -90,8 +90,20 @@ export default function StockTable({ statusFilter }: StockTableProps) {
     setPage(1);
   }, [debouncedSearch, category, stockStatus]);
 
+  // Keep detail drawer in sync with refetched list (e.g. after receive incoming)
+  useEffect(() => {
+    if (!data?.items || !detailVariant) return;
+    const updated = data.items.find((i) => i.id === detailVariant.id);
+    if (updated && updated !== detailVariant) setDetailVariant(updated);
+  }, [data?.items, detailVariant]);
+
   const handleAdjustSuccess = useCallback(() => {
     setAdjustVariant(null);
+    queryClient.invalidateQueries({ queryKey: ["admin-stock"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-stock-stats"] });
+  }, [queryClient]);
+
+  const handleDetailRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["admin-stock"] });
     queryClient.invalidateQueries({ queryKey: ["admin-stock-stats"] });
   }, [queryClient]);
@@ -321,6 +333,7 @@ export default function StockTable({ statusFilter }: StockTableProps) {
         <StockDetailDrawer
           variant={detailVariant}
           onClose={() => setDetailVariant(null)}
+          onRefresh={handleDetailRefresh}
         />
       )}
     </>

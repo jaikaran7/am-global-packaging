@@ -20,6 +20,7 @@ export async function GET(req: Request) {
     let baseQuery = supabase
       .from("quotations")
       .select("*, customer:customers(*)", { count: "exact" })
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (status && status !== "all") baseQuery = baseQuery.eq("status", status);

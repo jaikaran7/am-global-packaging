@@ -12,7 +12,12 @@ export async function GET(
     const supabase = createAdminClient();
 
     const [quoteRes, itemsRes] = await Promise.all([
-      supabase.from("quotations").select("*, customer:customers(*)").eq("id", id).single(),
+      supabase
+        .from("quotations")
+        .select("*, customer:customers(*)")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .single(),
       supabase
         .from("quotation_items")
         .select(
@@ -53,13 +58,31 @@ export async function PATCH(
     if (!existing) {
       return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
     }
-    if (["accepted", "rejected", "expired"].includes(existing.status)) {
+    if (["accepted", "rejected", "expired", "revised", "locked", "cancelled"].includes(existing.status)) {
       return NextResponse.json({ error: "Quotation cannot be edited" }, { status: 400 });
     }
 
-    const parsed = quotationSchema.partial().safeParse(body);
+    // Normalize payload: custom line items may come with product_id/variant_id "" from frontend; coerce to "custom"
+    const raw = body as Record<string, unknown>;
+    if (Array.isArray(raw.items)) {
+      raw.items = raw.items.map((item: Record<string, unknown>) => {
+        const hasCustomName = Boolean(typeof item.custom_name === "string" && item.custom_name.trim());
+        const emptyProduct = item.product_id === "" || item.product_id == null;
+        if (hasCustomName && emptyProduct) {
+          return { ...item, product_id: "custom", variant_id: "custom" };
+        }
+        return item;
+      });
+    }
+
+    const parsed = quotationSchema.partial().safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const err = parsed.error.flatten();
+      const message =
+        typeof err.formErrors?.[0] === "string"
+          ? err.formErrors[0]
+          : Object.values(err.fieldErrors ?? {}).flat().find(Boolean) ?? "Validation failed";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
     let customerId = parsed.data?.customer_id;
@@ -156,7 +179,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Only draft quotes can be deleted" }, { status: 400 });
     }
 
-    const { error } = await supabase.from("quotations").delete().eq("id", id);
+    // Soft delete: set deleted_at instead of hard delete
+    const { error } = await supabase
+      .from("quotations")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

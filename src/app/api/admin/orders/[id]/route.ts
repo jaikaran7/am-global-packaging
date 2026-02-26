@@ -52,16 +52,39 @@ export async function PATCH(
     if (!existing) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-    if (existing.status === "delivered") {
+    const editableStatuses = ["draft", "pending_confirmation"];
+    if (!editableStatuses.includes(existing.status)) {
       return NextResponse.json(
-        { error: "Delivered orders cannot be edited" },
+        { error: "Order cannot be edited after confirmation." },
         { status: 400 }
       );
     }
 
-    const parsed = orderSchema.partial().safeParse(body);
+    // Normalize payload: custom line items may send product_id/variant_id "" from frontend; coerce to "custom"
+    const raw = body as Record<string, unknown>;
+    if (Array.isArray(raw.items)) {
+      raw.items = raw.items.map((item: Record<string, unknown>) => {
+        const hasCustomName = Boolean(typeof item.custom_name === "string" && item.custom_name.trim());
+        const emptyProduct = item.product_id === "" || item.product_id == null;
+        if (hasCustomName && emptyProduct) {
+          return { ...item, product_id: "custom", variant_id: "custom" };
+        }
+        return item;
+      });
+    }
+
+    const parsed = orderSchema.partial().safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      const err = parsed.error.flatten();
+      const message =
+        (Array.isArray(err.formErrors) && typeof err.formErrors[0] === "string"
+          ? err.formErrors[0]
+          : null) ??
+        (err.fieldErrors && typeof err.fieldErrors === "object"
+          ? Object.values(err.fieldErrors).flat().find(Boolean)
+          : undefined) ??
+        "Validation failed";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
     let customerId = parsed.data?.customer_id;

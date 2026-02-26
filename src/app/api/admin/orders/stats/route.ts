@@ -16,11 +16,13 @@ export async function GET() {
     const counts: Record<string, number> = {
       all: 0,
       draft: 0,
+      pending_confirmation: 0,
       confirmed: 0,
       in_production: 0,
       shipped: 0,
       delivered: 0,
       cancelled: 0,
+      obsolete: 0,
     };
 
     for (const o of orders ?? []) {
