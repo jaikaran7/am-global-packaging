@@ -47,6 +47,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await req.json();
+
     const supabase = createAdminClient();
 
     const { data: existing } = await supabase
@@ -78,10 +79,12 @@ export async function PATCH(
     const parsed = quotationSchema.partial().safeParse(raw);
     if (!parsed.success) {
       const err = parsed.error.flatten();
+
       const message =
         typeof err.formErrors?.[0] === "string"
           ? err.formErrors[0]
-          : Object.values(err.fieldErrors ?? {}).flat().find(Boolean) ?? "Validation failed";
+          : (Object.values(err.fieldErrors ?? {}).flat().find(Boolean) as string | undefined) ??
+            "Validation failed";
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
@@ -145,13 +148,8 @@ export async function PATCH(
       }
     }
 
-    const { data: updated } = await supabase
-      .from("quotations")
-      .select("*, customer:customers(*)")
-      .eq("id", id)
-      .single();
-
-    return NextResponse.json(updated);
+    // For updates we don't need to re-fetch the full quotation; return a lightweight success payload.
+    return NextResponse.json({ success: true });
   } catch (e) {
     console.error("[admin/quotations/[id]] PATCH error:", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

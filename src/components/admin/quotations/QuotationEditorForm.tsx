@@ -169,10 +169,17 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
       // Normalize items for API: custom rows must send product_id/variant_id "custom" (schema expects UUID or "custom", not "")
       const normalizedItems = validItems.map((i) => {
         const isCustom = i.product_id === "custom" || Boolean(i.custom_name?.trim());
-        if (isCustom) {
-          return { ...i, product_id: "custom" as const, variant_id: "custom" as const };
-        }
-        return i;
+        const base = isCustom
+          ? { ...i, product_id: "custom" as const, variant_id: "custom" as const }
+          : i;
+        // Ensure optional text fields are always strings (never null) so validation sees correct types
+        return {
+          ...base,
+          description: base.description ?? "",
+          custom_name: base.custom_name ?? "",
+          custom_spec: base.custom_spec ?? "",
+          custom_notes: base.custom_notes ?? "",
+        };
       });
 
       const payload: Record<string, unknown> = {
@@ -208,15 +215,16 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
               : "Failed to save quotation";
         throw new Error(errMsg);
       }
-
-      const data = await res.json();
-      queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-quotations-stats"] });
-
       if (isEdit) {
+        // For updates we don't need response body; just refresh relevant queries.
         queryClient.invalidateQueries({ queryKey: ["admin-quote", quoteId] });
+        queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-quotations-stats"] });
         toast.success("Quotation updated");
       } else {
+        const data = await res.json();
+        queryClient.invalidateQueries({ queryKey: ["admin-quotations"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-quotations-stats"] });
         router.push(`/admin/quotations/${data.id}`);
         toast.success("Quotation created");
       }
@@ -576,21 +584,31 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
             <div className="glass rounded-2xl p-5 space-y-3">
               <h2 className="text-sm font-semibold text-[#2b2f33]">Actions</h2>
               <div className="grid gap-2">
-                <button
-                  onClick={handleAccept}
-                  disabled={sending || isLocked}
-                  className="admin-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
-                >
-                  <CheckCircleIcon className="w-4 h-4 text-emerald-600" /> Mark Accepted & Convert
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={sending || isLocked}
-                  className="admin-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
-                >
-                  <XCircleIcon className="w-4 h-4 text-red-600" /> Mark Rejected
-                </button>
-                {(quote?.status === "accepted" || quote?.status === "sent" || quote?.status === "revised" || quote?.status === "locked") && (
+                {/* Only allow accept/convert while quote is still open (not accepted/rejected/etc.) */}
+                {!isLocked && (
+                  <>
+                    <button
+                      onClick={handleAccept}
+                      disabled={sending}
+                      className="admin-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
+                    >
+                      <CheckCircleIcon className="w-4 h-4 text-emerald-600" /> Mark Accepted & Convert
+                    </button>
+                    <button
+                      onClick={handleReject}
+                      disabled={sending}
+                      className="admin-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm rounded-xl"
+                    >
+                      <XCircleIcon className="w-4 h-4 text-red-600" /> Mark Rejected
+                    </button>
+                  </>
+                )}
+
+                {/* Revision actions for accepted/sent/revised/locked quotes */}
+                {(quote?.status === "accepted" ||
+                  quote?.status === "sent" ||
+                  quote?.status === "revised" ||
+                  quote?.status === "locked") && (
                   <button
                     type="button"
                     onClick={handleCreateRevision}

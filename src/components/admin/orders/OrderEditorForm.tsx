@@ -176,10 +176,16 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
       // Normalize items: custom rows must send product_id/variant_id "custom"; schema expects UUID or "custom", not ""
       const normalizedItems = validItems.map((i) => {
         const isCustom = i.product_id === "custom" || Boolean(i.custom_name?.trim());
-        if (isCustom) {
-          return { ...i, product_id: "custom" as const, variant_id: "custom" as const };
-        }
-        return i;
+        const base = isCustom
+          ? { ...i, product_id: "custom" as const, variant_id: "custom" as const }
+          : i;
+        // Ensure optional text fields are always strings (never null) so validation sees correct types
+        return {
+          ...base,
+          custom_name: base.custom_name ?? "",
+          custom_spec: base.custom_spec ?? "",
+          custom_notes: base.custom_notes ?? "",
+        };
       });
 
       const payload: Record<string, unknown> = {
@@ -216,17 +222,18 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
               : "Failed to save order";
         throw new Error(errMsg);
       }
-
-      const data = await res.json();
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
-
-      if (!isEdit) {
+      if (isEdit) {
+        // For updates we don't need response body; just refresh relevant queries.
+        queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
+        toast.success("Order updated");
+      } else {
+        const data = await res.json();
+        queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
         router.push(`/admin/orders/${data.id}`);
         toast.success("Order created");
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
-        toast.success("Order updated");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

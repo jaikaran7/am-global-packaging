@@ -36,6 +36,10 @@ export default function CustomerSelector({
   const [selected, setSelected] = useState<Customer | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState<Customer | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useDropdownManager(isOpen, () => setIsOpen(false));
@@ -54,12 +58,18 @@ export default function CustomerSelector({
       return;
     }
     fetch(`/api/admin/customers?search=&limit=50`)
-      .then((r) => r.json())
-      .then((data: Customer[]) => {
-        const found = data.find((c) => c.id === selectedCustomerId);
+      .then(async (r) => {
+        if (!r.ok) return [];
+        const data = await r.json().catch(() => []);
+        return Array.isArray(data) ? (data as Customer[]) : [];
+      })
+      .then((data) => {
+        const found = data.find((c) => c.id === selectedCustomerId) ?? null;
         if (found) setSelected(found);
       })
-      .catch(() => {});
+      .catch(() => {
+        // Keep existing selected value; silently ignore lookup failure
+      });
   }, [selectedCustomerId]);
 
   useEffect(() => {
@@ -67,9 +77,13 @@ export default function CustomerSelector({
     setLoading(true);
     const timer = setTimeout(() => {
       fetch(`/api/admin/customers?search=${encodeURIComponent(search)}&limit=20`)
-        .then((r) => r.json())
-        .then((data: Customer[]) => setCustomers(data))
-        .catch(() => {})
+        .then(async (r) => {
+          if (!r.ok) return [];
+          const data = await r.json().catch(() => []);
+          return Array.isArray(data) ? (data as Customer[]) : [];
+        })
+        .then((data) => setCustomers(data))
+        .catch(() => setCustomers([]))
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(timer);
@@ -90,27 +104,177 @@ export default function CustomerSelector({
 
   if (selected) {
     return (
-      <div className="glass rounded-xl p-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ff7a2d] to-[#ff9a5c] flex items-center justify-center text-white text-sm font-bold">
-            {selected.name.charAt(0).toUpperCase()}
+      <div className="glass rounded-xl p-3 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ff7a2d] to-[#ff9a5c] flex items-center justify-center text-white text-sm font-bold">
+              {selected.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#2b2f33]">{selected.name}</p>
+              <p className="text-xs text-[#9aa6b0]">
+                {selected.company && `${selected.company} · `}
+                {selected.email}
+              </p>
+              {selected.phone && (
+                <p className="text-xs text-[#9aa6b0]">{selected.phone}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-[#2b2f33]">{selected.name}</p>
-            <p className="text-xs text-[#9aa6b0]">
-              {selected.company && `${selected.company} · `}
-              {selected.email}
-            </p>
-          </div>
+          {!disabled && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditError(null);
+                  setEditValues(selected);
+                  setIsEditing((prev) => !prev);
+                }}
+                className="text-xs text-[#ff7a2d] hover:underline"
+              >
+                {isEditing ? "Cancel edit" : "Edit"}
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-1.5 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
-        {!disabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="p-1.5 rounded-lg hover:bg-red-50 text-[#9aa6b0] hover:text-red-500 transition-colors"
-          >
-            <XMarkIcon className="w-4 h-4" />
-          </button>
+
+        {!disabled && isEditing && editValues && (
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            {editError && (
+              <p className="text-xs text-red-600">{editError}</p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-medium text-[#9aa6b0] mb-1">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={editValues.name}
+                  onChange={(e) =>
+                    setEditValues((prev) =>
+                      prev ? { ...prev, name: e.target.value } : prev
+                    )
+                  }
+                  className="admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-[#9aa6b0] mb-1">
+                  Company
+                </label>
+                <input
+                  type="text"
+                  value={editValues.company ?? ""}
+                  onChange={(e) =>
+                    setEditValues((prev) =>
+                      prev ? { ...prev, company: e.target.value || null } : prev
+                    )
+                  }
+                  className="admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-[#9aa6b0] mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editValues.email ?? ""}
+                  onChange={(e) =>
+                    setEditValues((prev) =>
+                      prev ? { ...prev, email: e.target.value || null } : prev
+                    )
+                  }
+                  className="admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-[#9aa6b0] mb-1">
+                  Phone
+                </label>
+                <input
+                  type="text"
+                  value={editValues.phone ?? ""}
+                  onChange={(e) =>
+                    setEditValues((prev) =>
+                      prev ? { ...prev, phone: e.target.value || null } : prev
+                    )
+                  }
+                  className="admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditError(null);
+                }}
+                className="text-xs text-[#9aa6b0] hover:underline"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={async () => {
+                  if (!editValues) return;
+                  setSavingEdit(true);
+                  setEditError(null);
+                  try {
+                    if (!editValues.name.trim()) {
+                      setEditError("Customer name is required.");
+                      setSavingEdit(false);
+                      return;
+                    }
+                    const res = await fetch(`/api/admin/customers/${editValues.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        name: editValues.name,
+                        email: editValues.email ?? "",
+                        phone: editValues.phone ?? "",
+                        company: editValues.company ?? "",
+                        address: "",
+                      }),
+                    });
+                    if (!res.ok) {
+                      const data = await res.json().catch(() => ({}));
+                      const errMsg =
+                        typeof data?.error === "string"
+                          ? data.error
+                          : "Failed to update customer";
+                      throw new Error(errMsg);
+                    }
+                    setSelected(editValues);
+                    onSelect(editValues);
+                    setIsEditing(false);
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    setEditError(
+                      msg === "[object Object]"
+                        ? "Failed to update customer. Please check details."
+                        : msg
+                    );
+                  } finally {
+                    setSavingEdit(false);
+                  }
+                }}
+                className="admin-btn-primary px-3 py-1.5 text-xs font-medium"
+              >
+                {savingEdit ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     );

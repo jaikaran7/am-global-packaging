@@ -43,13 +43,13 @@ function Box3D({
   const depth = Math.max(20, width * s * 0.5);
 
   const palette: Record<string, { front: string; mid: string; dark: string; top: string }> = {
-    "pizza-boxes":     { front: "#C4973B", mid: "#A67B1E", dark: "#8B6914", top: "#DDB84D" },
-    specialty:         { front: "#8B7355", mid: "#6B5A42", dark: "#5A4A35", top: "#A68B6B" },
-    books:             { front: "#B8935A", mid: "#9A7A48", dark: "#7D6338", top: "#D4AE6E" },
-    ecommerce:         { front: "#A68558", mid: "#8B6E45", dark: "#735B38", top: "#C4A06A" },
+    "pizza-boxes": { front: "#C4973B", mid: "#A67B1E", dark: "#8B6914", top: "#DDB84D" },
+    specialty: { front: "#8B7355", mid: "#6B5A42", dark: "#5A4A35", top: "#A68B6B" },
+    books: { front: "#B8935A", mid: "#9A7A48", dark: "#7D6338", top: "#D4AE6E" },
+    ecommerce: { front: "#A68558", mid: "#8B6E45", dark: "#735B38", top: "#C4A06A" },
     "general-purpose": { front: "#B09060", mid: "#957850", dark: "#7C6342", top: "#CBA878" },
     "vegetable-boxes": { front: "#5A8A4A", mid: "#4A7A3A", dark: "#3A6A2A", top: "#7AAA62" },
-    "poultry-boxes":   { front: "#C4784A", mid: "#A46038", dark: "#8A4E2C", top: "#E4986A" },
+    "poultry-boxes": { front: "#C4784A", mid: "#A46038", dark: "#8A4E2C", top: "#E4986A" },
   };
   const c = palette[product.category] ?? palette["general-purpose"];
 
@@ -156,6 +156,50 @@ function Box3D({
   );
 }
 
+function ProductVisual({
+  product,
+  hovered,
+}: {
+  product: Product;
+  hovered: boolean;
+}) {
+  const hasImages = product.images && product.images.length >= 2;
+
+  if (hasImages) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <motion.img
+          src={product.images![0]}
+          alt={`${product.shortName} closed`}
+          className="absolute max-w-[80%] max-h-[80%] object-contain"
+          style={{ filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.15))" }}
+          initial={{ opacity: 1, scale: 1 }}
+          animate={{
+            opacity: hovered ? 0 : 1,
+            scale: hovered ? 0.95 : 1,
+          }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <motion.img
+          src={product.images![1]}
+          alt={`${product.shortName} open`}
+          className="absolute max-w-[80%] max-h-[80%] object-contain"
+          style={{ filter: "drop-shadow(0 20px 30px rgba(0,0,0,0.15))" }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{
+            opacity: hovered ? 1 : 0,
+            scale: hovered ? 1 : 0.95,
+          }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
+    );
+  }
+
+  return <Box3D product={product} hovered={hovered} />;
+}
+
+
 /** Full detailed product card — Product Image, Category Label, Name, Description, Dimension/Ply badges, View Details */
 function ProductCard({
   product,
@@ -178,22 +222,20 @@ function ProductCard({
   return (
     <Link href={`/products/${product.slug}`}>
       <div
-        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
-          viewMode === "list" ? "flex flex-row items-stretch" : ""
-        }`}
+        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${viewMode === "list" ? "flex flex-row items-stretch" : ""
+          }`}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         {/* Product image with 3D box and dimension badge */}
         <div
-          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
-            viewMode === "list"
+          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${viewMode === "list"
               ? "w-[200px] h-[200px] flex-shrink-0"
               : "h-[180px] md:h-[240px]"
-          }`}
+            }`}
         >
           <div className="absolute inset-0 corrugated-pattern opacity-20" />
-          <Box3D product={product} hovered={hovered} />
+          <ProductVisual product={product} hovered={hovered} />
           <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/80 backdrop-blur-sm text-kraft text-[10px] font-bold tracking-wide rounded-full border border-kraft/10 hidden md:block">
             {maxDim}mm
           </div>
@@ -394,11 +436,10 @@ export default function ProductsPage() {
                         key={cat.id}
                         href={href}
                         onClick={() => setMobileFilterOpen(false)}
-                        className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          isActive
+                        className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
                             ? "bg-forest text-offwhite shadow-md shadow-forest/15"
                             : "text-charcoal/70 hover:bg-cream/60 hover:text-charcoal"
-                        }`}
+                          }`}
                       >
                         {cat.label}
                       </Link>
@@ -478,9 +519,8 @@ export default function ProductsPage() {
                           key={cat.id}
                           href={href}
                           onClick={() => setMobileFilterOpen(false)}
-                          className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${
-                            isActive ? "bg-forest text-offwhite" : "text-charcoal/70"
-                          }`}
+                          className={`w-full block text-left px-4 py-2.5 rounded-lg text-sm font-medium mb-1 ${isActive ? "bg-forest text-offwhite" : "text-charcoal/70"
+                            }`}
                         >
                           {cat.label}
                         </Link>
@@ -521,21 +561,19 @@ export default function ProductsPage() {
               <div className="hidden sm:flex items-center gap-1 bg-white border border-kraft/10 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === "grid"
+                  className={`p-2 rounded-md transition-colors ${viewMode === "grid"
                       ? "bg-forest text-offwhite"
                       : "text-warm-gray hover:text-charcoal"
-                  }`}
+                    }`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === "list"
+                  className={`p-2 rounded-md transition-colors ${viewMode === "list"
                       ? "bg-forest text-offwhite"
                       : "text-warm-gray hover:text-charcoal"
-                  }`}
+                    }`}
                 >
                   <LayoutList className="w-4 h-4" />
                 </button>
@@ -560,25 +598,23 @@ export default function ProductsPage() {
                   >
                     <Link href={categoryCardHref(cat)}>
                       <div
-                        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${
-                          viewMode === "list"
+                        className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${viewMode === "list"
                             ? "flex flex-row items-center"
                             : ""
-                        }`}
+                          }`}
                         onMouseEnter={() => setHoveredCategoryId(cat.id)}
                         onMouseLeave={() => setHoveredCategoryId(null)}
                       >
                         {/* Category visual — use first product in category for 3D box */}
                         <div
-                          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${
-                            viewMode === "list"
+                          className={`relative bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center overflow-hidden ${viewMode === "list"
                               ? "w-[200px] h-[160px] flex-shrink-0"
                               : "h-[180px] md:h-[240px]"
-                          }`}
+                            }`}
                         >
                           <div className="absolute inset-0 corrugated-pattern opacity-20" />
                           {cat.firstProduct && (
-                            <Box3D
+                            <ProductVisual
                               product={cat.firstProduct}
                               hovered={hoveredCategoryId === cat.id}
                             />
@@ -590,9 +626,8 @@ export default function ProductsPage() {
 
                         {/* Category info */}
                         <div
-                          className={`p-4 md:p-5 ${
-                            viewMode === "list" ? "flex-1" : ""
-                          }`}
+                          className={`p-4 md:p-5 ${viewMode === "list" ? "flex-1" : ""
+                            }`}
                         >
                           <span className="text-[10px] font-semibold tracking-[0.15em] text-kraft uppercase hidden md:block">
                             {cat.label}
