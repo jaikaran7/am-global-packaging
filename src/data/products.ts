@@ -254,6 +254,11 @@ export const products: Product[] = [
       "A premium heavy-duty tea chest box built with 5-Ply (3BC) corrugated board for maximum structural integrity. Designed for bulk storage, export cartons, and heavy goods transportation. The tall chest profile and reinforced walls make it ideal for warehouse logistics, international shipping, and industrial packing applications.",
     dimensions: "431 × 406 × 596 mm",
     dimensionDetail: { length: 431, width: 406, height: 596 },
+    images: [
+      "/assets/products/tea chest /tea chest close.png",
+      "/assets/products/tea chest /tea chest open .png",
+      "/assets/products/tea chest /tea chest open 2.png"
+    ],
     category: "specialty",
     categoryLabel: "Specialty / Heavy-Duty",
     priceAud: 3.70,
@@ -369,6 +374,13 @@ export const products: Product[] = [
       "A compact A4-format box ideal for documents, small goods, and everyday office shipping. Features tiered pricing for bulk orders — from $0.80 per unit at 500 units to $1.05 at 1,500+ units. The slim profile makes it perfect for lightweight shipments and cost-effective fulfillment.",
     dimensions: "320 × 220 × 240 mm",
     dimensionDetail: { length: 320, width: 220, height: 240 },
+    images: [
+      "/assets/products/A4-boxes%20/A4%20box%20close%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20group%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20&%20close.png",
+      "/assets/products/A4-boxes%20/a4%20type%201.png"
+    ],
     category: "general-purpose",
     categoryLabel: "A4 Boxes",
     pricingTiers: [
@@ -409,6 +421,13 @@ export const products: Product[] = [
       "A larger-format A4 box designed for files, documents, office storage, and general-purpose bulk packing. The generous depth accommodates thick document stacks, binders, and mixed office supplies. Available in both 3-Ply and 5-Ply configurations for varying weight requirements.",
     dimensions: "440 × 330 × 300 mm",
     dimensionDetail: { length: 440, width: 330, height: 300 },
+    images: [
+      "/assets/products/A4-boxes%20/A4%20box%20close%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20group%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20&%20close.png",
+      "/assets/products/A4-boxes%20/a4%20type%202.png"
+    ],
     category: "general-purpose",
     categoryLabel: "A4 Boxes",
     priceAud: 3.50,
@@ -446,6 +465,13 @@ export const products: Product[] = [
       "A slim-profile A4 box with a slightly reduced height for single-layer document stacks and lightweight goods. The narrow footprint maximises pallet density and reduces freight costs. Available in 3-Ply and 5-Ply configurations for varying strength requirements.",
     dimensions: "321 × 220 × 203 mm",
     dimensionDetail: { length: 321, width: 220, height: 203 },
+    images: [
+      "/assets/products/A4-boxes%20/A4%20box%20close%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20group%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20&%20close.png",
+      "/assets/products/A4-boxes%20/A4%20type%203.png"
+    ],
     category: "general-purpose",
     categoryLabel: "A4 Boxes",
     useCases: ["Documents", "Stationery", "Office shipping", "Retail packing"],
@@ -481,6 +507,13 @@ export const products: Product[] = [
       "A mid-depth A4 box that bridges the gap between Type 1 and Type 2, ideal for mixed document packs, small goods, and retail kits. The wider base accommodates A4 materials with room for protective inserts. Available in 3-Ply and 5-Ply.",
     dimensions: "369 × 269 × 211 mm",
     dimensionDetail: { length: 369, width: 269, height: 211 },
+    images: [
+      "/assets/products/A4-boxes%20/A4%20box%20close%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20group%20.png",
+      "/assets/products/A4-boxes%20/A4%20box%20open%20&%20close.png",
+      "/assets/products/A4-boxes%20/A4%20type%204.png"
+    ],
     category: "general-purpose",
     categoryLabel: "A4 Boxes",
     useCases: ["Mixed documents", "Small goods", "Retail kits", "Office packing"],
@@ -560,6 +593,12 @@ export const products: Product[] = [
       "A robust corrugated poultry box built for chilled and frozen poultry distribution. Features a wax or moisture-resistant coating option to withstand cold-chain environments. The reinforced base prevents sagging under heavy bird weight during transport and storage.",
     dimensions: "369 × 269 × 211 mm",
     dimensionDetail: { length: 369, width: 269, height: 211 },
+    images: [
+      "/assets/products/Poultry/polutry close .png",
+      "/assets/products/Poultry/polutry open.png",
+      "/assets/products/Poultry/polutry sizes.png",
+      "/assets/products/Poultry/polutry 4th.png"
+    ],
     category: "poultry-boxes",
     categoryLabel: "Poultry Boxes",
     priceAud: 1.80,
