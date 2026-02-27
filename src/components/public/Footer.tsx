@@ -79,17 +79,34 @@ export default function Footer() {
                 Contact
               </div>
               <ul className="space-y-2.5 text-sm text-offwhite/55">
-                <li className="flex items-center gap-2.5">
-                  <MapPin className="w-4 h-4 text-offwhite/30" />
-                  Melbourne, Australia
+                <li>
+                  <a
+                    href="https://www.google.com/maps?q=-33.792362213134766,150.9712677001953&z=17&hl=en"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <MapPin className="w-4 h-4 text-offwhite/30" />
+                    148 Bulli Road, Constitution Hill
+                  </a>
                 </li>
-                <li className="flex items-center gap-2.5">
-                  <Phone className="w-4 h-4 text-offwhite/30" />
-                  +61 0434 396 360
+                <li>
+                  <a
+                    href="tel:+61434396360"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <Phone className="w-4 h-4 text-offwhite/30" />
+                    +61 0434 396 360
+                  </a>
                 </li>
-                <li className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-offwhite/30" />
-                  info@amglobalpackagingsolutions.com
+                <li>
+                  <a
+                    href="mailto:info@amglobalpackagingsolutions.com"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-offwhite/30" />
+                    info@amglobalpackagingsolutions.com
+                  </a>
                 </li>
               </ul>
             </div>
@@ -160,17 +177,34 @@ export default function Footer() {
                 Contact
               </div>
               <ul className="space-y-2.5 text-sm text-offwhite/55">
-                <li className="flex items-center gap-2.5">
-                  <MapPin className="w-4 h-4 text-offwhite/30" />
-                  Melbourne, Australia
+                <li>
+                  <a
+                    href="https://www.google.com/maps?q=-33.792362213134766,150.9712677001953&z=17&hl=en"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <MapPin className="w-4 h-4 text-offwhite/30" />
+                    148 Bulli Road, Constitution Hill
+                  </a>
                 </li>
-                <li className="flex items-center gap-2.5">
-                  <Phone className="w-4 h-4 text-offwhite/30" />
-                  +61 0434 396 360
+                <li>
+                  <a
+                    href="tel:+61434396360"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <Phone className="w-4 h-4 text-offwhite/30" />
+                    +61 0434 396 360
+                  </a>
                 </li>
-                <li className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-offwhite/30" />
-                  info@amglobalpackagingsolutions.com
+                <li>
+                  <a
+                    href="mailto:info@amglobalpackagingsolutions.com"
+                    className="flex items-center gap-2.5 hover:text-kraft-light transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-offwhite/30" />
+                    info@amglobalpackagingsolutions.com
+                  </a>
                 </li>
               </ul>
             </div>

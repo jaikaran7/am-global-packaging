@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Send, Phone, MapPin, Mail, ChevronRight, Loader2, CheckCircle } from "lucide-react";
 import { isAustralianPhone } from "@/lib/validation/phone";
@@ -77,6 +78,8 @@ const allCategories = [
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchParams = useSearchParams();
+  const [isMobile, setIsMobile] = useState(false);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const [productRows, setProductRows] = useState<ProductRow[]>([defaultProductRow()]);
@@ -84,8 +87,11 @@ export default function ContactSection() {
   const [submitError, setSubmitError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [successVisible, setSuccessVisible] = useState<boolean>(false);
+  const [expandedProductIndex, setExpandedProductIndex] = useState<number>(0);
+  const [productNotice, setProductNotice] = useState<string>("");
 
   function setRow(index: number, field: keyof ProductRow, value: string) {
+    if (productNotice) setProductNotice("");
     setProductRows((prev) =>
       prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
@@ -96,6 +102,13 @@ export default function ContactSection() {
   function removeRow(index: number) {
     if (productRows.length <= 1) return;
     setProductRows((prev) => prev.filter((_, i) => i !== index));
+    if (isMobile) {
+      setExpandedProductIndex((prev) => {
+        if (index < prev) return prev - 1;
+        if (index === prev) return Math.max(0, prev - 1);
+        return prev;
+      });
+    }
   }
 
   function validatePhone(value: string): string {
@@ -114,6 +127,70 @@ export default function ContactSection() {
     }, 5000);
     return () => window.clearTimeout(timeoutId);
   }, [submitStatus]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 768px)");
+    const setMatch = () => setIsMobile(media.matches);
+    setMatch();
+    media.addEventListener("change", setMatch);
+    return () => media.removeEventListener("change", setMatch);
+  }, []);
+
+  useEffect(() => {
+    const categoryId = searchParams?.get("categoryId") || "";
+    const productSlug = searchParams?.get("productSlug") || "";
+    const quantityParam = searchParams?.get("quantity") || "";
+    const plyParam = searchParams?.get("ply") || "";
+    if (!categoryId || !productSlug) return;
+    setProductRows([
+      {
+        ...defaultProductRow(),
+        categoryId,
+        productSlug,
+        quantity: quantityParam,
+        plyPreference: plyParam,
+      },
+    ]);
+    setExpandedProductIndex(0);
+  }, [searchParams]);
+
+  function isProductComplete(row: ProductRow) {
+    return Boolean(row.categoryId && row.productSlug);
+  }
+
+  function getProductSummary(row: ProductRow, index: number) {
+    const categoryLabel = allCategories.find((c) => c.id === row.categoryId)?.label ?? "Category";
+    const isCorr = row.categoryId === CORRUGATED_SHEETS_ID;
+    const product =
+      !isCorr && row.productSlug
+        ? products.find((p) => p.slug === row.productSlug)
+        : undefined;
+    const sheet = isCorr
+      ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === row.productSlug)
+      : undefined;
+    const productLabel =
+      row.productSlug === "custom"
+        ? row.customName || "Custom"
+        : product?.shortName ?? sheet?.label ?? "Product";
+    return `Product ${index + 1} – ${categoryLabel} – ${productLabel}`;
+  }
+
+  function handleAddRow() {
+    if (!isMobile) {
+      addRow();
+      return;
+    }
+    const activeIndex = Math.min(expandedProductIndex, productRows.length - 1);
+    const activeRow = productRows[activeIndex];
+    if (!isProductComplete(activeRow)) {
+      setProductNotice("Please complete the current product before adding another.");
+      return;
+    }
+    const nextIndex = productRows.length;
+    setProductRows((prev) => [...prev, defaultProductRow()]);
+    setExpandedProductIndex(nextIndex);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -193,14 +270,14 @@ export default function ContactSection() {
   return (
     <section
       id="contact"
-      className="relative py-32 bg-cream overflow-hidden"
+      className="relative py-20 md:py-32 bg-cream overflow-hidden"
     >
       <div className="absolute inset-0 kraft-texture opacity-40" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-kraft/20 to-transparent" />
 
       <div
         ref={ref}
-        className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative"
+        className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative"
       >
         {/* Header */}
         <motion.div
@@ -234,13 +311,13 @@ export default function ContactSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl shadow-kraft/5 border border-kraft/5">
+            <div className="bg-white rounded-3xl p-5 md:p-10 shadow-xl shadow-kraft/5 border border-kraft/5 w-full max-w-[680px] mx-auto md:max-w-none">
               {submitStatus === "success" && successVisible ? (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-center text-center gap-6 py-8 min-h-[360px] md:min-h-[520px]"
+                  className="flex flex-col items-center justify-center text-center gap-6 py-8 min-h-0 md:min-h-[520px]"
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.7 }}
@@ -277,6 +354,8 @@ export default function ContactSection() {
                         setPhoneError("");
                         formRef.current?.reset();
                         setProductRows([defaultProductRow()]);
+                        setExpandedProductIndex(0);
+                        setProductNotice("");
                       }}
                       className="inline-flex items-center justify-center gap-2.5 px-6 py-3 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 text-sm"
                     >
@@ -306,7 +385,7 @@ export default function ContactSection() {
                       {submitError}
                     </div>
                   )}
-                  <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-2 gap-4 max-[380px]:grid-cols-1">
                     <div className="flex flex-col gap-2">
                       <label className="text-xs font-semibold text-charcoal tracking-wide">
                         Full Name *
@@ -379,17 +458,24 @@ export default function ContactSection() {
                     </div>
                   </div>
 
-              <div className="mt-5 space-y-6">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-charcoal tracking-wide">Products *</label>
+              <div className="mt-6 space-y-4 border-t border-kraft/10 pt-5">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-forest tracking-wide">
+                    Products *
+                  </label>
                   <button
                     type="button"
-                    onClick={addRow}
-                    className="text-xs font-medium text-forest hover:underline"
+                    onClick={handleAddRow}
+                    className="text-[11px] font-medium text-kraft hover:underline"
                   >
                     + Add another product
                   </button>
                 </div>
+                {productNotice && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+                    {productNotice}
+                  </div>
+                )}
                 {productRows.map((row, index) => {
                   const isCorrugatedSheets = row.categoryId === CORRUGATED_SHEETS_ID;
                   const isCustomCategory = row.categoryId === "custom";
@@ -398,6 +484,7 @@ export default function ContactSection() {
                   const selectedSheetOption = isCorrugatedSheets ? CORRUGATED_SHEETS_OPTIONS.find((s) => s.id === row.productSlug) : undefined;
                   const plyOptions = selectedProduct?.plyOptions ?? selectedSheetOption?.plyOptions ?? [];
                   const hasProductSelection = selectedProduct !== undefined || selectedSheetOption !== undefined;
+                  const isExpanded = !isMobile || expandedProductIndex === index;
                   const getProductPlaceholder = () => {
                     if (row.categoryId === "") return "Select category first";
                     if (isCorrugatedSheets) return "Select sheet type";
@@ -410,7 +497,26 @@ export default function ContactSection() {
                   };
                   const isCustomProduct = row.productSlug === "custom";
                   return (
-                    <div key={index} className="space-y-4">
+                    <div key={index} className="space-y-3 rounded-2xl border border-kraft/10 bg-white/60 p-3 md:p-0 md:border-0 md:bg-transparent">
+                      {isMobile && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedProductIndex(index)}
+                          className="flex w-full items-center justify-between gap-3 text-left"
+                        >
+                          <div className="text-[11px] font-semibold text-charcoal">
+                            {isExpanded
+                              ? `Product ${index + 1}`
+                              : getProductSummary(row, index)}
+                          </div>
+                          <ChevronRight
+                            className={`h-4 w-4 text-warm-gray transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                          />
+                        </button>
+                      )}
+                      <div
+                        className={`transition-[max-height,opacity] duration-300 ease-out ${isExpanded ? "max-h-[2000px] opacity-100 mt-3" : "max-h-0 opacity-0 overflow-hidden"}`}
+                      >
                       {productRows.length > 1 && (
                         <div className="flex justify-end">
                           <button
@@ -422,9 +528,9 @@ export default function ContactSection() {
                           </button>
                         </div>
                       )}
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">Product Category *</label>
+                      <div className="grid grid-cols-2 gap-4 max-[380px]:grid-cols-1">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide mb-1">Product Category *</label>
                           <select
                             value={row.categoryId}
                             onChange={(e) => {
@@ -445,8 +551,8 @@ export default function ContactSection() {
                             ))}
                           </select>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">Product *</label>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide mb-1">Product *</label>
                           <select
                             value={row.productSlug}
                             onChange={(e) => {
@@ -477,9 +583,9 @@ export default function ContactSection() {
                           </select>
                         </div>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">Quantity</label>
+                      <div className="grid grid-cols-2 gap-4 max-[380px]:grid-cols-1 mt-3">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide mb-1">Quantity</label>
                           <input
                             type="number"
                             min={1}
@@ -489,8 +595,8 @@ export default function ContactSection() {
                             className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">Ply Preference</label>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-charcoal tracking-wide mb-1">Ply Preference</label>
                           <select
                             value={row.plyPreference}
                             onChange={(e) => setRow(index, "plyPreference", e.target.value)}
@@ -505,7 +611,7 @@ export default function ContactSection() {
                         </div>
                       </div>
                       {isCustomProduct && (
-                        <div className="grid sm:grid-cols-3 gap-4 pt-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
                           <div className="flex flex-col gap-2">
                             <label className="text-xs font-semibold text-charcoal tracking-wide">Custom Product Name *</label>
                             <input
@@ -526,7 +632,7 @@ export default function ContactSection() {
                               className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all"
                             />
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 max-[380px]:col-span-2">
                             <label className="text-xs font-semibold text-charcoal tracking-wide">Custom Notes</label>
                             <input
                               type="text"
@@ -538,6 +644,7 @@ export default function ContactSection() {
                           </div>
                         </div>
                       )}
+                      </div>
                     </div>
                   );
                 })}
@@ -622,7 +729,7 @@ export default function ContactSection() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.6, delay: 0.4 + i * 0.1 }}
-                  className="group flex items-start gap-5 p-6 bg-white rounded-2xl border border-kraft/5 hover:border-kraft/15 hover:shadow-lg hover:shadow-kraft/5 transition-all duration-300"
+                  className="group flex items-start gap-4 md:gap-5 p-4 md:p-6 bg-white rounded-2xl border border-kraft/5 hover:border-kraft/15 hover:shadow-lg hover:shadow-kraft/5 transition-all duration-300"
                 >
                   <div className="w-12 h-12 rounded-xl bg-forest/5 flex items-center justify-center flex-shrink-0 group-hover:bg-forest/10 transition-colors">
                     <item.icon className="w-5 h-5 text-forest" />
@@ -631,7 +738,7 @@ export default function ContactSection() {
                     <div className="text-xs font-semibold text-kraft tracking-wider uppercase mb-1">
                       {item.label}
                     </div>
-                    <div className="text-base font-bold text-charcoal">
+                    <div className="text-sm md:text-base font-bold text-charcoal break-words">
                       {item.value}
                     </div>
                     <div className="text-xs text-warm-gray mt-0.5">
@@ -648,7 +755,7 @@ export default function ContactSection() {
                 <MapPin className="w-4 h-4 text-kraft" />
                 Find Us on Google Maps
               </div>
-              <div className="relative rounded-xl overflow-hidden h-[210px] bg-gradient-to-br from-offwhite to-cream border border-kraft/20 ring-1 ring-kraft/10">
+              <div className="relative rounded-xl overflow-hidden h-[200px] md:h-[210px] bg-gradient-to-br from-offwhite to-cream border border-kraft/20 ring-1 ring-kraft/10">
                 <iframe
                   title="AM Global Packaging location map"
                   src="https://www.google.com/maps?q=-33.792362213134766,150.9712677001953&z=17&hl=en&output=embed"
@@ -677,7 +784,7 @@ export default function ContactSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-12 md:mt-16 p-8 md:p-10 rounded-3xl bg-gradient-to-r from-forest to-forest-light relative overflow-hidden"
+          className="mt-8 md:mt-16 p-8 md:p-10 rounded-3xl bg-gradient-to-r from-forest to-forest-light relative overflow-hidden"
         >
           <div className="absolute inset-0 corrugated-pattern opacity-10" />
           <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

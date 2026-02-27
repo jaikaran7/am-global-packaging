@@ -115,13 +115,14 @@ export default function ProductsSection() {
         </motion.div>
 
         {/* Product Toggle */}
-        <div className="flex justify-center mb-16">
-          <div className="inline-flex bg-white rounded-full p-1.5 border border-kraft/10 shadow-sm">
+        <div className="flex justify-center mb-16 px-2">
+          <div className="w-full max-w-[560px] md:w-auto md:max-w-none">
+            <div className="grid grid-rows-2 grid-flow-col gap-2 bg-white rounded-2xl md:rounded-full p-2 md:p-1 border border-kraft/10 shadow-sm md:inline-flex md:flex-nowrap md:justify-center">
             {productTabs.map((tab, i) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveProduct(i)}
-                className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${activeProduct === i
+                className={`w-full px-4 py-2 md:px-6 md:py-3 rounded-full text-xs md:text-sm font-semibold transition-all duration-300 whitespace-nowrap ${activeProduct === i
                   ? "bg-forest text-offwhite shadow-lg shadow-forest/20"
                   : "text-warm-gray hover:text-charcoal"
                   }`}
@@ -129,6 +130,7 @@ export default function ProductsSection() {
                 {tab.label}
               </button>
             ))}
+            </div>
           </div>
         </div>
 
@@ -208,32 +210,21 @@ export default function ProductsSection() {
                     </div>
                   </div>
                 </div>
+              ) : activeTab.id === "boxes" ? (
+                <div className="relative w-full h-[320px] md:h-[360px] flex items-center justify-center z-10">
+                  <img
+                    src="/assets/products/A4-boxes%20/A4%20box%20group%20.png"
+                    alt="Corrugated Boxes Group"
+                    className="max-w-full max-h-[300px] object-contain drop-shadow-2xl"
+                  />
+                </div>
               ) : (
-                <div className="relative" style={{ perspective: "800px" }}>
-                  {/* 3D Box shape */}
-                  <div style={{ transformStyle: "preserve-3d", transform: "rotateX(-5deg) rotateY(-15deg)" }}>
-                    <div
-                      className="w-[200px] h-[180px] md:w-[240px] md:h-[200px] rounded-md relative"
-                      style={{
-                        background: "linear-gradient(145deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15))",
-                        transform: "translateZ(40px)",
-                        boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                      }}
-                    >
-                      <div className="absolute inset-4 border border-white/15 rounded flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-white/70 text-[10px] tracking-[0.3em] uppercase">AM Global</div>
-                          <div className="w-12 h-px bg-white/20 mx-auto my-2" />
-                          <div className="text-white/50 text-[8px] tracking-widest uppercase">Custom Print</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-8 text-center">
-                    <div className="text-white/80 text-sm font-medium">Custom Printed Box</div>
-                    <div className="text-white/50 text-xs mt-1">RSC & Die-cut available</div>
-                  </div>
+                <div className="relative w-full h-[320px] md:h-[360px] flex items-center justify-center z-10">
+                  <img
+                    src="/assets/products/Poultry/polutry%20sizes.png"
+                    alt="Poultry Boxes Group"
+                    className="max-w-full max-h-[300px] object-contain drop-shadow-2xl"
+                  />
                 </div>
               )}
 
