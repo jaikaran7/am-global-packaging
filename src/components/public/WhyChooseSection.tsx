@@ -54,7 +54,7 @@ export default function WhyChooseSection() {
 
       <div
         ref={ref}
-        className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative"
+        className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative"
       >
         {/* Header */}
         <motion.div
@@ -82,25 +82,25 @@ export default function WhyChooseSection() {
         </motion.div>
 
         {/* Reasons Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-8">
           {reasons.map((reason, i) => (
             <motion.div
               key={reason.title}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{
-                duration: 0.6,
-                delay: 0.1 + i * 0.08,
-                ease: [0.16, 1, 0.3, 1],
+                duration: 0.45,
+                delay: 0,
+                ease: "easeOut",
               }}
-              className="group relative p-5 md:p-8 rounded-2xl bg-offwhite border border-transparent hover:border-kraft/15 hover:shadow-xl hover:shadow-kraft/5 transition-all duration-500"
+              className={`group relative p-4 md:p-8 rounded-2xl bg-offwhite border border-transparent md:hover:border-kraft/15 md:hover:shadow-xl md:hover:shadow-kraft/5 transition-all duration-500 ${i === reasons.length - 1 ? "col-span-2 md:col-span-1" : ""}`}
             >
               {/* Icon */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-forest/10 to-forest-light/10 flex items-center justify-center mb-6 group-hover:from-forest/15 group-hover:to-forest-light/15 transition-all duration-300">
-                <reason.icon className="w-5 h-5 text-forest" />
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-forest/10 to-forest-light/10 flex items-center justify-center mb-4 md:mb-6 group-hover:from-forest/15 group-hover:to-forest-light/15 transition-all duration-300">
+                <reason.icon className="w-4 h-4 md:w-5 md:h-5 text-forest" />
               </div>
 
-              <h3 className="text-lg font-bold text-charcoal mb-3">
+              <h3 className="text-base md:text-lg font-bold text-charcoal mb-3">
                 {reason.title}
               </h3>
               <p className="hidden md:block text-sm text-warm-gray leading-relaxed mb-5">

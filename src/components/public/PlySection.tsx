@@ -44,7 +44,7 @@ const plyOptions = [
 
 function PlyVisualizer({ option, isActive }: { option: typeof plyOptions[0]; isActive: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1.5 md:gap-2">
       {/* Interactive layer stack */}
       <div className="relative flex flex-col items-center">
         {option.layers.map((layer, i) => {
@@ -84,7 +84,9 @@ function PlyVisualizer({ option, isActive }: { option: typeof plyOptions[0]; isA
           );
         })}
       </div>
-      <div className="text-xs text-warm-gray mt-2">{option.layers.length} Layers</div>
+      <div className="text-[11px] md:text-xs text-warm-gray mt-1 md:mt-2">
+        {option.layers.length} Layers
+      </div>
     </div>
   );
 }
@@ -95,16 +97,16 @@ export default function PlySection() {
   const [activePly, setActivePly] = useState(1);
 
   return (
-    <section id="ply-guide" className="relative py-32 bg-white overflow-hidden">
+    <section id="ply-guide" className="relative py-20 md:py-32 bg-white overflow-hidden">
       <div className="absolute inset-0 kraft-texture opacity-50" />
 
-      <div ref={ref} className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative">
+      <div ref={ref} className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center max-w-2xl mx-auto mb-20"
+          className="text-center max-w-2xl mx-auto mb-12 md:mb-20"
         >
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="w-8 h-px bg-kraft" />
@@ -124,21 +126,23 @@ export default function PlySection() {
         </motion.div>
 
         {/* Ply Selector */}
-        <div className="flex justify-center gap-4 mb-16">
+        <div className="flex justify-center gap-2 md:gap-4 mb-8 md:mb-16">
           {plyOptions.map((option, i) => (
             <button
               key={option.ply}
               onClick={() => setActivePly(i)}
-              className={`relative px-8 py-4 rounded-xl border-2 transition-all duration-300 ${
+              className={`relative px-4 py-2 md:px-8 md:py-4 rounded-xl border-2 transition-all duration-300 ${
                 activePly === i
                   ? "border-kraft bg-kraft-pale shadow-lg shadow-kraft/10"
                   : "border-kraft/10 bg-white hover:border-kraft/30"
               }`}
             >
-              <div className={`text-2xl font-bold ${activePly === i ? "text-forest" : "text-charcoal/40"}`}>
+              <div className={`text-lg md:text-2xl font-bold whitespace-nowrap leading-none ${activePly === i ? "text-forest" : "text-charcoal/40"}`}>
                 {option.label}
               </div>
-              <div className="text-[11px] text-warm-gray mt-0.5">{option.subtitle}</div>
+              <div className="text-[10px] md:text-[11px] text-warm-gray mt-0.5 whitespace-nowrap leading-none">
+                {option.subtitle}
+              </div>
             </button>
           ))}
         </div>
@@ -149,10 +153,10 @@ export default function PlySection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="grid lg:grid-cols-[1fr_1fr_1fr] gap-8 items-start"
+          className="grid lg:grid-cols-[1fr_1fr_1fr] gap-6 md:gap-8 items-start"
         >
           {/* Left: Visual */}
-          <div className="flex flex-col items-center justify-center bg-offwhite rounded-2xl p-10 min-h-[300px]">
+          <div className="flex flex-col items-center justify-center bg-offwhite rounded-2xl p-6 md:p-10 min-h-0 md:min-h-[300px]">
             <PlyVisualizer option={plyOptions[activePly]} isActive={true} />
           </div>
 

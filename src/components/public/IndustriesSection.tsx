@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import {
   ShoppingCart,
@@ -60,7 +60,56 @@ const industries = [
 
 export default function IndustriesSection() {
   const ref = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el || typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 768px)");
+    if (!media.matches) return;
+
+    let paused = false;
+    let lastTime = 0;
+    let rafId = 0;
+
+    const handlePause = () => {
+      paused = true;
+    };
+    const handleResume = () => {
+      paused = false;
+    };
+
+    el.addEventListener("mouseenter", handlePause);
+    el.addEventListener("mouseleave", handleResume);
+    el.addEventListener("touchstart", handlePause, { passive: true });
+    el.addEventListener("touchend", handleResume);
+    el.addEventListener("touchcancel", handleResume);
+
+    const step = (time: number) => {
+      if (!lastTime) lastTime = time;
+      const delta = time - lastTime;
+      lastTime = time;
+      if (!paused) {
+        el.scrollLeft += delta * 0.05;
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
+          el.scrollLeft = 0;
+        }
+      }
+      rafId = window.requestAnimationFrame(step);
+    };
+
+    rafId = window.requestAnimationFrame(step);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      el.removeEventListener("mouseenter", handlePause);
+      el.removeEventListener("mouseleave", handleResume);
+      el.removeEventListener("touchstart", handlePause);
+      el.removeEventListener("touchend", handleResume);
+      el.removeEventListener("touchcancel", handleResume);
+    };
+  }, []);
 
   return (
     <section
@@ -82,7 +131,7 @@ export default function IndustriesSection() {
 
       <div
         ref={ref}
-        className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative"
+        className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative"
       >
         {/* Header */}
         <motion.div
@@ -110,18 +159,21 @@ export default function IndustriesSection() {
         </motion.div>
 
         {/* Industries Grid */}
-        <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-3 md:gap-8">
+        <div
+          ref={carouselRef}
+          className="flex overflow-x-auto overflow-y-hidden gap-4 pb-6 md:pb-0 md:grid md:grid-cols-3 md:gap-8 snap-x snap-mandatory scroll-smooth scrollbar-none"
+        >
           {industries.map((industry, i) => (
             <motion.div
               key={industry.name}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{
-                duration: 0.6,
-                delay: 0.1 + i * 0.07,
-                ease: [0.16, 1, 0.3, 1],
+                duration: 0.45,
+                delay: 0,
+                ease: "easeOut",
               }}
-              className="group relative p-5 md:p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default min-w-[280px] flex-shrink-0 md:min-w-0"
+              className="group relative p-5 md:p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.08] hover:border-kraft/20 transition-all duration-500 cursor-default min-w-[240px] flex-shrink-0 md:min-w-0 snap-center scale-[0.95] md:scale-100 hover:scale-100"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-kraft/20 to-kraft-light/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                 <industry.icon className="w-5 h-5 text-kraft-light" />
@@ -143,7 +195,7 @@ export default function IndustriesSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-20 md:mt-24"
+          className="hidden md:block mt-20 md:mt-24"
         >
           <div className="rounded-3xl bg-white/[0.06] border border-white/[0.08] px-6 py-6 md:px-10 md:py-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">

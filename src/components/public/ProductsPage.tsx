@@ -592,9 +592,9 @@ export default function ProductsPage() {
                 {categoryCards.map((cat, i) => (
                   <motion.div
                     key={cat.id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                    transition={{ duration: 0.45, delay: 0, ease: "easeOut" }}
                   >
                     <Link href={categoryCardHref(cat)}>
                       <div
@@ -689,9 +689,9 @@ export default function ProductsPage() {
                 {categoryProducts.map((product, i) => (
                   <motion.div
                     key={product.slug}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                    transition={{ duration: 0.45, delay: 0, ease: "easeOut" }}
                   >
                     <ProductCard
                       product={product}

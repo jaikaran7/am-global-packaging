@@ -34,7 +34,7 @@ export default function SustainabilitySection() {
   return (
     <section
       id="sustainability"
-      className="relative py-32 bg-offwhite overflow-hidden"
+      className="relative py-20 md:py-32 bg-offwhite overflow-hidden"
     >
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-forest/10 to-transparent" />
@@ -43,7 +43,7 @@ export default function SustainabilitySection() {
 
       <div
         ref={ref}
-        className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 relative"
+        className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative"
       >
         <div className="grid lg:grid-cols-[1fr_1.3fr] gap-16 lg:gap-24 items-center">
           {/* Left: Visual */}
@@ -112,10 +112,10 @@ export default function SustainabilitySection() {
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 1 }}
-              className="absolute -bottom-6 -right-6 md:right-[-24px] bg-white rounded-2xl shadow-xl shadow-forest/10 p-6 border border-forest/5"
+              className="absolute top-3 right-3 md:top-auto md:-bottom-6 md:-right-6 bg-white rounded-2xl shadow-md shadow-forest/10 p-3 md:p-6 border border-forest/5"
             >
-              <div className="text-3xl font-bold text-forest">40%</div>
-              <div className="text-xs text-warm-gray mt-1">
+              <div className="text-xl md:text-3xl font-bold text-forest">40%</div>
+              <div className="text-[10px] md:text-xs text-warm-gray mt-1 leading-tight">
                 Carbon reduction
                 <br />
                 since 2018
@@ -155,22 +155,22 @@ export default function SustainabilitySection() {
             </div>
 
             {/* Pillars */}
-            <div className="grid sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
               {pillars.map((pillar, i) => (
                 <motion.div
                   key={pillar.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.6, delay: 0.5 + i * 0.1 }}
-                  className="group p-5 rounded-xl bg-white border border-forest/5 hover:border-forest/15 hover:shadow-lg hover:shadow-forest/5 transition-all duration-300"
+                  transition={{ duration: 0.45, delay: 0, ease: "easeOut" }}
+                  className="group h-full flex flex-col p-3 md:p-5 rounded-xl bg-white border border-forest/5 hover:border-forest/15 md:hover:shadow-lg md:hover:shadow-forest/5 transition-all duration-300"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-forest/5 flex items-center justify-center mb-4 group-hover:bg-forest/10 transition-colors">
-                    <pillar.icon className="w-5 h-5 text-forest" />
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-forest/5 flex items-center justify-center mb-2 md:mb-4 group-hover:bg-forest/10 transition-colors">
+                    <pillar.icon className="w-4 h-4 md:w-5 md:h-5 text-forest" />
                   </div>
-                  <h3 className="text-sm font-bold text-charcoal mb-2">
+                  <h3 className="text-[13px] md:text-sm font-bold text-charcoal mb-2">
                     {pillar.title}
                   </h3>
-                  <p className="text-xs text-warm-gray leading-relaxed">
+                  <p className="text-[11px] md:text-xs text-warm-gray leading-relaxed">
                     {pillar.desc}
                   </p>
                 </motion.div>

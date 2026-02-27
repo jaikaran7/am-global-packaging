@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Navbar from "@/components/public/Navbar";
 import HeroSection from "@/components/public/HeroSection";
 import AboutSection from "@/components/public/AboutSection";
@@ -21,7 +22,9 @@ export default function Home() {
         <IndustriesSection />
         <SustainabilitySection />
         <WhyChooseSection />
-        <ContactSection />
+        <Suspense fallback={null}>
+          <ContactSection />
+        </Suspense>
       </main>
       <Footer />
     </>

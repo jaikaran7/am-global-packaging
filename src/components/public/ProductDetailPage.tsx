@@ -259,7 +259,7 @@ function AccordionSpecs({ specs }: { specs: { label: string; value: string }[] }
   const hasMore = specs.length > PREVIEW;
 
   return (
-    <div className="bg-white rounded-2xl border border-kraft/10 p-6 mb-8">
+    <div className="bg-white rounded-2xl border border-kraft/10 p-4 md:p-6 mb-8">
       <h3 className="text-sm font-bold text-charcoal uppercase tracking-wide mb-5">
         Technical Specifications
       </h3>
@@ -267,11 +267,14 @@ function AccordionSpecs({ specs }: { specs: { label: string; value: string }[] }
         {visible.map((spec, i) => (
           <div
             key={spec.label}
-            className={`flex items-center justify-between py-3.5 ${i < visible.length - 1 ? "border-b border-kraft/8" : ""
-              }`}
+            className={`grid grid-cols-[1fr_auto] items-start gap-3 md:flex md:items-center md:justify-between py-2.5 md:py-3.5 ${
+              i < visible.length - 1 ? "border-b border-kraft/8" : ""
+            }`}
           >
-            <span className="text-sm text-warm-gray">{spec.label}</span>
-            <span className="text-sm font-semibold text-charcoal">{spec.value}</span>
+            <span className="text-xs md:text-sm text-warm-gray">{spec.label}</span>
+            <span className="text-xs md:text-sm font-semibold text-charcoal text-right md:text-left break-words">
+              {spec.value}
+            </span>
           </div>
         ))}
       </div>
@@ -345,7 +348,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
       <section className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 pt-10 pb-20">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-start">
           {/* ── Left: Product gallery ── */}
-          <div className="relative md:sticky md:top-28 w-full min-w-0">
+          <div className="relative lg:sticky lg:top-28 w-full min-w-0">
             <div className="bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 rounded-3xl overflow-hidden relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
               <div className="absolute inset-0 corrugated-pattern opacity-20" />
 
@@ -588,7 +591,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                 <div className="h-px bg-kraft/10 my-8" />
 
                 {/* Quote CTA */}
-                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-5 md:p-8 text-offwhite">
+                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-4 md:p-8 text-offwhite">
                   <h3 className="text-lg font-bold mb-4">
                     Request a Quote for {product.shortName}
                   </h3>
@@ -628,8 +631,13 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   </div>
 
                   <Link
-                    href="/contact"
-                    className="w-full inline-flex items-center justify-center py-3 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-4"
+                    href={`/contact?${new URLSearchParams({
+                      categoryId: product.category,
+                      productSlug: product.slug,
+                      quantity,
+                      ply: plyPreference,
+                    }).toString()}`}
+                    className="w-full inline-flex items-center justify-center py-2.5 md:py-3 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-3 md:mb-4"
                   >
                     Request Quote
                   </Link>
@@ -699,9 +707,9 @@ export default function ProductDetailPage({ product: initialProduct }: { product
               {relatedProducts.map((rp, i) => (
                 <motion.div
                   key={rp.slug}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ duration: 0.45, delay: 0, ease: "easeOut" }}
                 >
                   <Link href={`/products/${rp.slug}`}>
                     <div className="group bg-white rounded-2xl border border-kraft/8 overflow-hidden hover:shadow-lg hover:border-kraft/20 transition-all">
