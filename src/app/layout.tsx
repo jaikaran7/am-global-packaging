@@ -7,6 +7,11 @@ import { Toaster } from "@/components/ui/sonner";
 export const metadata: Metadata = {
   title: "AM Global Packaging Solutions | Premium Corrugated Packaging",
   description: "Leading manufacturer of premium corrugated packaging solutions. Custom boxes, sheets, and bulk supply for global industries.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

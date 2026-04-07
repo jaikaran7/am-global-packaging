@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight } from "lucide-react";
 
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
+  { label: "Papers", href: "/papers" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -16,6 +18,8 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const solidByDefault = pathname === "/products" || pathname === "/papers";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -30,7 +34,7 @@ export default function Navbar() {
         animate={{ y: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
+          scrolled || solidByDefault
             ? "bg-offwhite/90 backdrop-blur-xl shadow-[0_1px_0_0_rgba(184,134,11,0.1)]"
             : "bg-transparent"
         }`}
