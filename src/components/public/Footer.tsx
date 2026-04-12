@@ -9,6 +9,7 @@ const footerLinks = [
   {
     title: "Products",
     links: [
+      { label: "Papers", href: "/papers" },
       { label: "Corrugated Boxes", href: "#products" },
       { label: "Corrugated Sheets", href: "#products" },
       { label: "Custom Packaging", href: "#products" },
