@@ -115,7 +115,7 @@ export default function Navbar() {
                   {switchHref && switchLabel && (
                     <Link
                       href={switchHref}
-                      className="px-4 py-2 text-[13px] font-medium text-forest/90 hover:text-forest transition-colors duration-200 border border-kraft/25 rounded-full ml-1"
+                      className="px-4 py-2 text-[13px] font-medium text-forest/90 hover:text-forest transition-colors duration-200 border border-kraft/25 rounded-full ml-1 bg-kraft/15 hover:bg-kraft/25"
                     >
                       {switchLabel}
                     </Link>
