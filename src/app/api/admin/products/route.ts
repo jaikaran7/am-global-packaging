@@ -8,6 +8,7 @@ export async function GET(req: Request) {
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const status = searchParams.get("status");
+    const productLine = searchParams.get("product_line");
     const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, Number.parseInt(searchParams.get("limit") ?? "20", 10)));
     const offset = (page - 1) * limit;
@@ -16,13 +17,14 @@ export async function GET(req: Request) {
 
     let query = supabase
       .from("products")
-      .select("id, title, slug, category_id, short_description, marketing_text, active, featured, meta, created_at", { count: "exact" })
+      .select("id, title, slug, category_id, short_description, marketing_text, active, featured, meta, product_line, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (category) query = query.eq("category_id", category);
     if (status === "active") query = query.eq("active", true);
     if (status === "inactive") query = query.eq("active", false);
+    if (productLine === "papers" || productLine === "boxes") query = query.eq("product_line", productLine);
     if (search?.trim()) {
       query = query.or(`title.ilike.%${search.trim()}%,short_description.ilike.%${search.trim()}%`);
     }
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
         active: parsed.data.active,
         featured: parsed.data.featured,
         meta: parsed.data.meta || null,
+        product_line: parsed.data.product_line ?? "boxes",
       }])
       .select()
       .single();

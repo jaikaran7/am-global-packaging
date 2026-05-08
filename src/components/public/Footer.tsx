@@ -3,40 +3,43 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronRight, MapPin, Phone, Mail } from "lucide-react";
 
 const footerLinks = [
   {
     title: "Products",
     links: [
-      { label: "Papers", href: "/papers" },
-      { label: "Corrugated Boxes", href: "#products" },
-      { label: "Corrugated Sheets", href: "#products" },
-      { label: "Custom Packaging", href: "#products" },
-      { label: "Die-Cut Solutions", href: "#products" },
+      { label: "Papers", href: "/papers/home" },
+      { label: "Corrugated Boxes", href: "/boxes/home#products" },
+      { label: "Corrugated Sheets", href: "/boxes/home#products" },
+      { label: "Custom Packaging", href: "/boxes/home#products" },
+      { label: "Die-Cut Solutions", href: "/boxes/home#products" },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "About Us", href: "#about" },
-      { label: "Sustainability", href: "#sustainability" },
-      { label: "Quality & Certifications", href: "#why-us" },
+      { label: "About Us", href: "/boxes/home#about" },
+      { label: "Sustainability", href: "/boxes/home#sustainability" },
+      { label: "Quality & Certifications", href: "/boxes/home#why-us" },
       { label: "Careers", href: "#" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Ply Guide", href: "/#ply-guide" },
+      { label: "Ply Guide", href: "/boxes/home#ply-guide" },
       { label: "GSM Calculator", href: "/resources/gsm-calculator" },
-      { label: "Box Styles", href: "/#products" },
+      { label: "Box Styles", href: "/boxes/home#products" },
       { label: "FAQs", href: "/faqs" },
     ],
   },
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
+  const quoteHref = pathname.startsWith("/papers") ? "/papers/contact" : "/boxes/contact";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const toggleSection = (title: string) => {
     setOpenSections((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -111,13 +114,13 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
-            <a
-              href="#contact"
+            <Link
+              href={quoteHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 mt-6 bg-forest text-offwhite text-xs font-semibold rounded-full hover:bg-forest-light transition-all duration-300"
             >
               Request a Quote
               <ChevronRight className="w-3.5 h-3.5" />
-            </a>
+            </Link>
           </div>
 
           {/* Accordion sections */}
@@ -209,13 +212,13 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
-            <a
-              href="#contact"
+            <Link
+              href={quoteHref}
               className="inline-flex items-center gap-2 px-6 py-3 bg-forest text-offwhite text-xs font-semibold rounded-full hover:bg-forest-light transition-all duration-300"
             >
               Request a Quote
               <ChevronRight className="w-3.5 h-3.5" />
-            </a>
+            </Link>
           </div>
 
           {/* Link groups */}

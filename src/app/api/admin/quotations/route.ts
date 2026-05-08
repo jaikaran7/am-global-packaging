@@ -11,6 +11,7 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const dateFrom = searchParams.get("date_from");
     const dateTo = searchParams.get("date_to");
+    const productLine = searchParams.get("product_line");
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? "20")));
     const offset = (page - 1) * limit;
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
     if (customer) baseQuery = baseQuery.eq("customer_id", customer);
     if (dateFrom) baseQuery = baseQuery.gte("created_at", dateFrom);
     if (dateTo) baseQuery = baseQuery.lte("created_at", `${dateTo}T23:59:59`);
+    if (productLine === "papers" || productLine === "boxes") baseQuery = baseQuery.eq("product_line", productLine);
 
     const { data: quotes, error, count } = await baseQuery.range(offset, offset + limit - 1);
     if (error) {
@@ -96,6 +98,7 @@ export async function POST(req: Request) {
           valid_until: parsed.data.valid_until || null,
           gst_percent: gstPercent,
           terms_text: termsText,
+          product_line: parsed.data.product_line ?? "boxes",
         },
       ])
       .select()

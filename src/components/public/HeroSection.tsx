@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronRight, ArrowDown } from "lucide-react";
 
@@ -188,12 +189,12 @@ export default function HeroSection() {
                   Source Packaging Now
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </a>
-                <a
-                  href="#products"
+                <Link
+                  href="/boxes/products"
                   className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-white text-charcoal font-semibold rounded-full border border-charcoal/10 hover:border-kraft/30 hover:bg-kraft-pale/40 transition-all duration-300 text-sm"
                 >
                   View Products
-                </a>
+                </Link>
               </motion.div>
 
             </div>

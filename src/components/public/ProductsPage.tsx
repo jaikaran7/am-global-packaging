@@ -27,6 +27,8 @@ import {
   type Product,
 } from "@/data/products";
 
+const BOXES_PRODUCTS_BASE = "/boxes/products";
+
 function Box3D({
   product,
   hovered,
@@ -220,7 +222,7 @@ function ProductCard({
     product.dimensionDetail.height
   );
   return (
-    <Link href={`/products/${product.slug}`}>
+    <Link href={`${BOXES_PRODUCTS_BASE}/${product.slug}`}>
       <div
         className={`group bg-white rounded-2xl border border-kraft/8 overflow-hidden transition-all duration-400 hover:shadow-xl hover:shadow-kraft/8 hover:border-kraft/20 ${viewMode === "list" ? "flex flex-row items-stretch" : ""
           }`}
@@ -290,10 +292,11 @@ function ProductCard({
 
 export default function ProductsPage() {
   const pathname = usePathname();
-  const pathSlug = pathname.replace(/^\/products\/?/, "") || "";
-  const isAllProductsPage = pathname === "/products";
+  const pathSlug = pathname.replace(new RegExp(`^${BOXES_PRODUCTS_BASE}/?`), "") || "";
+  const isAllProductsPage =
+    pathname === BOXES_PRODUCTS_BASE || pathname === `${BOXES_PRODUCTS_BASE}/`;
   const isCategoryListingPage =
-    pathname.startsWith("/products/") &&
+    pathname.startsWith(`${BOXES_PRODUCTS_BASE}/`) &&
     pathSlug !== "" &&
     isCategoryRouteSlug(pathSlug);
   const currentCategoryId = isCategoryListingPage
@@ -339,8 +342,8 @@ export default function ProductsPage() {
   /** All Products page only: category card opens first product with switcher (?from=all) */
   const categoryCardHref = (cat: (typeof categoryCards)[0]) =>
     cat.firstProduct
-      ? `/products/${cat.firstProduct.slug}?from=all`
-      : `/products/${cat.routeSlug}`;
+      ? `${BOXES_PRODUCTS_BASE}/${cat.firstProduct.slug}?from=all`
+      : `${BOXES_PRODUCTS_BASE}/${cat.routeSlug}`;
 
   return (
     <div className="min-h-screen bg-offwhite">
@@ -367,7 +370,7 @@ export default function ProductsPage() {
             transition={{ duration: 0.8 }}
           >
             <div className="flex items-center gap-2 text-kraft-light/80 text-sm mb-4">
-              <Link href="/" className="hover:text-kraft-light transition-colors">
+              <Link href="/boxes/home" className="hover:text-kraft-light transition-colors">
                 Home
               </Link>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -429,8 +432,8 @@ export default function ProductsPage() {
                       ? isAllProductsPage
                       : isCategoryListingPage && currentCategoryId === cat.id;
                     const href = isAll
-                      ? "/products"
-                      : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
+                      ? BOXES_PRODUCTS_BASE
+                      : `${BOXES_PRODUCTS_BASE}/${categoryRouteSlugs[cat.id] ?? cat.id}`;
                     return (
                       <Link
                         key={cat.id}
@@ -473,7 +476,7 @@ export default function ProductsPage() {
                   Get volume pricing for orders above 5,000 units.
                 </p>
                 <Link
-                  href="/#contact"
+                  href="/boxes/contact"
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-kraft-light hover:text-kraft-lighter transition-colors"
                 >
                   Request Quote
@@ -510,7 +513,7 @@ export default function ProductsPage() {
                     </h4>
                     {categories.map((cat) => {
                       const isAll = cat.id === "all";
-                      const href = isAll ? "/products" : `/products/${categoryRouteSlugs[cat.id] ?? cat.id}`;
+                      const href = isAll ? BOXES_PRODUCTS_BASE : `${BOXES_PRODUCTS_BASE}/${categoryRouteSlugs[cat.id] ?? cat.id}`;
                       const isActive = isAll
                         ? isAllProductsPage
                         : isCategoryListingPage && currentCategoryId === cat.id;
@@ -722,7 +725,7 @@ export default function ProductsPage() {
                   branded packaging tailored to your exact requirements.
                 </p>
                 <Link
-                  href="/#contact"
+                  href="/boxes/contact"
                   className="inline-flex items-center gap-2 px-8 py-3.5 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm"
                 >
                   Request Custom Quote

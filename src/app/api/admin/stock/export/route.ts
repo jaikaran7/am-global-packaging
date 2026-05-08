@@ -1,13 +1,29 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+
     const supabase = createAdminClient();
 
-    const { data: variants } = await supabase
+    let variantsQuery = supabase
       .from("product_variants")
       .select("id, product_id, name, sku, stock, reserved_stock, incoming_stock, stock_warning_threshold");
+
+    if (productLine === "papers" || productLine === "boxes") {
+      const { data: lineProducts } = await supabase
+        .from("products")
+        .select("id")
+        .eq("product_line", productLine);
+      const lineProductIds = (lineProducts ?? []).map((p) => p.id);
+      if (lineProductIds.length > 0) {
+        variantsQuery = variantsQuery.in("product_id", lineProductIds);
+      }
+    }
+
+    const { data: variants } = await variantsQuery;
 
     const productIds = [...new Set((variants ?? []).map((v) => v.product_id))];
 

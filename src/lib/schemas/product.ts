@@ -20,6 +20,7 @@ export const productSchema = z.object({
   active: z.boolean(),
   featured: z.boolean(),
   meta: z.record(z.string(), z.unknown()).optional(),
+  product_line: z.enum(["boxes", "papers"]).optional().default("boxes"),
 });
 
 /**

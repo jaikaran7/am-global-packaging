@@ -19,6 +19,13 @@ type EnquiryItemPayload = {
   variant_id?: string | null;
 };
 
+type ProductLine = "boxes" | "papers";
+
+function resolveProductLine(raw: unknown): ProductLine {
+  if (raw === "papers") return "papers";
+  return "boxes";
+}
+
 function normalizeItem(item: Record<string, unknown>): EnquiryItemPayload {
   const product_category = String(item.product_category ?? "").trim();
   const product = String(item.product ?? "").trim();
@@ -150,6 +157,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient();
+    const productLine = resolveProductLine(body.product_line);
 
     const { data: enquiry, error } = await supabase
       .from("enquiries")
@@ -167,6 +175,7 @@ export async function POST(req: Request) {
           custom_spec: enquiryPayload.custom_spec,
           custom_notes: enquiryPayload.custom_notes,
           project_details: enquiryPayload.project_details,
+          product_line: productLine,
         },
       ])
       .select()

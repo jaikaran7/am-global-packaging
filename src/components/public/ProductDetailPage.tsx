@@ -23,6 +23,8 @@ import {
 import type { Product } from "@/data/products";
 import { getRelatedProducts, getCategoryProducts } from "@/data/products";
 
+const BOXES_PRODUCTS_BASE = "/boxes/products";
+
 // ─── 3-D box render ──────────────────────────────────────────────────────────
 function DetailBox3D({
   size,
@@ -328,12 +330,12 @@ export default function ProductDetailPage({ product: initialProduct }: { product
       <div className="bg-white border-b border-kraft/8">
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20 py-4">
           <div className="flex items-center gap-2 text-sm text-warm-gray">
-            <Link href="/" className="hover:text-charcoal transition-colors">
+            <Link href="/boxes/home" className="hover:text-charcoal transition-colors">
               Home
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
             <Link
-              href="/products"
+              href={BOXES_PRODUCTS_BASE}
               className="hover:text-charcoal transition-colors"
             >
               Products
@@ -476,7 +478,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                       href={
                         fromAll && categoryProducts.length > 1
                           ? undefined
-                          : `/products/${p.slug}`
+                          : `${BOXES_PRODUCTS_BASE}/${p.slug}`
                       }
                     />
                   );
@@ -631,7 +633,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   </div>
 
                   <Link
-                    href={`/contact?${new URLSearchParams({
+                    href={`/boxes/contact?${new URLSearchParams({
                       categoryId: product.category,
                       productSlug: product.slug,
                       quantity,
@@ -695,7 +697,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                 </h2>
               </div>
               <Link
-                href="/products"
+                href={BOXES_PRODUCTS_BASE}
                 className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-forest hover:text-kraft transition-colors"
               >
                 View All Products
@@ -711,7 +713,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: 0, ease: "easeOut" }}
                 >
-                  <Link href={`/products/${rp.slug}`}>
+                  <Link href={`${BOXES_PRODUCTS_BASE}/${rp.slug}`}>
                     <div className="group bg-white rounded-2xl border border-kraft/8 overflow-hidden hover:shadow-lg hover:border-kraft/20 transition-all">
                       <div className="h-[180px] bg-gradient-to-br from-kraft-pale/50 via-cream/30 to-kraft-bg/60 flex items-center justify-center relative">
                         <div className="absolute inset-0 corrugated-pattern opacity-15" />
@@ -741,7 +743,7 @@ export default function ProductDetailPage({ product: initialProduct }: { product
         {/* Back button */}
         <div className="mt-12">
           <Link
-            href="/products"
+            href={BOXES_PRODUCTS_BASE}
             className="inline-flex items-center gap-2 text-sm font-medium text-warm-gray hover:text-charcoal transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

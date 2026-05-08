@@ -21,7 +21,7 @@ const productTabs = [
     ],
     gradient: "from-kraft to-kraft-light",
     visualType: "sheets" as const,
-    redirect: "/products",
+    redirect: "/boxes/products",
   },
   {
     id: "boxes",
@@ -38,7 +38,7 @@ const productTabs = [
     ],
     gradient: "from-forest to-forest-light",
     visualType: "box" as const,
-    redirect: "/products",
+    redirect: "/boxes/products",
   },
   {
     id: "pizza",
@@ -55,7 +55,7 @@ const productTabs = [
     ],
     gradient: "from-kraft to-kraft-light",
     visualType: "box" as const,
-    redirect: "/products/pizza-boxes",
+    redirect: "/boxes/products/pizza-boxes",
   },
   {
     id: "other",
@@ -72,7 +72,7 @@ const productTabs = [
     ],
     gradient: "from-forest to-forest-light",
     visualType: "box" as const,
-    redirect: "/products",
+    redirect: "/boxes/products",
   },
 ];
 

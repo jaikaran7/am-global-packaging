@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useProductLine } from "@/contexts/ProductLineContext";
 import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
@@ -50,6 +51,7 @@ interface StockTableProps {
 
 export default function StockTable({ statusFilter }: StockTableProps) {
   const queryClient = useQueryClient();
+  const { activeProductLine } = useProductLine();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [stockStatus, setStockStatus] = useState(statusFilter ?? "");
@@ -60,7 +62,7 @@ export default function StockTable({ statusFilter }: StockTableProps) {
   const limit = 20;
 
   const { data, isLoading } = useQuery<{ items: StockItem[]; total: number }>({
-    queryKey: ["admin-stock", debouncedSearch, category, stockStatus, page],
+    queryKey: ["admin-stock", activeProductLine, debouncedSearch, category, stockStatus, page],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("search", debouncedSearch);
@@ -68,6 +70,7 @@ export default function StockTable({ statusFilter }: StockTableProps) {
       if (stockStatus) params.set("status", stockStatus);
       params.set("page", String(page));
       params.set("limit", String(limit));
+      params.set("product_line", activeProductLine);
       const res = await fetch(`/api/admin/stock?${params}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
@@ -88,7 +91,7 @@ export default function StockTable({ statusFilter }: StockTableProps) {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, category, stockStatus]);
+  }, [debouncedSearch, category, stockStatus, activeProductLine]);
 
   // Keep detail drawer in sync with refetched list (e.g. after receive incoming)
   useEffect(() => {

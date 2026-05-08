@@ -258,7 +258,7 @@ export default function ProductEditorForm({
         </Link>
         {mode === "edit" && productId && initialData && (
           <Link
-            href={`/products/${initialData.slug}`}
+            href={`/boxes/products/${initialData.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="admin-btn-secondary px-6 py-2.5 text-sm font-medium inline-block"

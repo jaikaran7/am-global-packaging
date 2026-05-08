@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useProductLine } from "@/contexts/ProductLineContext";
 import {
   PlusIcon,
   ArrowDownTrayIcon,
@@ -26,8 +27,8 @@ type Stats = {
   categories: number;
 };
 
-async function fetchStats(): Promise<Stats> {
-  const res = await fetch("/api/admin/products/stats");
+async function fetchStats(productLine: string): Promise<Stats> {
+  const res = await fetch(`/api/admin/products/stats?product_line=${productLine}`);
   if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
 }
@@ -47,6 +48,7 @@ const kpiPills = [
 ];
 
 export default function AdminProductsPage() {
+  const { activeProductLine } = useProductLine();
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [ply, setPly] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -54,7 +56,10 @@ export default function AdminProductsPage() {
   const [page] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { data: stats } = useQuery({ queryKey: ["admin-products-stats"], queryFn: fetchStats });
+  const { data: stats } = useQuery({
+    queryKey: ["admin-products-stats", activeProductLine],
+    queryFn: () => fetchStats(activeProductLine),
+  });
   const { data: categories = [] } = useQuery({ queryKey: ["admin-categories"], queryFn: fetchCategories });
 
   const categoryOptions = [

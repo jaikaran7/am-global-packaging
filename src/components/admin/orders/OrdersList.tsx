@@ -13,6 +13,7 @@ import {
 import OrderStatusBadge from "./OrderStatusBadge";
 import OrderStockIndicator from "./OrderStockIndicator";
 import { ORDER_STATUS_CONFIG, type OrderStatus } from "@/lib/schemas/order";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 type OrderRow = {
   id: string;
@@ -64,6 +65,7 @@ interface OrdersListProps {
 
 export default function OrdersList({ statusFilter }: OrdersListProps) {
   const router = useRouter();
+  const { activeProductLine } = useProductLine();
   const [status, setStatus] = useState(statusFilter ?? "all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -72,9 +74,9 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
   const limit = 15;
 
   const { data: stats } = useQuery<StatsData>({
-    queryKey: ["admin-orders-stats"],
+    queryKey: ["admin-orders-stats", activeProductLine],
     queryFn: async () => {
-      const res = await fetch("/api/admin/orders/stats");
+      const res = await fetch(`/api/admin/orders/stats?product_line=${activeProductLine}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -86,13 +88,14 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
     page: number;
     limit: number;
   }>({
-    queryKey: ["admin-orders", status, debouncedSearch, page],
+    queryKey: ["admin-orders", activeProductLine, status, debouncedSearch, page],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (status !== "all") params.set("status", status);
       if (debouncedSearch) params.set("search", debouncedSearch);
       params.set("page", String(page));
       params.set("limit", String(limit));
+      params.set("product_line", activeProductLine);
       const res = await fetch(`/api/admin/orders?${params}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
@@ -103,7 +106,7 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
 
   useEffect(() => {
     setPage(1);
-  }, [status, debouncedSearch]);
+  }, [status, debouncedSearch, activeProductLine]);
 
   const handleDelete = useCallback(
     async (id: string) => {

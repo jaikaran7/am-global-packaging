@@ -53,6 +53,7 @@ export const orderSchema = z.object({
   shipping_provider: z.string().optional().or(z.literal("")),
   tracking_id: z.string().optional().or(z.literal("")),
   shipped_date: z.string().optional().or(z.literal("")),
+  product_line: z.enum(["boxes", "papers"]).optional().default("boxes"),
 });
 
 export const orderStatusSchema = z.object({

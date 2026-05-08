@@ -16,6 +16,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
+import { useProductLine, type ProductLine } from '@/contexts/ProductLineContext'
 
 type NavItem = {
   href: string
@@ -44,14 +45,22 @@ interface SidebarProps {
   width?: number
 }
 
+const PRODUCT_LINE_OPTIONS: { value: ProductLine; label: string; short: string }[] = [
+  { value: 'boxes', label: 'Corrugated Boxes', short: 'Boxes' },
+  { value: 'papers', label: 'Papers', short: 'Papers' },
+]
+
 export default function Sidebar({ collapsed, setCollapsed, hydrated = true, width: widthProp }: Readonly<SidebarProps>) {
   const pathname = usePathname()
   const width = widthProp ?? (collapsed ? 76 : 240)
+  const { activeProductLine, setActiveProductLine } = useProductLine()
 
   const isActive = (href: string) => {
     if (href === '/admin/dashboard') return pathname === '/admin/dashboard' || pathname === '/admin'
     return pathname?.startsWith(href)
   }
+
+  const activeOption = PRODUCT_LINE_OPTIONS.find((o) => o.value === activeProductLine) ?? PRODUCT_LINE_OPTIONS[0]
 
   return (
     <aside
@@ -80,6 +89,67 @@ export default function Sidebar({ collapsed, setCollapsed, hydrated = true, widt
               <span className="text-base font-bold text-[#2b2f33] tracking-tight">AM Global</span>
               <span className="text-[10px] text-[#9aa6b0] font-medium tracking-wide uppercase">Packaging</span>
             </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Product Line Switcher */}
+      <div className="px-3 mb-1">
+        <AnimatePresence mode="wait">
+          {!collapsed ? (
+            <motion.div
+              key="switcher-expanded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="rounded-xl overflow-hidden border border-white/50 flex"
+            >
+              {PRODUCT_LINE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setActiveProductLine(opt.value)}
+                  className={`flex-1 py-1.5 text-[11px] font-semibold transition-all duration-150 ${
+                    activeProductLine === opt.value
+                      ? 'bg-[#ff7a2d] text-white shadow-sm'
+                      : 'text-[#9aa6b0] hover:text-[#2b2f33] bg-white/30'
+                  }`}
+                >
+                  {opt.short}
+                </button>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.button
+              key="switcher-collapsed"
+              type="button"
+              onClick={() => setActiveProductLine(activeProductLine === 'boxes' ? 'papers' : 'boxes')}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              title={`Switch to ${activeProductLine === 'boxes' ? 'Papers' : 'Boxes'}`}
+              className="w-full flex items-center justify-center py-1.5 rounded-xl bg-[#ff7a2d]/10 hover:bg-[#ff7a2d]/20 transition-colors"
+            >
+              <span className="text-[10px] font-bold text-[#ff7a2d]">
+                {activeProductLine === 'boxes' ? 'B' : 'P'}
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+        <AnimatePresence mode="wait">
+          {!collapsed && (
+            <motion.p
+              key="managing-label"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="text-[10px] text-center text-[#9aa6b0] mt-1 font-medium tracking-wide"
+            >
+              Managing: <span className="text-[#ff7a2d] font-semibold">{activeOption.label}</span>
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

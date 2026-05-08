@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/admin/layout/Sidebar'
 import QueryProvider from './QueryProvider'
+import { ProductLineProvider } from '@/contexts/ProductLineContext'
 
 const AUTH_ROUTES = new Set([
   '/admin/login',
@@ -44,6 +45,7 @@ function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) 
 
   return (
     <QueryProvider>
+      <ProductLineProvider>
       <div className="admin-body h-screen w-full overflow-hidden flex">
         <Sidebar
           collapsed={collapsed}
@@ -60,6 +62,7 @@ function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) 
           </div>
         </main>
       </div>
+      </ProductLineProvider>
     </QueryProvider>
   )
 }

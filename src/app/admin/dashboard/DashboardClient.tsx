@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import Topbar from '@/components/admin/layout/Topbar'
 import KPIGrid from '@/components/admin/dashboard/KPIGrid'
 import DashboardOverview from '@/components/admin/dashboard/DashboardOverview'
+import { useProductLine } from '@/contexts/ProductLineContext'
 
 const SalesChart = dynamic(() => import('@/components/admin/dashboard/SalesChart'), { ssr: false })
 const StockChart = dynamic(() => import('@/components/admin/dashboard/StockChart'), { ssr: false })
@@ -30,8 +31,8 @@ export type DashboardData = {
   stockSummary: { available: number; reserved: number; incoming: number }
 }
 
-async function fetchDashboard(): Promise<DashboardData> {
-  const res = await fetch('/api/admin/dashboard')
+async function fetchDashboard(productLine: string): Promise<DashboardData> {
+  const res = await fetch(`/api/admin/dashboard?product_line=${productLine}`)
   if (!res.ok) throw new Error('Failed to load dashboard')
   return res.json()
 }
@@ -49,9 +50,10 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: Readonly<DashboardClientProps>) {
+  const { activeProductLine } = useProductLine()
   const { data: dashboard, isLoading } = useQuery({
-    queryKey: ['admin-dashboard'],
-    queryFn: fetchDashboard,
+    queryKey: ['admin-dashboard', activeProductLine],
+    queryFn: () => fetchDashboard(activeProductLine),
     refetchInterval: 60 * 1000,
   })
 
@@ -72,6 +74,9 @@ export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: 
           className="text-xl font-semibold text-[#2b2f33] tracking-tight"
         >
           Dashboard
+          <span className="ml-2 text-sm font-medium px-2 py-0.5 rounded-lg bg-[#ff7a2d]/10 text-[#ff7a2d]">
+            {activeProductLine === 'papers' ? 'Papers' : 'Corrugated Boxes'}
+          </span>
         </motion.h1>
       </div>
 

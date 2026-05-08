@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { PlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import OrdersList from "@/components/admin/orders/OrdersList";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 export default function AdminOrdersPage() {
+  const { activeProductLine } = useProductLine();
   const handleExportCSV = async () => {
     try {
-      const res = await fetch("/api/admin/orders?limit=500");
+      const res = await fetch(`/api/admin/orders?limit=500&product_line=${activeProductLine}`);
       if (!res.ok) return;
       const data = await res.json();
       const items = data.items ?? [];

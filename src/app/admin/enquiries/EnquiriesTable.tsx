@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { updateEnquiryStatus } from "./actions";
+import { useProductLine } from "@/contexts/ProductLineContext";
 import {
   ENQUIRY_STATUS_CONFIG,
   ENQUIRY_STATUSES,
@@ -90,6 +91,7 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function EnquiriesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { activeProductLine } = useProductLine();
 
   const urlStatus = searchParams.get("status") ?? "";
   const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10);
@@ -119,6 +121,7 @@ export default function EnquiriesTable() {
       if (debouncedSearch) params.set("search", debouncedSearch);
       params.set("page", String(page));
       params.set("limit", String(limit));
+      params.set("product_line", activeProductLine);
 
       const res = await fetch(`/api/admin/enquiries?${params.toString()}`);
       if (res.ok) {
@@ -129,11 +132,11 @@ export default function EnquiriesTable() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, debouncedSearch, page]);
+  }, [statusFilter, debouncedSearch, page, activeProductLine]);
 
   const fetchCounts = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/enquiries/stats");
+      const res = await fetch(`/api/admin/enquiries/stats?product_line=${activeProductLine}`);
       if (res.ok) {
         const data = await res.json();
         setCounts(data);
@@ -141,7 +144,11 @@ export default function EnquiriesTable() {
     } catch {
       // Ignore
     }
-  }, []);
+  }, [activeProductLine]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeProductLine]);
 
   useEffect(() => {
     fetchEnquiries();

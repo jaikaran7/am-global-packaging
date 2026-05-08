@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/public/Navbar";
 import Footer from "@/components/public/Footer";
 
 export const metadata: Metadata = {
@@ -35,7 +34,6 @@ export default function PapersPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: papersStyles }} />
-      <Navbar />
       <div className="bg-[#faf9f6] font-['Inter',sans-serif] text-[#1f2421] antialiased">
         {/* Hero — cotton-forward, light */}
         <header className="relative bg-[#f3f1ec] border-b border-[#e5e2dc]">

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import ProductEditorForm from "@/components/admin/products/ProductEditorForm";
 import type { ProductEditorValues } from "@/components/admin/products/ProductEditorForm";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 async function fetchCategories(): Promise<{ id: string; name: string; slug: string }[]> {
   const res = await fetch("/api/admin/categories");
@@ -16,6 +17,7 @@ function NewProductContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultCategoryId = searchParams.get("category") ?? null;
+  const { activeProductLine } = useProductLine();
 
   const { data: categories = [] } = useQuery({
     queryKey: ["admin-categories"],
@@ -34,6 +36,7 @@ function NewProductContent() {
         marketing_text: data.marketing_text || undefined,
         active: data.active,
         featured: data.featured,
+        product_line: activeProductLine,
       }),
     });
     if (!res.ok) {

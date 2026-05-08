@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import StockTable from "@/components/admin/stock/StockTable";
 import StockBulkAdjustModal from "@/components/admin/stock/StockBulkAdjustModal";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 type StockStats = {
   in_stock: number;
@@ -43,17 +44,18 @@ const kpiCards = [
 ];
 
 export default function AdminStockPage() {
+  const { activeProductLine } = useProductLine();
   const { data: stats } = useQuery<StockStats>({
-    queryKey: ["admin-stock-stats"],
+    queryKey: ["admin-stock-stats", activeProductLine],
     queryFn: async () => {
-      const res = await fetch("/api/admin/stock/stats");
+      const res = await fetch(`/api/admin/stock/stats?product_line=${activeProductLine}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
   });
 
   const handleExportCSV = () => {
-    window.open("/api/admin/stock/export", "_blank");
+    window.open(`/api/admin/stock/export?product_line=${activeProductLine}`, "_blank");
   };
 
   const [showBulk, setShowBulk] = useState(false);

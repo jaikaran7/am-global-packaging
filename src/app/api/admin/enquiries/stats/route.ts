@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+
     const supabase = createAdminClient();
 
+    function applyLine<T extends ReturnType<typeof supabase.from>>(q: T) {
+      if (productLine === "papers" || productLine === "boxes") {
+        return (q as unknown as { eq: (col: string, val: string) => T }).eq("product_line", productLine);
+      }
+      return q;
+    }
+
     const [totalRes, newRes, contactRes, cancelledRes, successfulRes, followUpRes] = await Promise.all([
-      supabase.from("enquiries").select("id", { count: "exact", head: true }),
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "new"),
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).in("status", ["contact", "contacted"]),
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).in("status", ["cancelled", "closed"]),
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "successful"),
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "follow_up"),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true })),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "new")),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true }).in("status", ["contact", "contacted"])),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true }).in("status", ["cancelled", "closed"])),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "successful")),
+      applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "follow_up")),
     ]);
 
     return NextResponse.json({

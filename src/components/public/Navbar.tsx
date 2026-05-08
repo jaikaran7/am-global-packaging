@@ -7,19 +7,32 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronRight } from "lucide-react";
 
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
-  { label: "Papers", href: "/papers" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
-
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const solidByDefault = pathname === "/products" || pathname === "/papers";
+  const isPapers = pathname.startsWith("/papers");
+  const isBoxes = pathname.startsWith("/boxes");
+  const isLanding = pathname === "/";
+
+  const homeHref = isPapers ? "/papers/home" : isBoxes ? "/boxes/home" : "/";
+  const productsHref = isPapers ? "/papers/products" : "/boxes/products";
+  const aboutHref = isPapers ? "/papers/about" : "/boxes/about";
+  const contactHref = isPapers ? "/papers/contact" : "/boxes/contact";
+  const quoteHref = contactHref;
+
+  const switchHref = isPapers ? "/boxes/home" : isBoxes ? "/papers/home" : null;
+  const switchLabel = isPapers
+    ? "Switch to Corrugated Boxes"
+    : isBoxes
+      ? "Switch to Papers"
+      : null;
+
+  const solidByDefault =
+    pathname === "/boxes/products" ||
+    pathname.startsWith("/boxes/products/") ||
+    pathname.startsWith("/papers") ||
+    isLanding;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -40,9 +53,8 @@ export default function Navbar() {
         }`}
       >
         <div className="mx-auto max-w-[1440px] px-6 md:px-12 lg:px-20">
-          <div className="flex h-20 items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex h-20 items-center justify-between gap-4">
+            <Link href={homeHref} className="flex items-center gap-3 group shrink-0">
               <div className="relative w-10 h-10 bg-forest rounded-lg flex items-center justify-center overflow-hidden group-hover:bg-forest-light transition-colors duration-300">
                 <Image
                   src="/am-global-logo.png"
@@ -63,35 +75,73 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop Links */}
-            <div className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
+            <div className="hidden lg:flex items-center gap-1 flex-wrap justify-end">
+              {isLanding ? (
+                <>
+                  <Link
+                    href="/papers/home"
+                    className="px-4 py-2 text-[13px] font-medium text-charcoal/70 hover:text-forest transition-colors duration-200 relative group"
+                  >
+                    Papers
+                    <span className="absolute bottom-0 left-4 right-4 h-px bg-kraft scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  </Link>
+                  <Link
+                    href="/boxes/home"
+                    className="px-4 py-2 text-[13px] font-medium text-charcoal/70 hover:text-forest transition-colors duration-200 relative group"
+                  >
+                    Corrugated Boxes
+                    <span className="absolute bottom-0 left-4 right-4 h-px bg-kraft scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  {(
+                    [
+                      { label: "Home", href: homeHref },
+                      { label: "Products", href: productsHref },
+                      { label: "About", href: aboutHref },
+                      { label: "Contact", href: contactHref },
+                    ] as const
+                  ).map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className="px-4 py-2 text-[13px] font-medium text-charcoal/70 hover:text-forest transition-colors duration-200 relative group"
+                    >
+                      {link.label}
+                      <span className="absolute bottom-0 left-4 right-4 h-px bg-kraft scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                    </Link>
+                  ))}
+                  {switchHref && switchLabel && (
+                    <Link
+                      href={switchHref}
+                      className="px-4 py-2 text-[13px] font-medium text-forest/90 hover:text-forest transition-colors duration-200 border border-kraft/25 rounded-full ml-1"
+                    >
+                      {switchLabel}
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="hidden lg:flex items-center gap-4 shrink-0">
+              {!isLanding && (
                 <Link
-                  key={link.label}
-                  href={link.href}
-                  className="px-4 py-2 text-[13px] font-medium text-charcoal/70 hover:text-forest transition-colors duration-200 relative group"
+                  href={quoteHref}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-forest text-offwhite text-[13px] font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/20 hover:shadow-forest/30"
                 >
-                  {link.label}
-                  <span className="absolute bottom-0 left-4 right-4 h-px bg-kraft scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  Request a Quote
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
-              ))}
+              )}
             </div>
 
-            {/* CTA */}
-            <div className="hidden lg:flex items-center gap-4">
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-forest text-offwhite text-[13px] font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/20 hover:shadow-forest/30"
-              >
-                Request a Quote
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Mobile Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 text-charcoal"
+              className="lg:hidden p-2 text-charcoal shrink-0"
+              type="button"
+              aria-expanded={mobileOpen}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
             >
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -99,7 +149,6 @@ export default function Navbar() {
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -110,30 +159,87 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-offwhite pt-24 px-6"
           >
             <div className="flex flex-col gap-2">
-              {navLinks.map((link, i) => (
-                <motion.div
-                  key={link.label}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Link
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block py-4 px-4 text-lg font-medium text-charcoal border-b border-kraft/10 hover:text-forest hover:bg-kraft-pale/50 rounded-lg transition-colors"
+              {isLanding ? (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0 }}
                   >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
-              <Link
-                href="/contact"
-                onClick={() => setMobileOpen(false)}
-                className="mt-6 inline-flex items-center justify-center gap-2 px-6 py-4 bg-forest text-offwhite font-semibold rounded-full"
-              >
-                Request a Quote
-                <ChevronRight className="w-4 h-4" />
-              </Link>
+                    <Link
+                      href="/papers/home"
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-4 px-4 text-lg font-medium text-charcoal border-b border-kraft/10 hover:text-forest hover:bg-kraft-pale/50 rounded-lg transition-colors"
+                    >
+                      Papers
+                    </Link>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 }}
+                  >
+                    <Link
+                      href="/boxes/home"
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-4 px-4 text-lg font-medium text-charcoal border-b border-kraft/10 hover:text-forest hover:bg-kraft-pale/50 rounded-lg transition-colors"
+                    >
+                      Corrugated Boxes
+                    </Link>
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  {(
+                    [
+                      { label: "Home", href: homeHref },
+                      { label: "Products", href: productsHref },
+                      { label: "About", href: aboutHref },
+                      { label: "Contact", href: contactHref },
+                    ] as const
+                  ).map((link, i) => (
+                    <motion.div
+                      key={link.label}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="block py-4 px-4 text-lg font-medium text-charcoal border-b border-kraft/10 hover:text-forest hover:bg-kraft-pale/50 rounded-lg transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </motion.div>
+                  ))}
+                  {switchHref && switchLabel && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 }}
+                    >
+                      <Link
+                        href={switchHref}
+                        onClick={() => setMobileOpen(false)}
+                        className="block py-4 px-4 text-lg font-medium text-forest border-b border-kraft/10 hover:bg-kraft-pale/50 rounded-lg transition-colors"
+                      >
+                        {switchLabel}
+                      </Link>
+                    </motion.div>
+                  )}
+                </>
+              )}
+              {!isLanding && (
+                <Link
+                  href={quoteHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-6 inline-flex items-center justify-center gap-2 px-6 py-4 bg-forest text-offwhite font-semibold rounded-full"
+                >
+                  Request a Quote
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

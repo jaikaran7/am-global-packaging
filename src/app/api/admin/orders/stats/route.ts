@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+
     const supabase = createAdminClient();
 
-    const { data: orders, error } = await supabase
-      .from("orders")
-      .select("status");
+    let query = supabase.from("orders").select("status");
+    if (productLine === "papers" || productLine === "boxes") {
+      query = query.eq("product_line", productLine);
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

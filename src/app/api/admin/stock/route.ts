@@ -7,6 +7,7 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const category = searchParams.get("category");
     const stockStatus = searchParams.get("status"); // in_stock, low_stock, out_of_stock
+    const productLine = searchParams.get("product_line");
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
     const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "20"));
     const limit = Math.min(2000, requestedLimit);
@@ -14,11 +15,30 @@ export async function GET(req: Request) {
 
     const supabase = createAdminClient();
 
-    const { data: variants, error } = await supabase
+    // If product_line filter is active, resolve product IDs first
+    let allowedProductIds: string[] | null = null;
+    if (productLine === "papers" || productLine === "boxes") {
+      const { data: lineProducts } = await supabase
+        .from("products")
+        .select("id")
+        .eq("product_line", productLine);
+      allowedProductIds = (lineProducts ?? []).map((p) => p.id);
+    }
+
+    let variantsQuery = supabase
       .from("product_variants")
       .select(
         "id, product_id, name, sku, price, stock, reserved_stock, incoming_stock, stock_warning_threshold, is_primary, created_at, updated_at"
       );
+
+    if (allowedProductIds !== null) {
+      if (allowedProductIds.length === 0) {
+        return NextResponse.json({ items: [], total: 0, page, limit });
+      }
+      variantsQuery = variantsQuery.in("product_id", allowedProductIds);
+    }
+
+    const { data: variants, error } = await variantsQuery;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -30,7 +50,7 @@ export async function GET(req: Request) {
       productIds.length
         ? supabase
             .from("products")
-            .select("id, title, slug, category_id")
+            .select("id, title, slug, category_id, product_line")
             .in("id", productIds)
         : Promise.resolve({ data: [] }),
       productIds.length

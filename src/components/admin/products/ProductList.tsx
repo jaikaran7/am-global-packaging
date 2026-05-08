@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ProductCard, { type AdminProductItem } from "./ProductCard";
 import ProductFilters, { type CategoryOption } from "./ProductFilters";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 type ListResponse = {
   items: AdminProductItem[];
@@ -17,6 +18,7 @@ async function fetchProducts(params: {
   status?: string;
   page?: number;
   limit?: number;
+  product_line?: string;
 }): Promise<ListResponse> {
   const sp = new URLSearchParams();
   if (params.category) sp.set("category", params.category);
@@ -24,6 +26,7 @@ async function fetchProducts(params: {
   if (params.status) sp.set("status", params.status);
   if (params.page) sp.set("page", String(params.page));
   if (params.limit) sp.set("limit", String(params.limit ?? 20));
+  if (params.product_line) sp.set("product_line", params.product_line);
   const res = await fetch(`/api/admin/products?${sp.toString()}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -68,10 +71,11 @@ export default function ProductList({
   onPlyChange,
 }: ProductListProps) {
   const queryClient = useQueryClient();
+  const { activeProductLine } = useProductLine();
 
   const { data: list, isLoading, error } = useQuery({
-    queryKey: ["admin-products", categoryId, search, status, page],
-    queryFn: () => fetchProducts({ category: categoryId, search: search || undefined, status: status || undefined, page, limit: 20 }),
+    queryKey: ["admin-products", activeProductLine, categoryId, search, status, page],
+    queryFn: () => fetchProducts({ category: categoryId, search: search || undefined, status: status || undefined, page, limit: 20, product_line: activeProductLine }),
   });
 
   const { data: categories = [] } = useQuery({

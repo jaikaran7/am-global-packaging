@@ -7,6 +7,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     const search = searchParams.get("search");
+    const productLine = searchParams.get("product_line");
     const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, Number.parseInt(searchParams.get("limit") ?? "10", 10)));
     const offset = (page - 1) * limit;
@@ -26,6 +27,10 @@ export async function GET(req: Request) {
       };
       const statuses = legacyMap[status] ?? [status];
       query = statuses.length === 1 ? query.eq("status", statuses[0]) : query.in("status", statuses);
+    }
+
+    if (productLine === "papers" || productLine === "boxes") {
+      query = query.eq("product_line", productLine);
     }
 
     if (search?.trim()) {

@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, useInView } from "framer-motion";
-import { Factory, Globe, Shield, Award } from "lucide-react";
+import { Factory, Globe, Shield, Award, ChevronRight } from "lucide-react";
 
 const stats = [
   { icon: Factory, label: "20+ Years", value: "Experience", desc: "Combined partner expertise" },
@@ -13,6 +15,7 @@ const stats = [
 
 export default function AboutSection() {
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
@@ -121,6 +124,18 @@ export default function AboutSection() {
             </div>
           </motion.div>
         </div>
+
+        {pathname !== "/about" && pathname !== "/boxes/about" && (
+          <div className="flex justify-center mt-14 md:mt-20">
+            <Link
+              href="/boxes/about"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-forest hover:text-forest-light transition-colors group"
+            >
+              View more
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

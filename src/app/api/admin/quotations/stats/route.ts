@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+
     const supabase = createAdminClient();
-    const { data: quotes, error } = await supabase
+    let query = supabase
       .from("quotations")
       .select("status")
       .is("deleted_at", null);
+
+    if (productLine === "papers" || productLine === "boxes") {
+      query = query.eq("product_line", productLine);
+    }
+
+    const { data: quotes, error } = await query;
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

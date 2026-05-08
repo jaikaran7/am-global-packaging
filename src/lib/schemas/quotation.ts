@@ -42,6 +42,7 @@ export const quotationSchema = z.object({
   status: z
     .enum(["draft", "sent", "accepted", "rejected", "expired", "revised", "locked", "cancelled"])
     .optional(),
+  product_line: z.enum(["boxes", "papers"]).optional().default("boxes"),
 });
 
 export const quotationStatusSchema = z.object({

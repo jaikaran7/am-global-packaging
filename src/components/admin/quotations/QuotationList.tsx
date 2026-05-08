@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import QuotationStatusBadge from "./QuotationStatusBadge";
 import QuotationPDFButton from "./QuotationPDFButton";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 type QuoteRow = {
   id: string;
@@ -57,6 +58,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
 
 export default function QuotationList() {
   const router = useRouter();
+  const { activeProductLine } = useProductLine();
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -65,9 +67,9 @@ export default function QuotationList() {
   const limit = 15;
 
   const { data: stats } = useQuery<StatsData>({
-    queryKey: ["admin-quotations-stats"],
+    queryKey: ["admin-quotations-stats", activeProductLine],
     queryFn: async () => {
-      const res = await fetch("/api/admin/quotations/stats");
+      const res = await fetch(`/api/admin/quotations/stats?product_line=${activeProductLine}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -79,13 +81,14 @@ export default function QuotationList() {
     page: number;
     limit: number;
   }>({
-    queryKey: ["admin-quotations", status, debouncedSearch, page],
+    queryKey: ["admin-quotations", activeProductLine, status, debouncedSearch, page],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (status !== "all") params.set("status", status);
       if (debouncedSearch) params.set("search", debouncedSearch);
       params.set("page", String(page));
       params.set("limit", String(limit));
+      params.set("product_line", activeProductLine);
       const res = await fetch(`/api/admin/quotations?${params}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
@@ -96,7 +99,7 @@ export default function QuotationList() {
 
   useEffect(() => {
     setPage(1);
-  }, [status, debouncedSearch]);
+  }, [status, debouncedSearch, activeProductLine]);
 
   const handleDelete = useCallback(
     async (id: string) => {

@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Revenue: only delivered (or shipped if you recognise revenue on ship) */
 const REVENUE_STATUSES = ["delivered", "shipped"] as const;
 const PENDING_ORDER_STATUSES = ["draft", "pending_confirmation", "confirmed", "in_production"];
 const ACTIVE_ORDER_STATUSES = ["confirmed", "in_production", "shipped"];
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+    const filterByLine = productLine === "papers" || productLine === "boxes";
+
     const supabase = createAdminClient();
 
     const now = new Date();
@@ -17,10 +20,26 @@ export async function GET() {
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
 
+    // Resolve product IDs for the active product line (for stock filtering)
+    let lineProductIds: string[] | null = null;
+    if (filterByLine) {
+      const { data: lineProducts } = await supabase
+        .from("products")
+        .select("id")
+        .eq("product_line", productLine);
+      lineProductIds = (lineProducts ?? []).map((p) => p.id);
+    }
+
+    function applyLineToEnquiries<T extends { eq: (col: string, val: string) => T }>(q: T): T {
+      return filterByLine ? q.eq("product_line" as never, productLine as string) as T : q;
+    }
+    function applyLineToOrders<T extends { eq: (col: string, val: string) => T }>(q: T): T {
+      return filterByLine ? q.eq("product_line" as never, productLine as string) as T : q;
+    }
+
     const [
       newEnquiriesRes,
       orderStatsRes,
-      stockStatsRes,
       variantsRes,
       revenueThisMonthRes,
       revenueLastMonthRes,
@@ -30,16 +49,62 @@ export async function GET() {
       productsCountRes,
       customersCountRes,
     ] = await Promise.all([
-      supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "new"),
-      supabase.from("orders").select("id, status"),
-      supabase.from("product_variants").select("id, stock, reserved_stock, incoming_stock, stock_warning_threshold, name, product_id"),
-      supabase.from("product_variants").select("id, stock, reserved_stock, incoming_stock, stock_warning_threshold, name, product_id"),
-      supabase.from("orders").select("total").in("status", REVENUE_STATUSES).gte("created_at", thisMonthStart).lte("created_at", `${thisMonthEnd}T23:59:59`),
-      supabase.from("orders").select("total").in("status", REVENUE_STATUSES).gte("created_at", lastMonthStart).lte("created_at", `${lastMonthEnd}T23:59:59`),
-      supabase.from("orders").select("total, created_at").in("status", REVENUE_STATUSES).gte("created_at", sixMonthsAgo),
-      supabase.from("enquiries").select("id, full_name, company_name, product_category, product, status, created_at").order("created_at", { ascending: false }).limit(5),
-      supabase.from("orders").select("id, order_number, status, total, created_at").order("created_at", { ascending: false }).limit(5),
-      supabase.from("products").select("id", { count: "exact", head: true }),
+      applyLineToEnquiries(
+        supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "new")
+      ),
+      applyLineToOrders(supabase.from("orders").select("id, status")),
+      lineProductIds !== null
+        ? (lineProductIds.length === 0
+            ? Promise.resolve({ data: [] })
+            : supabase
+                .from("product_variants")
+                .select("id, stock, reserved_stock, incoming_stock, stock_warning_threshold, name, product_id")
+                .in("product_id", lineProductIds))
+        : supabase
+            .from("product_variants")
+            .select("id, stock, reserved_stock, incoming_stock, stock_warning_threshold, name, product_id"),
+      applyLineToOrders(
+        supabase
+          .from("orders")
+          .select("total")
+          .in("status", REVENUE_STATUSES)
+          .gte("created_at", thisMonthStart)
+          .lte("created_at", `${thisMonthEnd}T23:59:59`)
+      ),
+      applyLineToOrders(
+        supabase
+          .from("orders")
+          .select("total")
+          .in("status", REVENUE_STATUSES)
+          .gte("created_at", lastMonthStart)
+          .lte("created_at", `${lastMonthEnd}T23:59:59`)
+      ),
+      applyLineToOrders(
+        supabase
+          .from("orders")
+          .select("total, created_at")
+          .in("status", REVENUE_STATUSES)
+          .gte("created_at", sixMonthsAgo)
+      ),
+      applyLineToEnquiries(
+        supabase
+          .from("enquiries")
+          .select("id, full_name, company_name, product_category, product, status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5)
+      ),
+      applyLineToOrders(
+        supabase
+          .from("orders")
+          .select("id, order_number, status, total, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5)
+      ),
+      (() => {
+        let q = supabase.from("products").select("id", { count: "exact", head: true });
+        if (filterByLine) q = q.eq("product_line", productLine as string) as typeof q;
+        return q;
+      })(),
       supabase.from("customers").select("id", { count: "exact", head: true }),
     ]);
 
@@ -84,7 +149,9 @@ export async function GET() {
     const revenueThisMonth = (revenueThisMonthRes.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
     const revenueLastMonth = (revenueLastMonthRes.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
     const revenueChangePct =
-      revenueLastMonth > 0 ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100 : (revenueThisMonth > 0 ? 100 : 0);
+      revenueLastMonth > 0
+        ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100
+        : revenueThisMonth > 0 ? 100 : 0;
 
     const salesByMonthRaw = salesByMonthRes.data ?? [];
     const monthSums: Record<string, number> = {};
