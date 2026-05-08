@@ -30,12 +30,12 @@ export async function GET(req: Request) {
       lineProductIds = (lineProducts ?? []).map((p) => p.id);
     }
 
-    function applyLineToEnquiries<T extends { eq: (col: string, val: string) => T }>(q: T): T {
-      return filterByLine ? q.eq("product_line" as never, productLine as string) as T : q;
-    }
-    function applyLineToOrders<T extends { eq: (col: string, val: string) => T }>(q: T): T {
-      return filterByLine ? q.eq("product_line" as never, productLine as string) as T : q;
-    }
+    // Use `any` for these helpers to avoid TS "type instantiation is excessively deep"
+    // errors caused by Supabase's deeply-chained query builder generics.
+    const applyLineToEnquiries = (q: any): any =>
+      filterByLine ? q.eq("product_line", productLine) : q;
+    const applyLineToOrders = (q: any): any =>
+      filterByLine ? q.eq("product_line", productLine) : q;
 
     const [
       newEnquiriesRes,
@@ -108,11 +108,19 @@ export async function GET(req: Request) {
       supabase.from("customers").select("id", { count: "exact", head: true }),
     ]);
 
-    const orders = orderStatsRes.data ?? [];
+    const orders = (orderStatsRes.data ?? []) as Array<{ id: string; status: string }>;
     const pendingOrders = orders.filter((o) => PENDING_ORDER_STATUSES.includes(o.status)).length;
     const activeOrders = orders.filter((o) => ACTIVE_ORDER_STATUSES.includes(o.status)).length;
 
-    const variants = variantsRes.data ?? [];
+    const variants = (variantsRes.data ?? []) as Array<{
+      id: string;
+      stock: number | null;
+      reserved_stock: number | null;
+      incoming_stock: number | null;
+      stock_warning_threshold: number | null;
+      name: string | null;
+      product_id: string;
+    }>;
     let totalAvailable = 0;
     let totalReserved = 0;
     let totalIncoming = 0;
@@ -121,8 +129,10 @@ export async function GET(req: Request) {
     const productIds = [...new Set(variants.map((v) => v.product_id))];
     const { data: productsList } = productIds.length
       ? await supabase.from("products").select("id, title").in("id", productIds)
-      : { data: [] };
-    const productMap = Object.fromEntries((productsList ?? []).map((p) => [p.id, p]));
+      : { data: [] as Array<{ id: string; title: string }> };
+    const productMap = Object.fromEntries(
+      (productsList ?? []).map((p: { id: string; title: string }) => [p.id, p])
+    ) as Record<string, { id: string; title: string }>;
 
     for (const v of variants) {
       const available = v.stock ?? 0;
@@ -146,14 +156,19 @@ export async function GET(req: Request) {
 
     const lowStockAlerts = lowStockItems.length;
 
-    const revenueThisMonth = (revenueThisMonthRes.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
-    const revenueLastMonth = (revenueLastMonthRes.data ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const revenueThisMonth = ((revenueThisMonthRes.data ?? []) as Array<{ total: number | null }>)
+      .reduce((s, o) => s + Number(o.total ?? 0), 0);
+    const revenueLastMonth = ((revenueLastMonthRes.data ?? []) as Array<{ total: number | null }>)
+      .reduce((s, o) => s + Number(o.total ?? 0), 0);
     const revenueChangePct =
       revenueLastMonth > 0
         ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100
         : revenueThisMonth > 0 ? 100 : 0;
 
-    const salesByMonthRaw = salesByMonthRes.data ?? [];
+    const salesByMonthRaw = (salesByMonthRes.data ?? []) as Array<{
+      total: number | null;
+      created_at: string;
+    }>;
     const monthSums: Record<string, number> = {};
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -172,7 +187,17 @@ export async function GET(req: Request) {
         return { month: d.toLocaleString("en-AU", { month: "short", year: "2-digit" }), sales, period: month };
       });
 
-    const recentEnquiries = (recentEnquiriesRes.data ?? []).map((e) => ({
+    const recentEnquiries = (
+      (recentEnquiriesRes.data ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+        company_name: string | null;
+        product_category: string | null;
+        product: string | null;
+        status: string;
+        created_at: string;
+      }>
+    ).map((e) => ({
       id: e.id,
       name: e.full_name,
       subject: `${e.product_category ?? ""} — ${e.product ?? ""}`.trim() || "Enquiry",
@@ -180,7 +205,15 @@ export async function GET(req: Request) {
       created_at: e.created_at,
     }));
 
-    const latestOrders = (latestOrdersRes.data ?? []).map((o) => ({
+    const latestOrders = (
+      (latestOrdersRes.data ?? []) as Array<{
+        id: string;
+        order_number: string | null;
+        status: string;
+        total: number | null;
+        created_at: string;
+      }>
+    ).map((o) => ({
       id: o.id,
       order_number: o.order_number,
       status: o.status,

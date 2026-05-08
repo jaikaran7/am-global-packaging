@@ -8,12 +8,14 @@ export async function GET(req: Request) {
 
     const supabase = createAdminClient();
 
-    function applyLine<T extends ReturnType<typeof supabase.from>>(q: T) {
+    // Use `any` to avoid TS "type instantiation is excessively deep" with Supabase
+    // chained query-builder generics.
+    const applyLine = (q: any): any => {
       if (productLine === "papers" || productLine === "boxes") {
-        return (q as unknown as { eq: (col: string, val: string) => T }).eq("product_line", productLine);
+        return q.eq("product_line", productLine);
       }
       return q;
-    }
+    };
 
     const [totalRes, newRes, contactRes, cancelledRes, successfulRes, followUpRes] = await Promise.all([
       applyLine(supabase.from("enquiries").select("id", { count: "exact", head: true })),
