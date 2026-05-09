@@ -91,6 +91,40 @@ export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: 
         <div className="glass glass--soft rounded-xl p-6 text-center text-sm text-[#6b7280]">Loading dashboard…</div>
       ) : (
         <>
+          {/* Papers eco-identity banner — only shown when managing Papers */}
+          {activeProductLine === 'papers' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="rounded-xl overflow-hidden border border-emerald-100"
+              style={{ background: 'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#f0fdf4 100%)' }}
+            >
+              <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-800 tracking-wide">AM Global Handmade Papers</p>
+                    <p className="text-[11px] text-emerald-600 mt-0.5">
+                      {dashboard?.productsCount ?? 0} products · {dashboard?.activeOrders ?? 0} active orders · {dashboard?.newEnquiries ?? 0} new enquiries
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['100% Handmade', 'Acid Free', 'Tree Free', '99% Recycled', 'Ships Globally'].map((b) => (
+                    <span key={b} className="px-2.5 py-1 bg-emerald-600/10 text-emerald-700 text-[10px] font-semibold rounded-full border border-emerald-200">
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <KPIGrid data={dashboard} />
           <motion.h2
             initial={{ opacity: 0 }}
@@ -98,7 +132,7 @@ export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: 
             transition={{ delay: 0.3 }}
             className="text-lg font-semibold text-[#2b2f33]"
           >
-            Dashboard Overview
+            {activeProductLine === 'papers' ? 'Papers Dashboard Overview' : 'Dashboard Overview'}
           </motion.h2>
           <DashboardOverview
             recentEnquiries={dashboard?.recentEnquiries ?? recentEnquiries}
@@ -131,13 +165,19 @@ export default function DashboardClient({ newEnquiriesCount, recentEnquiries }: 
           href="/admin/quotations/new"
           className="admin-btn-primary inline-block px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 text-center"
         >
-          Generate Quotation
+          {activeProductLine === 'papers' ? 'New Paper Quotation' : 'Generate Quotation'}
         </Link>
         <Link
           href="/admin/stock"
           className="admin-btn-secondary inline-block px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 text-center"
         >
-          Manage Inventory
+          {activeProductLine === 'papers' ? 'Paper Stock' : 'Manage Inventory'}
+        </Link>
+        <Link
+          href="/admin/enquiries"
+          className="admin-btn-secondary inline-block px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 text-center"
+        >
+          {activeProductLine === 'papers' ? 'Paper Enquiries' : 'Enquiries'}
         </Link>
         <a
           href="/api/admin/dashboard/export?format=csv"

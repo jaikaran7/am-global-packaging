@@ -109,6 +109,7 @@ export async function PATCH(
     if (customerId !== undefined) updates.customer_id = customerId || null;
     if (parsed.data?.notes !== undefined) updates.notes = parsed.data.notes || null;
     if (parsed.data?.tax !== undefined) updates.tax = parsed.data.tax;
+    if (parsed.data?.product_line !== undefined) updates.product_line = parsed.data.product_line;
     if (parsed.data?.shipping_provider !== undefined)
       updates.shipping_provider = parsed.data.shipping_provider || null;
     if (parsed.data?.tracking_id !== undefined)

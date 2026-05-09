@@ -37,6 +37,8 @@ async function submitEnquiry(payload: {
   email: string;
   phone?: string;
   project_details?: string | null;
+  /** Corrugated / main site enquiries */
+  product_line?: "boxes" | "papers";
   items: Array<{
     product_category: string;
     product: string;
@@ -258,6 +260,7 @@ export default function ContactSection() {
         email,
         phone,
         project_details: project_details || undefined,
+        product_line: "boxes",
         items,
       });
       setSubmitStatus("success");

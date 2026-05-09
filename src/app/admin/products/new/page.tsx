@@ -6,12 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import ProductEditorForm from "@/components/admin/products/ProductEditorForm";
 import type { ProductEditorValues } from "@/components/admin/products/ProductEditorForm";
 import { useProductLine } from "@/contexts/ProductLineContext";
-
-async function fetchCategories(): Promise<{ id: string; name: string; slug: string }[]> {
-  const res = await fetch("/api/admin/categories");
-  if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
-}
+import { adminCategoriesQueryKey, fetchAdminCategories } from "@/lib/admin/categories-api";
 
 function NewProductContent() {
   const router = useRouter();
@@ -20,8 +15,8 @@ function NewProductContent() {
   const { activeProductLine } = useProductLine();
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: fetchCategories,
+    queryKey: adminCategoriesQueryKey(activeProductLine),
+    queryFn: () => fetchAdminCategories(activeProductLine),
   });
 
   async function saveProduct(data: ProductEditorValues): Promise<{ id: string } | undefined> {

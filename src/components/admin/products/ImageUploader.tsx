@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { ArrowUpTrayIcon, StarIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 
 type ImageRow = { id: string; url: string; is_primary: boolean; variant_id?: string | null };
@@ -20,6 +21,7 @@ export default function ImageUploader({
   images,
   onUploaded,
 }: ImageUploaderProps) {
+  const { confirm } = useAppConfirm();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +63,13 @@ export default function ImageUploader({
   }
 
   async function handleDelete(imageId: string) {
-    if (!confirm("Delete this image?")) return;
+    const ok = await confirm({
+      title: "Delete image?",
+      description: "This image will be removed from the product.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     await fetch(`/api/admin/products/${productId}/images/${imageId}`, { method: "DELETE" });
     onUploaded();
   }

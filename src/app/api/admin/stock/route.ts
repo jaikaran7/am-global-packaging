@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPapersMarketingImageUrl } from "@/lib/papers-marketing-images";
 
 export async function GET(req: Request) {
   try {
@@ -50,7 +51,7 @@ export async function GET(req: Request) {
       productIds.length
         ? supabase
             .from("products")
-            .select("id, title, slug, category_id, product_line")
+            .select("id, title, slug, category_id, product_line, meta")
             .in("id", productIds)
         : Promise.resolve({ data: [] }),
       productIds.length
@@ -110,7 +111,15 @@ export async function GET(req: Request) {
         remaining,
         threshold,
         status,
-        image_url: imageMap[v.id] ?? imageMap[`product_${v.product_id}`] ?? null,
+        image_url:
+          imageMap[v.id] ??
+          imageMap[`product_${v.product_id}`] ??
+          (product?.product_line === "papers"
+            ? getPapersMarketingImageUrl(
+                product.meta as Record<string, unknown> | null | undefined,
+                cat?.slug ?? null
+              )
+            : null),
         is_primary: v.is_primary,
       };
     });

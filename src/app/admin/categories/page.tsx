@@ -7,17 +7,18 @@ import {
   TrashIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-
-type Category = { id: string; name: string; slug: string; description: string | null };
-
-async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch("/api/admin/categories");
-  if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
-}
+import { useProductLine } from "@/contexts/ProductLineContext";
+import {
+  adminCategoriesQueryKey,
+  fetchAdminCategories,
+  type AdminCategoryRow,
+} from "@/lib/admin/categories-api";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
+  const { activeProductLine } = useProductLine();
+  const { confirm } = useAppConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
@@ -25,12 +26,12 @@ export default function AdminCategoriesPage() {
   const [editSlug, setEditSlug] = useState("");
 
   const { data: categories = [], isLoading, error } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: fetchCategories,
+    queryKey: adminCategoriesQueryKey(activeProductLine),
+    queryFn: () => fetchAdminCategories(activeProductLine),
   });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { name: string; slug: string }) => {
+    mutationFn: async (payload: { name: string; slug: string; product_line: typeof activeProductLine }) => {
       const res = await fetch("/api/admin/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,11 +84,13 @@ export default function AdminCategoriesPage() {
     },
   });
 
-  function startEdit(c: Category) {
+  function startEdit(c: AdminCategoryRow) {
     setEditingId(c.id);
     setEditName(c.name);
     setEditSlug(c.slug);
   }
+
+  const lineLabel = activeProductLine === "papers" ? "Papers" : "Corrugated boxes";
 
   if (error) {
     return (
@@ -99,7 +102,13 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="max-w-[800px] mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight">Categories</h1>
+      <div>
+        <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight">Categories</h1>
+        <p className="text-sm text-[#6b7280] mt-1">
+          Manage categories for <span className="font-medium text-[#2b2f33]">{lineLabel}</span> only. Switch product
+          line in the sidebar to edit the other catalog.
+        </p>
+      </div>
 
       <div className="glass glass--soft rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-[#2b2f33] uppercase tracking-wider mb-4">Add category</h3>
@@ -122,7 +131,12 @@ export default function AdminCategoriesPage() {
           <button
             type="button"
             onClick={() => {
-              if (newName.trim() && newSlug.trim()) createMutation.mutate({ name: newName.trim(), slug: newSlug.trim() });
+              if (newName.trim() && newSlug.trim())
+                createMutation.mutate({
+                  name: newName.trim(),
+                  slug: newSlug.trim(),
+                  product_line: activeProductLine,
+                });
             }}
             disabled={createMutation.isPending || !newName.trim() || !newSlug.trim()}
             className="admin-btn-primary py-2 px-4 text-sm font-medium inline-flex items-center gap-2"
@@ -188,10 +202,14 @@ export default function AdminCategoriesPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm(`Delete category "${c.name}"? Products may become uncategorised.`)) {
-                            deleteMutation.mutate(c.id);
-                          }
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: "Delete category?",
+                            description: `Delete "${c.name}"? Products may become uncategorised.`,
+                            confirmLabel: "Delete",
+                            variant: "danger",
+                          });
+                          if (ok) deleteMutation.mutate(c.id);
                         }}
                         className="p-2 rounded-lg text-red-600 hover:bg-red-50"
                         aria-label="Delete"

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { updateEnquiryStatus } from "./actions";
 import { useProductLine } from "@/contexts/ProductLineContext";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 import {
   ENQUIRY_STATUS_CONFIG,
   ENQUIRY_STATUSES,
@@ -92,6 +93,7 @@ export default function EnquiriesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { activeProductLine } = useProductLine();
+  const { showAlert } = useAppConfirm();
 
   const urlStatus = searchParams.get("status") ?? "";
   const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10);
@@ -188,7 +190,11 @@ export default function EnquiriesTable() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        window.alert(data?.error ?? "Failed to create quotation");
+        await showAlert({
+          title: "Could not create quotation",
+          description:
+            typeof data?.error === "string" ? data.error : "Something went wrong. Please try again.",
+        });
         return;
       }
       setDetailId(null);

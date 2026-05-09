@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,7 +14,8 @@ import CustomerSelector from "@/components/admin/orders/CustomerSelector";
 import QuotationItemRow from "./QuotationItemRow";
 import QuotationStatusBadge from "./QuotationStatusBadge";
 import QuotationPDFButton from "./QuotationPDFButton";
-import { DEFAULT_QUOTE_TERMS } from "@/lib/quotation-terms";
+import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
+import { useProductLine } from "@/contexts/ProductLineContext";
 import { isAustralianPhone } from "@/lib/validation/phone";
 import { toast } from "sonner";
 
@@ -45,6 +46,7 @@ interface QuoteData {
   notes: string | null;
   terms_text: string | null;
   valid_until: string | null;
+  product_line?: string | null;
   created_at: string;
   items: Array<{
     id: string;
@@ -63,6 +65,7 @@ interface QuotationEditorFormProps {
 export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEditorFormProps>) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activeProductLine, hydrated } = useProductLine();
   const isEdit = !!quoteId;
 
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   ]);
   const [notes, setNotes] = useState("");
   const [termsText, setTermsText] = useState(DEFAULT_QUOTE_TERMS);
+  const termsSeedDone = useRef(false);
   const [validUntil, setValidUntil] = useState("");
   const [gstPercent, setGstPercent] = useState(10);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
@@ -91,9 +95,9 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   });
 
   const { data: products } = useQuery<Product[]>({
-    queryKey: ["admin-products-list"],
+    queryKey: ["admin-products-list", activeProductLine],
     queryFn: async () => {
-      const res = await fetch("/api/admin/products?limit=200");
+      const res = await fetch(`/api/admin/products?limit=200&product_line=${activeProductLine}`);
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
       return (json.items ?? []).map((p: Record<string, unknown>) => ({
@@ -105,10 +109,18 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
   });
 
   useEffect(() => {
+    if (isEdit || !hydrated || termsSeedDone.current) return;
+    setTermsText(activeProductLine === "papers" ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS);
+    termsSeedDone.current = true;
+  }, [activeProductLine, hydrated, isEdit]);
+
+  useEffect(() => {
     if (!quote) return;
     setCustomerId(quote.customer_id);
     setNotes(quote.notes ?? "");
-    setTermsText(quote.terms_text ?? DEFAULT_QUOTE_TERMS);
+    const fallbackTerms =
+      quote.product_line === "papers" ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS;
+    setTermsText(quote.terms_text ?? fallbackTerms);
     setValidUntil(quote.valid_until ?? "");
     setGstPercent(Number(quote.gst_percent ?? 10));
     if (quote.items.length > 0) {
@@ -189,6 +201,10 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
         valid_until: validUntil,
         gst_percent: gstPercent,
       };
+
+      if (!isEdit) {
+        payload.product_line = activeProductLine;
+      }
 
       if (showNewCustomer && newCustomer.name) {
         payload.new_customer = newCustomer;
@@ -397,8 +413,8 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
-          {/* Customer */}
-          <div className="glass rounded-2xl p-5 space-y-3">
+          {/* Customer — higher z-index so CustomerSelector dropdown stacks above following .glass cards */}
+          <div className="glass rounded-2xl p-5 space-y-3 relative z-30 overflow-visible">
             <h2 className="text-sm font-semibold text-[#2b2f33]">Customer</h2>
             {showNewCustomer ? (
               <div className="space-y-3">
@@ -478,7 +494,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
           </div>
 
           {/* Line items */}
-          <div className="glass rounded-2xl p-5 space-y-3">
+          <div className="glass rounded-2xl p-5 space-y-3 relative z-10">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-[#2b2f33]">
                 Line Items ({items.length})

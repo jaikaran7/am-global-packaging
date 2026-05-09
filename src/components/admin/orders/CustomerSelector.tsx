@@ -300,7 +300,7 @@ export default function CustomerSelector({
           leaveFrom="opacity-100 scale-100"
           leaveTo="opacity-0 scale-95"
         >
-          <div className="absolute top-full left-0 mt-2 w-full z-[70] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top">
+          <div className="absolute top-full left-0 mt-2 w-full z-[100] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top">
             <div className="p-2 border-b border-slate-100">
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50">
                 <MagnifyingGlassIcon className="w-4 h-4 text-[#9aa6b0]" />

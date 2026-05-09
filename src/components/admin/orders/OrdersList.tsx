@@ -14,12 +14,14 @@ import OrderStatusBadge from "./OrderStatusBadge";
 import OrderStockIndicator from "./OrderStockIndicator";
 import { ORDER_STATUS_CONFIG, type OrderStatus } from "@/lib/schemas/order";
 import { useProductLine } from "@/contexts/ProductLineContext";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 
 type OrderRow = {
   id: string;
   order_number: string;
   customer: { id: string; name: string; company: string | null } | null;
   status: string;
+  invoice_status?: string | null;
   subtotal: number;
   total: number;
   stock_status: "in_stock" | "partial" | "out_of_stock";
@@ -50,6 +52,24 @@ function formatDate(iso: string) {
   }
 }
 
+function InvoiceStatusChip({ status }: { status?: string | null }) {
+  const s = status ?? "none";
+  const styles: Record<string, string> = {
+    none: "bg-gray-100 text-gray-600",
+    draft: "bg-amber-50 text-amber-800",
+    generated: "bg-sky-50 text-sky-800",
+    sent: "bg-violet-50 text-violet-800",
+    paid: "bg-emerald-50 text-emerald-800",
+  };
+  return (
+    <span
+      className={`inline-flex px-2 py-0.5 rounded-lg text-[11px] font-semibold capitalize ${styles[s] ?? styles.none}`}
+    >
+      {s.replace(/_/g, " ")}
+    </span>
+  );
+}
+
 const STATUS_TABS: { key: string; label: string }[] = [
   { key: "all", label: "All Orders" },
   { key: "draft", label: "Draft" },
@@ -66,6 +86,7 @@ interface OrdersListProps {
 export default function OrdersList({ statusFilter }: OrdersListProps) {
   const router = useRouter();
   const { activeProductLine } = useProductLine();
+  const { confirm, showAlert } = useAppConfirm();
   const [status, setStatus] = useState(statusFilter ?? "all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -110,13 +131,22 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm("Delete this draft order?")) return;
+      const ok = await confirm({
+        title: "Delete draft order?",
+        description: "This draft order will be removed permanently.",
+        confirmLabel: "Delete",
+        variant: "danger",
+      });
+      if (!ok) return;
       setDeleting(id);
       try {
         const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
         if (!res.ok) {
           const d = await res.json();
-          alert(d.error ?? "Failed to delete");
+          await showAlert({
+            title: "Could not delete",
+            description: typeof d?.error === "string" ? d.error : "Failed to delete order.",
+          });
           return;
         }
         refetch();
@@ -124,7 +154,7 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
         setDeleting(null);
       }
     },
-    [refetch]
+    [refetch, confirm, showAlert]
   );
 
   return (
@@ -189,6 +219,9 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
                 Status
               </th>
               <th className="text-left text-xs font-semibold text-[#9aa6b0] uppercase tracking-wider px-4 py-3">
+                Invoice
+              </th>
+              <th className="text-left text-xs font-semibold text-[#9aa6b0] uppercase tracking-wider px-4 py-3">
                 Total
               </th>
               <th className="text-left text-xs font-semibold text-[#9aa6b0] uppercase tracking-wider px-4 py-3">
@@ -205,14 +238,14 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-sm text-[#9aa6b0]">
+                <td colSpan={8} className="text-center py-12 text-sm text-[#9aa6b0]">
                   Loading orders...
                 </td>
               </tr>
             )}
             {!isLoading && (data?.items ?? []).length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-sm text-[#9aa6b0]">
+                <td colSpan={8} className="text-center py-12 text-sm text-[#9aa6b0]">
                   No orders found
                 </td>
               </tr>
@@ -240,6 +273,9 @@ export default function OrdersList({ statusFilter }: OrdersListProps) {
                 </td>
                 <td className="px-4 py-3">
                   <OrderStatusBadge status={order.status} />
+                </td>
+                <td className="px-4 py-3">
+                  <InvoiceStatusChip status={order.invoice_status} />
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm font-medium text-[#2b2f33]">

@@ -412,7 +412,7 @@ function roundedTopRectPath(w: number, h: number, r: number): string {
   return `M ${s},0 Q 0,0 0,${s} L 0,${h} L ${w},${h} L ${w},${s} Q ${w},0 ${w - s},0 L ${s},0 Z`;
 }
 
-function drawTableHeader(page: PDFPage, ctx: PdfCtx, topY: number): void {
+function drawTableHeader(page: PDFPage, ctx: PdfCtx, topY: number, currencyLabel: string): void {
   const colX = [
     ctx.margin,
     ctx.margin + COL_NO,
@@ -450,15 +450,17 @@ function drawTableHeader(page: PDFPage, ctx: PdfCtx, topY: number): void {
     font: ctx.fontBold,
     color: rgb(1, 1, 1),
   });
-  page.drawText("Unit Price (AUD)", {
-    x: colX[4] - CELL_PAD - ctx.fontBold.widthOfTextAtSize("Unit Price (AUD)", hSize),
+  const unitHdr = `Unit Price (${currencyLabel})`;
+  page.drawText(unitHdr, {
+    x: colX[4] - CELL_PAD - ctx.fontBold.widthOfTextAtSize(unitHdr, hSize),
     y: topY - 14,
     size: hSize,
     font: ctx.fontBold,
     color: rgb(1, 1, 1),
   });
-  page.drawText("Subtotal (AUD)", {
-    x: colX[4] + COL_SUB - CELL_PAD - ctx.fontBold.widthOfTextAtSize("Subtotal (AUD)", hSize),
+  const subHdr = `Subtotal (${currencyLabel})`;
+  page.drawText(subHdr, {
+    x: colX[4] + COL_SUB - CELL_PAD - ctx.fontBold.widthOfTextAtSize(subHdr, hSize),
     y: topY - 14,
     size: hSize,
     font: ctx.fontBold,
@@ -475,7 +477,8 @@ function drawItemsTable(
   ctx: PdfCtx,
   data: QuoteData,
   tableTop: number,
-  drawTemplateFn: (p: PDFPage) => Promise<void>
+  drawTemplateFn: (p: PDFPage) => Promise<void>,
+  currencyLabel: string
 ): { lastPage: PDFPage; lastRowY: number } {
   const colX = [
     ctx.margin,
@@ -489,7 +492,7 @@ function drawItemsTable(
   let currentPage = page;
   let rowY = tableTop - 21;
 
-  drawTableHeader(currentPage, ctx, tableTop);
+  drawTableHeader(currentPage, ctx, tableTop, currencyLabel);
 
   const NO_COL_BG = rgb(0.96, 0.965, 0.97); // Light grey for # column
   const ROW_BG = rgb(1, 1, 1); // White for data columns
@@ -511,7 +514,7 @@ function drawItemsTable(
       currentPage = ctx.pdfDoc.addPage([A4.width, A4.height]);
       drawTemplateFn(currentPage);
       rowY = ctx.contentTop - 24;
-      drawTableHeader(currentPage, ctx, ctx.contentTop - 6);
+      drawTableHeader(currentPage, ctx, ctx.contentTop - 6, currencyLabel);
     }
 
     // # column: light grey background
@@ -607,7 +610,8 @@ function drawTotalsAndNotes(
   page: PDFPage,
   ctx: PdfCtx,
   data: QuoteData,
-  rowY: number
+  rowY: number,
+  currencyLabel: string
 ): void {
   const totalsTop = rowY + 3;
   const totalsLeft = ctx.margin + COL_NO + COL_DESC + COL_QTY;
@@ -660,7 +664,7 @@ function drawTotalsAndNotes(
     color: TEXT_MID,
   });
 
-  page.drawText("Total (AUD)", { x: LABEL_COL_X + CELL_PAD, y: centerY(2), size: 9, font: ctx.fontBold, color: TEXT_DARK });
+  page.drawText(`Total (${currencyLabel})`, { x: LABEL_COL_X + CELL_PAD, y: centerY(2), size: 9, font: ctx.fontBold, color: TEXT_DARK });
   const totalStr = formatCurrency(data.total);
   page.drawText(totalStr, {
     x: SUB_COL_X + COL_SUB - CELL_PAD - ctx.fontBold.widthOfTextAtSize(totalStr, 9),
@@ -780,6 +784,7 @@ function drawTermsPage(page: PDFPage, ctx: PdfCtx, termsText?: string | null): v
 // ============================================================================
 
 export async function renderQuotationPdf(data: QuoteData): Promise<Uint8Array> {
+  const currencyLabel = data.currency_label ?? "AUD";
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A4.width, A4.height]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -802,8 +807,8 @@ export async function renderQuotationPdf(data: QuoteData): Promise<Uint8Array> {
 
   const metaBottom = drawMeta(page, ctx, data);
   const tableTop = drawCustomer(page, ctx, data, metaBottom);
-  const { lastPage, lastRowY } = drawItemsTable(page, ctx, data, tableTop, drawTmpl);
-  drawTotalsAndNotes(lastPage, ctx, data, lastRowY);
+  const { lastPage, lastRowY } = drawItemsTable(page, ctx, data, tableTop, drawTmpl, currencyLabel);
+  drawTotalsAndNotes(lastPage, ctx, data, lastRowY, currencyLabel);
 
   // Terms & Conditions – always on a new last page
   const termsPage = pdfDoc.addPage([A4.width, A4.height]);

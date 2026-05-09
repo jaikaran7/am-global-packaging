@@ -6,6 +6,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   description: z.string().optional(),
+  product_line: z.enum(["boxes", "papers"]).optional(),
 });
 
 export async function PATCH(
@@ -25,6 +26,7 @@ export async function PATCH(
     if (parsed.data.name != null) update.name = parsed.data.name;
     if (parsed.data.slug != null) update.slug = parsed.data.slug;
     if (parsed.data.description !== undefined) update.description = parsed.data.description;
+    if (parsed.data.product_line != null) update.product_line = parsed.data.product_line;
 
     const { data, error } = await supabase
       .from("categories")

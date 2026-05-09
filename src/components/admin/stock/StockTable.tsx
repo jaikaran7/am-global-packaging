@@ -14,6 +14,7 @@ import StockStatusBadge from "./StockStatusBadge";
 import { SearchableSelect } from "@/components/ui/select";
 import StockAdjustModal from "./StockAdjustModal";
 import StockDetailDrawer from "./StockDetailDrawer";
+import { adminCategoriesQueryKey, fetchAdminCategories } from "@/lib/admin/categories-api";
 
 type StockItem = {
   id: string;
@@ -78,12 +79,10 @@ export default function StockTable({ statusFilter }: StockTableProps) {
   });
 
   const { data: categories } = useQuery<Category[]>({
-    queryKey: ["admin-categories"],
+    queryKey: adminCategoriesQueryKey(activeProductLine),
     queryFn: async () => {
-      const res = await fetch("/api/admin/categories");
-      if (!res.ok) throw new Error("Failed");
-      const d = await res.json();
-      return Array.isArray(d) ? d : d.data ?? [];
+      const rows = await fetchAdminCategories(activeProductLine);
+      return rows.map((c) => ({ id: c.id, name: c.name }));
     },
   });
 

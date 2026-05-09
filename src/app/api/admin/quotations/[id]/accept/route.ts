@@ -39,6 +39,9 @@ export async function PATCH(
       : `Converted from quote ${quote.quote_number} (v${quoteVersion})`;
 
     // Order created as Draft (admin finalizes then moves to Confirmed; stock deducts only on Shipped)
+    const productLine =
+      (quote as { product_line?: string }).product_line === "papers" ? "papers" : "boxes";
+
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert([
@@ -49,6 +52,7 @@ export async function PATCH(
           subtotal: quote.subtotal,
           tax: quote.tax,
           total: quote.total,
+          product_line: productLine,
           quotation_id: quote.id,
           source_quote_id: quote.id,
           source_quote_version: quoteVersion,

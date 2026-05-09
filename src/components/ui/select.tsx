@@ -246,6 +246,8 @@ type SearchableSelectProps = {
   className?: string
   buttonClassName?: string
   listClassName?: string
+  /** `wrap`: multiline trigger + list rows show full labels (order/quote line items). */
+  buttonTextMode?: "truncate" | "wrap"
 }
 
 type SearchableSelectBodyProps = {
@@ -265,6 +267,7 @@ type SearchableSelectBodyProps = {
   buttonClassName?: string
   listClassName?: string
   onChange: (value: string) => void
+  buttonTextMode: "truncate" | "wrap"
 }
 
 function SearchableSelectBody({
@@ -284,9 +287,18 @@ function SearchableSelectBody({
   buttonClassName,
   listClassName,
   onChange,
+  buttonTextMode,
 }: SearchableSelectBodyProps) {
+  const multiline = buttonTextMode === "wrap"
   const openRef = React.useRef(open)
-  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = React.useState<{
+    left: number
+    width: number
+    top: number
+    maxPanelHeight: number
+    listMaxHeight: number
+    translateY: number
+  }>({ left: 0, width: 200, top: 0, maxPanelHeight: 320, listMaxHeight: 264, translateY: 0 })
 
   React.useEffect(() => {
     openRef.current = open
@@ -294,15 +306,41 @@ function SearchableSelectBody({
 
   React.useLayoutEffect(() => {
     if (open && buttonRef.current && typeof document !== "undefined") {
+      const GAP = 8
+      const MIN_EDGE = 8
+      const PANEL_CAP = 320
+      const SEARCH_BLOCK = 56
+
       const updatePosition = () => {
-        if (buttonRef.current) {
-          const rect = buttonRef.current.getBoundingClientRect()
-          setDropdownPosition({
-            top: rect.bottom + 8,
-            left: rect.left,
-            width: Math.max(rect.width, 200),
-          })
-        }
+        if (!buttonRef.current) return
+        const rect = buttonRef.current.getBoundingClientRect()
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+
+        let width = Math.max(rect.width, multiline ? 280 : 200)
+        let left = rect.left
+        if (left + width > vw - MIN_EDGE) left = vw - width - MIN_EDGE
+        if (left < MIN_EDGE) left = MIN_EDGE
+
+        /** Always anchor below the trigger; shift up with translateY so options stay on-screen (overlaps UI above). */
+        const top = rect.bottom + GAP
+        let maxPanelHeight = PANEL_CAP
+        let translateY = Math.min(0, vh - MIN_EDGE - (top + maxPanelHeight))
+        translateY = Math.max(translateY, MIN_EDGE - top)
+
+        const available = vh - MIN_EDGE - (top + translateY)
+        maxPanelHeight = Math.min(PANEL_CAP, Math.max(0, available))
+
+        const listMaxHeight = Math.max(0, maxPanelHeight - SEARCH_BLOCK)
+
+        setDropdownPosition({
+          left,
+          width,
+          top,
+          maxPanelHeight,
+          listMaxHeight,
+          translateY,
+        })
       }
       updatePosition()
       window.addEventListener("scroll", updatePosition, true)
@@ -312,7 +350,7 @@ function SearchableSelectBody({
         window.removeEventListener("resize", updatePosition)
       }
     }
-  }, [open, buttonRef])
+  }, [open, buttonRef, multiline])
 
   useDropdownManager(open, () => {
     if (openRef.current) onCloseRequest()
@@ -323,23 +361,25 @@ function SearchableSelectBody({
       show={open}
       as={React.Fragment}
       enter="transition duration-150 ease-out"
-      enterFrom="opacity-0 scale-95"
-      enterTo="opacity-100 scale-100"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
       leave="transition duration-150 ease-in"
-      leaveFrom="opacity-100 scale-100"
-      leaveTo="opacity-0 scale-95"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
     >
       <Combobox.Options
         static
         modal={false}
         className={cn(
-          "fixed z-[9999] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden origin-top transition duration-150 ease-out",
+          "fixed z-[20000] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden pointer-events-auto transition duration-150 ease-out",
           listClassName
         )}
         style={{
-          top: dropdownPosition.top,
           left: dropdownPosition.left,
           width: dropdownPosition.width || 200,
+          top: dropdownPosition.top,
+          maxHeight: dropdownPosition.maxPanelHeight || 320,
+          transform: dropdownPosition.translateY ? `translateY(${dropdownPosition.translateY}px)` : undefined,
         }}
       >
         <div className="p-2 border-b border-slate-100">
@@ -350,7 +390,10 @@ function SearchableSelectBody({
             placeholder={searchPlaceholder}
           />
         </div>
-        <div className="max-h-56 overflow-y-auto">
+        <div
+          className="overflow-y-auto overflow-x-hidden overscroll-contain"
+          style={{ maxHeight: dropdownPosition.listMaxHeight }}
+        >
           {filtered.length === 0 && (
             <div className="p-3 text-center text-xs text-slate-400">No results</div>
           )}
@@ -361,7 +404,8 @@ function SearchableSelectBody({
               disabled={opt.disabled}
               className={({ active, selected: isSelected }) =>
                 cn(
-                  "px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors",
+                  "px-3 py-2 text-sm cursor-pointer flex gap-2 transition-colors",
+                  multiline ? "items-start text-left" : "items-center justify-between",
                   active && "bg-slate-100 text-slate-900",
                   isSelected && "bg-slate-100 text-slate-900 font-medium"
                 )
@@ -369,8 +413,19 @@ function SearchableSelectBody({
             >
               {({ selected: isSelected }) => (
                 <>
-                  <span className="truncate">{opt.label}</span>
-                  {isSelected && <CheckIcon className="w-4 h-4 text-[#ff7a2d] shrink-0" />}
+                  <span
+                    className={cn(
+                      "min-w-0 text-left",
+                      multiline ? "flex-1 break-words whitespace-normal" : "truncate flex-1"
+                    )}
+                  >
+                    {opt.label}
+                  </span>
+                  {isSelected && (
+                    <CheckIcon
+                      className={cn("w-4 h-4 text-[#ff7a2d] shrink-0", multiline && "mt-0.5")}
+                    />
+                  )}
                 </>
               )}
             </Combobox.Option>
@@ -380,21 +435,39 @@ function SearchableSelectBody({
     </Transition>
   )
 
+  const iconY = multiline ? "top-3" : "top-1/2 -translate-y-1/2"
+
   return (
-    <div className={cn("relative inline-block w-full overflow-visible", className)}>
+    <div className={cn("relative w-full min-w-0 overflow-visible", className)}>
       <Combobox.Button
         ref={buttonRef}
         className={cn(
-          "admin-btn-secondary w-full py-2 px-3 rounded-xl text-sm flex items-center justify-between gap-2",
+          "admin-btn-secondary w-full min-w-0 rounded-xl text-sm flex text-left",
+          multiline ? "items-start py-2 pl-3" : "items-center py-2 px-3",
           disabled && "opacity-60 cursor-not-allowed",
-          buttonClassName
+          buttonClassName,
+          "pr-14"
         )}
       >
-        <span className={cn("truncate", !selected && "text-[#9aa6b0]")}>
+        <span
+          className={cn(
+            "min-w-0 flex-1",
+            multiline
+              ? "break-words whitespace-normal [overflow-wrap:anywhere]"
+              : "truncate",
+            !selected && "text-[#9aa6b0]"
+          )}
+        >
           {selected?.label ?? placeholder}
         </span>
       </Combobox.Button>
-      {allowClear && value ? (
+      <ChevronDownIcon
+        className={cn(
+          "pointer-events-none absolute right-3 z-[1] h-4 w-4 text-[#9aa6b0]",
+          iconY
+        )}
+      />
+      {allowClear && value && !disabled ? (
         <button
           type="button"
           onClick={(e) => {
@@ -403,13 +476,15 @@ function SearchableSelectBody({
             onChange("")
             setQuery("")
           }}
-          className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-white/70"
+          className={cn(
+            "absolute right-9 z-[2] rounded-md p-0.5 text-[#9aa6b0] hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a2d]/40",
+            iconY
+          )}
           aria-label="Clear selection"
         >
-          <XMarkIcon className="w-4 h-4 text-[#9aa6b0]" />
+          <XMarkIcon className="h-4 w-4" />
         </button>
       ) : null}
-      <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9aa6b0] pointer-events-none" />
       {typeof document !== "undefined"
         ? createPortal(dropdownContent, document.body)
         : null}
@@ -428,6 +503,7 @@ function SearchableSelect({
   className,
   buttonClassName,
   listClassName,
+  buttonTextMode = "truncate",
 }: Readonly<SearchableSelectProps>) {
   const [query, setQuery] = React.useState("")
   const buttonRef = React.useRef<HTMLButtonElement>(null)
@@ -462,6 +538,7 @@ function SearchableSelect({
           buttonClassName={buttonClassName}
           listClassName={listClassName}
           onChange={onChange}
+          buttonTextMode={buttonTextMode}
         />
       )}
     </Combobox>

@@ -54,6 +54,7 @@ export async function POST(
           subtotal: order.subtotal,
           tax: order.tax ?? 0,
           total: order.total,
+          product_line: (order as { product_line?: string }).product_line ?? "boxes",
           quotation_id: order.quotation_id ?? null,
           source_quote_id: order.source_quote_id ?? null,
           source_quote_version: order.source_quote_version ?? null,

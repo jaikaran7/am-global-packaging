@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { quotationSchema } from "@/lib/schemas/quotation";
-import { DEFAULT_QUOTE_TERMS } from "@/lib/quotation-terms";
+import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
 
 export async function GET(req: Request) {
   try {
@@ -86,7 +86,9 @@ export async function POST(req: Request) {
     }
 
     const gstPercent = parsed.data.gst_percent ?? 10;
-    const termsText = parsed.data.terms_text?.trim() || DEFAULT_QUOTE_TERMS;
+    const pl = parsed.data.product_line ?? "boxes";
+    const defaultTerms = pl === "papers" ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS;
+    const termsText = parsed.data.terms_text?.trim() || defaultTerms;
 
     const { data: quote, error: quoteErr } = await supabase
       .from("quotations")

@@ -12,6 +12,7 @@ import CustomerSelector from "./CustomerSelector";
 import OrderItemRow from "./OrderItemRow";
 import OrderStatusBadge from "./OrderStatusBadge";
 import OrderStatusTimeline from "./OrderStatusTimeline";
+import InvoiceBuilderModal from "@/components/admin/invoices/InvoiceBuilderModal";
 import {
   ORDER_STATUS_CONFIG,
   VALID_TRANSITIONS,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/schemas/order";
 import { isAustralianPhone } from "@/lib/validation/phone";
 import { toast } from "sonner";
+import { useProductLine } from "@/contexts/ProductLineContext";
 
 type Product = { id: string; title: string; slug: string };
 type OrderItem = {
@@ -49,6 +51,8 @@ interface OrderData {
   shipped_date: string | null;
   delivered_date: string | null;
   created_at: string;
+  invoice_status?: string | null;
+  product_line?: string | null;
   items: Array<{
     id: string;
     product_id: string;
@@ -68,6 +72,7 @@ interface OrderEditorFormProps {
 export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activeProductLine } = useProductLine();
   const isEdit = !!orderId;
 
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -75,7 +80,8 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
     { product_id: "", variant_id: "", quantity: 1, unit_price: 0 },
   ]);
   const [notes, setNotes] = useState("");
-  const [tax, setTax] = useState(0);
+  /** GST rate applied to subtotal (default 10%). API still receives tax as a dollar amount. */
+  const [gstPercent, setGstPercent] = useState(10);
   const [shippingProvider, setShippingProvider] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const [shippedDate, setShippedDate] = useState("");
@@ -85,6 +91,7 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   const [saving, setSaving] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   const { data: order } = useQuery<OrderData>({
     queryKey: ["admin-order", orderId],
@@ -97,9 +104,9 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   });
 
   const { data: products } = useQuery<Product[]>({
-    queryKey: ["admin-products-list"],
+    queryKey: ["admin-products-list", activeProductLine],
     queryFn: async () => {
-      const res = await fetch("/api/admin/products?limit=200");
+      const res = await fetch(`/api/admin/products?limit=200&product_line=${activeProductLine}`);
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
       return (json.items ?? []).map((p: Record<string, unknown>) => ({
@@ -114,7 +121,9 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
     if (!order) return;
     setCustomerId(order.customer_id);
     setNotes(order.notes ?? "");
-    setTax(order.tax ?? 0);
+    const st = Number(order.subtotal ?? 0);
+    const savedTax = Number(order.tax ?? 0);
+    setGstPercent(st > 0 ? Math.round((savedTax / st) * 10000) / 100 : 10);
     setShippingProvider(order.shipping_provider ?? "");
     setTrackingId(order.tracking_id ?? "");
     setShippedDate(order.shipped_date ?? "");
@@ -134,7 +143,8 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   }, [order]);
 
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
-  const total = subtotal + tax;
+  const taxAmount = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
+  const total = subtotal + taxAmount;
   const isReadOnly = ["confirmed", "in_production", "shipped", "delivered"].includes(
     order?.status ?? ""
   );
@@ -191,7 +201,8 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
       const payload: Record<string, unknown> = {
         items: normalizedItems,
         notes: notes ?? "",
-        tax,
+        tax: taxAmount,
+        product_line: activeProductLine,
         shipping_provider: shippingProvider ?? "",
         tracking_id: trackingId ?? "",
         shipped_date: shippedDate ?? "",
@@ -318,6 +329,9 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
     });
   const showShipWarning = currentStatus === "in_production" && nextStatuses.includes("shipped") && !canShip;
 
+  const canGenerateInvoice =
+    order && !["cancelled", "obsolete"].includes(order.status);
+
   return (
     <div className="w-full max-w-none space-y-6">
       {/* Header */}
@@ -333,8 +347,26 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
             <h1 className="text-2xl font-semibold text-[#2b2f33] tracking-tight">
               {isEdit ? `Order ${order?.order_number ?? ""}` : "New Order"}
             </h1>
+            {!isEdit && (
+              <p className="text-xs text-[#9aa6b0] mt-1">
+                Saved under{" "}
+                <span className="font-semibold text-[#2b2f33]">
+                  {activeProductLine === "papers" ? "Papers" : "Corrugated boxes"}
+                </span>{" "}
+                (sidebar selector).
+              </p>
+            )}
             {isEdit && order && (
               <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span
+                  className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${
+                    order.product_line === "papers"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-amber-50 text-amber-900 border border-amber-200"
+                  }`}
+                >
+                  {order.product_line === "papers" ? "Papers" : "Corrugated boxes"}
+                </span>
                 <OrderStatusBadge status={order.status} size="md" />
                 {(order.source_quote_id || order.quotation_id) && (
                   <a
@@ -354,15 +386,27 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
             )}
           </div>
         </div>
-        {!isReadOnly && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="admin-btn-primary px-6 py-2.5 text-sm font-medium"
-          >
-            {saving ? "Saving..." : isEdit ? "Update Order" : "Create Order"}
-          </button>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+          {isEdit && order && canGenerateInvoice && (
+            <button
+              type="button"
+              onClick={() => setInvoiceOpen(true)}
+              className="admin-btn-primary px-5 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap"
+            >
+              Create / edit invoice
+            </button>
+          )}
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="admin-btn-primary px-6 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap"
+            >
+              {saving ? "Saving..." : isEdit ? "Update Order" : "Create Order"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Status Timeline */}
@@ -429,8 +473,8 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
       <div className="grid grid-cols-3 gap-6">
         {/* Main content */}
         <div className="col-span-2 space-y-6">
-          {/* Customer */}
-          <div className="glass rounded-2xl p-5 space-y-3">
+          {/* Customer — higher z-index so dropdown (absolute) stacks above following .glass cards */}
+          <div className="glass rounded-2xl p-5 space-y-3 relative z-30 overflow-visible">
             <h2 className="text-sm font-semibold text-[#2b2f33]">Customer</h2>
             {showNewCustomer ? (
               <div className="space-y-3">
@@ -505,7 +549,7 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
           </div>
 
           {/* Line items */}
-          <div className="glass rounded-2xl p-5 space-y-3">
+          <div className="glass rounded-2xl p-5 space-y-3 relative z-10">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-[#2b2f33]">
                 Order Items ({items.length})
@@ -588,16 +632,29 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
                 <span className="font-medium text-[#2b2f33]">${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm items-center gap-2">
-                <span className="text-[#6b7280]">Tax</span>
+                <span className="text-[#6b7280]">GST %</span>
                 <input
                   type="number"
                   min={0}
-                  step={0.01}
-                  value={tax}
-                  onChange={(e) => setTax(Number(e.target.value))}
+                  max={100}
+                  step={0.1}
+                  value={gstPercent}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setGstPercent(0);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (!Number.isNaN(n)) setGstPercent(Math.min(100, Math.max(0, n)));
+                  }}
                   disabled={isReadOnly}
-                  className="admin-btn-secondary w-24 py-1 px-2 rounded-lg text-sm text-right"
+                  className="admin-btn-secondary w-20 py-1 px-2 rounded-lg text-sm text-right"
                 />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#6b7280]">GST amount</span>
+                <span className="font-medium text-[#2b2f33]">${taxAmount.toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-100/50 pt-2 flex justify-between">
                 <span className="font-semibold text-[#2b2f33]">Total</span>
@@ -630,6 +687,10 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
           )}
         </div>
       </div>
+
+      {isEdit && orderId && (
+        <InvoiceBuilderModal orderId={orderId} open={invoiceOpen} onClose={() => setInvoiceOpen(false)} />
+      )}
     </div>
   );
 }

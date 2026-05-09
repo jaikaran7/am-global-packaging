@@ -6,15 +6,25 @@ const categorySchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
   description: z.string().optional(),
+  product_line: z.enum(["boxes", "papers"]).optional(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const productLine = searchParams.get("product_line");
+
     const supabase = createAdminClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from("categories")
-      .select("id, name, slug, description")
+      .select("id, name, slug, description, product_line")
       .order("name");
+
+    if (productLine === "boxes" || productLine === "papers") {
+      query = query.eq("product_line", productLine);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[admin/categories] list error:", error);
@@ -37,13 +47,17 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient();
+    const line = parsed.data.product_line ?? "boxes";
     const { data, error } = await supabase
       .from("categories")
-      .insert([{
-        name: parsed.data.name,
-        slug: parsed.data.slug,
-        description: parsed.data.description ?? null,
-      }])
+      .insert([
+        {
+          name: parsed.data.name,
+          slug: parsed.data.slug,
+          description: parsed.data.description ?? null,
+          product_line: line,
+        },
+      ])
       .select()
       .single();
 

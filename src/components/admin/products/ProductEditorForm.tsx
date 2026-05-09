@@ -10,6 +10,7 @@ import VariantCard from "./VariantCard";
 import VariantEditorForm from "./VariantEditorForm";
 import ImageUploader from "./ImageUploader";
 import { SearchableSelect } from "@/components/ui/select";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 
 const productEditorSchema = z.object({
   title: z.string().min(2, "Title required"),
@@ -80,6 +81,7 @@ export default function ProductEditorForm({
 }: ProductEditorFormProps) {
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const { confirm } = useAppConfirm();
 
   const form = useForm<ProductEditorValues>({
     resolver: zodResolver(productEditorSchema),
@@ -237,7 +239,13 @@ export default function ProductEditorForm({
                   setShowVariantForm(true);
                 }}
                 onDelete={async () => {
-                  if (!confirm(`Delete variant "${v.name}"?`)) return;
+                  const ok = await confirm({
+                    title: "Delete variant?",
+                    description: `Remove "${v.name}"? Stock and images for this variant may be affected.`,
+                    confirmLabel: "Delete",
+                    variant: "danger",
+                  });
+                  if (!ok) return;
                   await fetch(`/api/admin/variants/${v.id}`, { method: "DELETE" });
                   refetchProduct?.();
                 }}

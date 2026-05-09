@@ -3,6 +3,8 @@
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ProductEditorForm from "@/components/admin/products/ProductEditorForm";
+import { useProductLine } from "@/contexts/ProductLineContext";
+import { adminCategoriesQueryKey, fetchAdminCategories } from "@/lib/admin/categories-api";
 import type { ProductEditorValues } from "@/components/admin/products/ProductEditorForm";
 
 type Variant = {
@@ -48,15 +50,10 @@ async function fetchProduct(id: string): Promise<ProductWithRelations> {
   return res.json();
 }
 
-async function fetchCategories(): Promise<{ id: string; name: string; slug: string }[]> {
-  const res = await fetch("/api/admin/categories");
-  if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
-}
-
 export default function EditProductPage() {
   const params = useParams();
   const queryClient = useQueryClient();
+  const { activeProductLine } = useProductLine();
   const id = typeof params.id === "string" ? params.id : "";
 
   const { data: product, isLoading, error, refetch } = useQuery({
@@ -66,8 +63,8 @@ export default function EditProductPage() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: fetchCategories,
+    queryKey: adminCategoriesQueryKey(activeProductLine),
+    queryFn: () => fetchAdminCategories(activeProductLine),
   });
 
   async function saveProduct(data: ProductEditorValues): Promise<{ id: string } | undefined> {

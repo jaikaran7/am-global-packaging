@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { productSchema } from "@/lib/schemas/product";
+import { getPapersMarketingImageUrl } from "@/lib/papers-marketing-images";
 
 export async function GET(req: Request) {
   try {
@@ -9,11 +10,42 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const status = searchParams.get("status");
     const productLine = searchParams.get("product_line");
+    const paperSizeParam = searchParams.get("paper_size"); // meta.size_label — papers only (e.g. A4)
+    const gsmParam = searchParams.get("gsm");
+    const plyParam = searchParams.get("ply"); // boxes only: 3 | 5 | 7
     const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, Number.parseInt(searchParams.get("limit") ?? "20", 10)));
     const offset = (page - 1) * limit;
 
     const supabase = createAdminClient();
+
+    async function productIdsFromVariantFilter(opts: { gsm?: number; ply?: number }): Promise<string[]> {
+      let vq = supabase.from("product_variants").select("product_id");
+      if (opts.gsm != null) vq = vq.eq("gsm", opts.gsm);
+      if (opts.ply != null) vq = vq.eq("ply", opts.ply);
+      const { data: vrows } = await vq;
+      const raw = [...new Set((vrows ?? []).map((r) => r.product_id))];
+      if (raw.length === 0) return [];
+      let pq = supabase.from("products").select("id").in("id", raw);
+      if (productLine === "papers" || productLine === "boxes") {
+        pq = pq.eq("product_line", productLine) as typeof pq;
+      }
+      const { data: prows } = await pq;
+      return (prows ?? []).map((p) => p.id);
+    }
+
+    let variantRestrictedIds: string[] | null = null;
+    if (productLine === "papers" && gsmParam?.trim()) {
+      const g = Number.parseInt(gsmParam, 10);
+      if (!Number.isNaN(g)) variantRestrictedIds = await productIdsFromVariantFilter({ gsm: g });
+    } else if (productLine === "boxes" && plyParam?.trim()) {
+      const pl = Number.parseInt(plyParam, 10);
+      if (!Number.isNaN(pl)) variantRestrictedIds = await productIdsFromVariantFilter({ ply: pl });
+    }
+
+    if (variantRestrictedIds !== null && variantRestrictedIds.length === 0) {
+      return NextResponse.json({ items: [], total: 0, page, limit });
+    }
 
     let query = supabase
       .from("products")
@@ -25,6 +57,12 @@ export async function GET(req: Request) {
     if (status === "active") query = query.eq("active", true);
     if (status === "inactive") query = query.eq("active", false);
     if (productLine === "papers" || productLine === "boxes") query = query.eq("product_line", productLine);
+    if (productLine === "papers" && paperSizeParam?.trim()) {
+      query = query.eq("meta->>size_label", paperSizeParam.trim());
+    }
+    if (variantRestrictedIds !== null) {
+      query = query.in("id", variantRestrictedIds);
+    }
     if (search?.trim()) {
       query = query.or(`title.ilike.%${search.trim()}%,short_description.ilike.%${search.trim()}%`);
     }
@@ -76,12 +114,20 @@ export async function GET(req: Request) {
         ?? images[0]
         ?? null;
 
+      const category = p.category_id ? categoryMap[p.category_id] : null;
+      const meta = p.meta as Record<string, unknown> | null | undefined;
+      const primaryUrl =
+        primaryImage?.url ??
+        (p.product_line === "papers"
+          ? getPapersMarketingImageUrl(meta, category?.slug ?? null)
+          : null);
+
       return {
         ...p,
-        category: p.category_id ? categoryMap[p.category_id] : null,
+        category: category ?? null,
         variant_count,
         representative_variant,
-        primary_image_url: primaryImage?.url ?? null,
+        primary_image_url: primaryUrl,
       };
     });
 
@@ -122,6 +168,36 @@ export async function POST(req: Request) {
     if (error) {
       console.error("[admin/products] create error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (data.product_line === "papers") {
+      let categorySlug: string | null = null;
+      if (parsed.data.category_id) {
+        const { data: catRow } = await supabase
+          .from("categories")
+          .select("slug")
+          .eq("id", parsed.data.category_id)
+          .maybeSingle();
+        categorySlug = catRow?.slug ?? null;
+      }
+      const url = getPapersMarketingImageUrl(
+        (parsed.data.meta ?? data.meta) as Record<string, unknown> | null | undefined,
+        categorySlug
+      );
+      const { error: imgErr } = await supabase.from("product_images").insert([
+        {
+          product_id: data.id,
+          variant_id: null,
+          storage_path: `static/papers/${data.id}`,
+          url,
+          alt: data.title,
+          is_primary: true,
+          sort_order: 0,
+        },
+      ]);
+      if (imgErr) {
+        console.error("[admin/products] default paper image insert:", imgErr);
+      }
     }
 
     return NextResponse.json(data);

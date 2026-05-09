@@ -13,6 +13,7 @@ import {
 import QuotationStatusBadge from "./QuotationStatusBadge";
 import QuotationPDFButton from "./QuotationPDFButton";
 import { useProductLine } from "@/contexts/ProductLineContext";
+import { useAppConfirm } from "@/contexts/AppConfirmContext";
 
 type QuoteRow = {
   id: string;
@@ -59,6 +60,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
 export default function QuotationList() {
   const router = useRouter();
   const { activeProductLine } = useProductLine();
+  const { confirm, showAlert } = useAppConfirm();
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -103,13 +105,22 @@ export default function QuotationList() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm("Delete this draft quote?")) return;
+      const ok = await confirm({
+        title: "Delete draft quote?",
+        description: "This draft quotation will be removed permanently.",
+        confirmLabel: "Delete",
+        variant: "danger",
+      });
+      if (!ok) return;
       setDeleting(id);
       try {
         const res = await fetch(`/api/admin/quotations/${id}`, { method: "DELETE" });
         if (!res.ok) {
           const d = await res.json();
-          alert(d.error ?? "Failed to delete");
+          await showAlert({
+            title: "Could not delete",
+            description: typeof d?.error === "string" ? d.error : "Failed to delete quotation.",
+          });
           return;
         }
         refetch();
@@ -117,7 +128,7 @@ export default function QuotationList() {
         setDeleting(null);
       }
     },
-    [refetch]
+    [refetch, confirm, showAlert]
   );
 
   return (

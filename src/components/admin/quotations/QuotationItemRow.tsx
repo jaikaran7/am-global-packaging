@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { TrashIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { SearchableSelect } from "@/components/ui/select";
+import { formatVariantSelectLabel } from "@/lib/admin/order-item-variant-label";
 
 type Product = { id: string; title: string };
 type Variant = {
@@ -12,6 +13,10 @@ type Variant = {
   price: number;
   stock: number;
   reserved_stock: number;
+  size_label?: string | null;
+  gsm?: number | null;
+  ply?: number | null;
+  dimensions?: unknown;
 };
 
 interface QuotationItemRowProps {
@@ -79,7 +84,7 @@ export default function QuotationItemRow({
   const variantOptions = [
     ...variants.map((v) => ({
       value: v.id,
-      label: `${v.name}${v.sku ? ` (${v.sku})` : ""}`,
+      label: formatVariantSelectLabel(v),
     })),
     ...(!isCustom ? [{ value: "custom", label: "➕ Custom" }] : []),
   ];
@@ -87,12 +92,12 @@ export default function QuotationItemRow({
   const isCustomVariant = !isCustom && item.variant_id === "custom";
   const showCustomInputs = isCustom || isCustomVariant;
 
-  const compactSelectClass = "text-xs py-1.5 px-2.5 rounded-lg min-h-8 h-8";
+  const compactSelectClass = "text-xs py-2 px-2.5 rounded-lg min-h-9";
   const compactInputClass = "admin-btn-secondary w-full py-1.5 px-2 rounded-lg text-xs min-h-8";
 
   return (
     <div className="glass rounded-xl p-3 space-y-3">
-      <div className="grid grid-cols-12 gap-2 items-end min-w-0">
+      <div className="grid grid-cols-12 gap-2 items-start min-w-0">
         <div className="col-span-12 sm:col-span-3 min-w-0">
           <label htmlFor={`product-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Product
@@ -114,6 +119,7 @@ export default function QuotationItemRow({
               placeholder="Select product..."
               disabled={disabled}
               buttonClassName={compactSelectClass}
+              buttonTextMode="wrap"
             />
           </div>
         </div>
@@ -122,7 +128,7 @@ export default function QuotationItemRow({
           <label htmlFor={`variant-${index}`} className="block text-xs font-medium text-[#9aa6b0] mb-1">
             Variant
           </label>
-          <div className="min-w-0 [&_[data-slot=trigger]]:min-w-0 [&_[data-slot=trigger]]:truncate">
+          <div className="min-w-0">
             <SearchableSelect
               value={item.variant_id}
               onChange={(value) => {
@@ -135,6 +141,7 @@ export default function QuotationItemRow({
               placeholder={loadingVariants ? "Loading..." : isCustom ? "Custom product" : "Select variant..."}
               disabled={disabled || loadingVariants || !item.product_id || isCustom}
               buttonClassName={compactSelectClass}
+              buttonTextMode="wrap"
             />
           </div>
         </div>

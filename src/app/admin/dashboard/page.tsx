@@ -1,14 +1,9 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from './DashboardClient'
 
+/** Session is validated in middleware; do not call `getUser()` again here (avoids double refresh token use). */
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/admin/login')
-  }
 
   const [{ count }, { data: recentEnquiries }] = await Promise.all([
     supabase.from('enquiries').select('*', { count: 'exact', head: true }).eq('status', 'new'),

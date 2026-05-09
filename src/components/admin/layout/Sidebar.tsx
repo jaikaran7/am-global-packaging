@@ -24,13 +24,23 @@ type NavItem = {
   Icon: React.FC<React.SVGProps<SVGSVGElement>>
 }
 
-const navItems: NavItem[] = [
+const boxesNavItems: NavItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { href: '/admin/enquiries', label: 'Enquiries', Icon: InboxIcon },
   { href: '/admin/products', label: 'Products', Icon: CubeIcon },
   { href: '/admin/categories', label: 'Categories', Icon: Squares2X2Icon },
   { href: '/admin/orders', label: 'Orders', Icon: ArchiveBoxIcon },
   { href: '/admin/stock', label: 'Stock', Icon: ChartBarIcon },
+  { href: '/admin/quotations', label: 'Quotations', Icon: DocumentTextIcon },
+]
+
+const papersNavItems: NavItem[] = [
+  { href: '/admin/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { href: '/admin/enquiries', label: 'Paper Enquiries', Icon: InboxIcon },
+  { href: '/admin/products', label: 'Paper Products', Icon: CubeIcon },
+  { href: '/admin/categories', label: 'Categories', Icon: Squares2X2Icon },
+  { href: '/admin/orders', label: 'Paper Orders', Icon: ArchiveBoxIcon },
+  { href: '/admin/stock', label: 'Paper Stock', Icon: ChartBarIcon },
   { href: '/admin/quotations', label: 'Quotations', Icon: DocumentTextIcon },
 ]
 
@@ -54,6 +64,8 @@ export default function Sidebar({ collapsed, setCollapsed, hydrated = true, widt
   const pathname = usePathname()
   const width = widthProp ?? (collapsed ? 76 : 240)
   const { activeProductLine, setActiveProductLine } = useProductLine()
+
+  const navItems = activeProductLine === 'papers' ? papersNavItems : boxesNavItems
 
   const isActive = (href: string) => {
     if (href === '/admin/dashboard') return pathname === '/admin/dashboard' || pathname === '/admin'

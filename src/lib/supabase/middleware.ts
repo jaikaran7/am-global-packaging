@@ -25,9 +25,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Do not run code between createServerClient and getClaims - required for session refresh
-  const { data } = await supabase.auth.getClaims();
-  const isAuthenticated = !!data?.claims;
+  // Keep this minimal: same auth check as server.ts — avoids mixing getClaims + getUser refresh races.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
   const isLoginPage = request.nextUrl.pathname === "/admin/login";

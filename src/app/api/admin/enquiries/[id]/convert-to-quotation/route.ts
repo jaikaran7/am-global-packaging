@@ -75,6 +75,9 @@ export async function POST(
       customerId = newCustomer.id;
     }
 
+    const productLine =
+      (enquiry as { product_line?: string }).product_line === "papers" ? "papers" : "boxes";
+
     const { data: quote, error: quoteErr } = await supabase
       .from("quotations")
       .insert({
@@ -82,6 +85,7 @@ export async function POST(
         status: "draft",
         source_enquiry_id: enquiryId,
         notes: enquiry.project_details ?? null,
+        product_line: productLine,
       })
       .select("id")
       .single();

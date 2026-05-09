@@ -35,4 +35,46 @@ export type QuoteData = {
   total: number;
   customer: QuoteCustomer;
   items: QuoteItem[];
+  /** Table/PDF column label, e.g. USD for papers, AUD for boxes */
+  currency_label?: string;
+};
+
+export type InvoiceLinePdf = {
+  description: string;
+  unit_price: number;
+  quantity: number;
+  line_total: number;
+};
+
+export type InvoicePdfData = {
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  gst_percent: number;
+  subtotal: number;
+  discount_amount: number;
+  taxable_base: number;
+  tax: number;
+  total: number;
+  terms_text: string | null;
+  company: {
+    name: string;
+    tagline: string | null;
+    abn: string | null;
+    bank_name: string | null;
+    bsb: string | null;
+    account_number: string | null;
+    address_line: string | null;
+    phone: string | null;
+    email: string | null;
+    gst_note: string | null;
+  };
+  bill_to: {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+  };
+  lines: InvoiceLinePdf[];
+  currency_label: string;
 };

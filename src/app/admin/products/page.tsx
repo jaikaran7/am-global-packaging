@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useProductLine } from "@/contexts/ProductLineContext";
@@ -19,6 +19,7 @@ import {
 
 import ProductList from "@/components/admin/products/ProductList";
 import { SearchableSelect } from "@/components/ui/select";
+import { adminCategoriesQueryKey, fetchAdminCategories } from "@/lib/admin/categories-api";
 
 type Stats = {
   totalProducts: number;
@@ -33,13 +34,6 @@ async function fetchStats(productLine: string): Promise<Stats> {
   return res.json();
 }
 
-type CategoryOption = { id: string; name: string; slug: string };
-async function fetchCategories(): Promise<CategoryOption[]> {
-  const res = await fetch("/api/admin/categories");
-  if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
-}
-
 const kpiPills = [
   { key: "totalProducts" as const, label: "Total Products", icon: CubeIcon, color: "text-amber-700", bg: "bg-amber-50" },
   { key: "activeProducts" as const, label: "Active Products", icon: CheckCircleIcon, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -51,6 +45,8 @@ export default function AdminProductsPage() {
   const { activeProductLine } = useProductLine();
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [ply, setPly] = useState<number | null>(null);
+  const [paperSize, setPaperSize] = useState<string | null>(null);
+  const [gsm, setGsm] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page] = useState(1);
@@ -60,12 +56,21 @@ export default function AdminProductsPage() {
     queryKey: ["admin-products-stats", activeProductLine],
     queryFn: () => fetchStats(activeProductLine),
   });
-  const { data: categories = [] } = useQuery({ queryKey: ["admin-categories"], queryFn: fetchCategories });
+  const { data: categories = [] } = useQuery({
+    queryKey: adminCategoriesQueryKey(activeProductLine),
+    queryFn: () => fetchAdminCategories(activeProductLine),
+  });
 
   const categoryOptions = [
     { value: "", label: "All Categories" },
     ...categories.map((c) => ({ value: c.id, label: c.name })),
   ];
+
+  useEffect(() => {
+    setPly(null);
+    setPaperSize(null);
+    setGsm(null);
+  }, [activeProductLine]);
 
   return (
     <div className="w-full max-w-full space-y-4">
@@ -183,12 +188,16 @@ export default function AdminProductsPage() {
       <ProductList
         categoryId={categoryId}
         ply={ply}
+        paperSize={paperSize}
+        gsm={gsm}
         search={search}
         status={status}
         page={page}
         viewMode={viewMode}
         onCategoryChange={setCategoryId}
         onPlyChange={setPly}
+        onPaperSizeChange={setPaperSize}
+        onGsmChange={setGsm}
       />
     </div>
   );

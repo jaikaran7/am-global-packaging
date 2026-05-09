@@ -34,7 +34,7 @@ export type AdminProductItem = {
 
 interface ProductCardProps {
   product: AdminProductItem;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
 }
 
 function formatPrice(n: number) {
@@ -111,7 +111,7 @@ export default function ProductCard({ product, onDelete }: Readonly<ProductCardP
           </Link>
           <button
             type="button"
-            onClick={() => onDelete(product.id)}
+            onClick={() => void onDelete(product.id)}
             className="px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center gap-2"
           >
             <TrashIcon className="w-4 h-4" /> Delete

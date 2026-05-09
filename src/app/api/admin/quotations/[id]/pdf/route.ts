@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { renderQuotationPdf } from "@/lib/pdf";
-import { DEFAULT_QUOTE_TERMS } from "@/lib/quotation-terms";
+import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
 
 export async function GET(
   _req: Request,
@@ -26,17 +26,21 @@ export async function GET(
       .select("*, product:products(id,title), variant:product_variants(id,name,dimensions)")
       .eq("quotation_id", id);
 
+    const isPapers = quote.product_line === "papers";
     const pdfBytes = await renderQuotationPdf({
       quote_number: quote.quote_number,
       status: quote.status,
       created_at: quote.created_at,
       valid_until: quote.valid_until,
       notes: quote.notes,
-      terms_text: quote.terms_text || DEFAULT_QUOTE_TERMS,
+      terms_text:
+        quote.terms_text ||
+        (isPapers ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS),
       gst_percent: Number(quote.gst_percent ?? 10),
       subtotal: Number(quote.subtotal ?? 0),
       tax: Number(quote.tax ?? 0),
       total: Number(quote.total ?? 0),
+      currency_label: isPapers ? "USD" : "AUD",
       customer: {
         name: quote.customer?.name ?? "Customer",
         email: quote.customer?.email ?? null,
