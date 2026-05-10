@@ -31,8 +31,12 @@ export async function GET(
     const discount = Number(invoice.discount_amount ?? 0);
     const gstPct = Number(invoice.gst_percent ?? 10);
 
+    const websiteEnv = process.env.NEXT_PUBLIC_COMPANY_WEBSITE?.trim();
+    const websiteDisplay = websiteEnv?.replace(/^https?:\/\//i, "") ?? null;
+
     const pdfData: InvoicePdfData = {
       invoice_number: invoice.invoice_number,
+      reference_no: order?.order_number != null ? String(order.order_number) : null,
       invoice_date: String(invoice.invoice_date),
       due_date: String(invoice.due_date),
       gst_percent: gstPct,
@@ -53,6 +57,7 @@ export async function GET(
         phone: company.phone,
         email: company.email,
         gst_note: company.gst_note,
+        website_url: websiteDisplay,
       },
       bill_to: {
         name: invoice.bill_to_name ?? "Customer",

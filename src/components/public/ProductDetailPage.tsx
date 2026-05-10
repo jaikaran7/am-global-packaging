@@ -633,9 +633,8 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                   </div>
 
                   <Link
-                    href={`/boxes/contact?${new URLSearchParams({
-                      categoryId: product.category,
-                      productSlug: product.slug,
+                    href={`/boxes/checkout?${new URLSearchParams({
+                      slug: product.slug,
                       quantity,
                       ply: plyPreference,
                     }).toString()}`}

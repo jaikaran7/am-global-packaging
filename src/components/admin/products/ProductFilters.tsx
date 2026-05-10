@@ -4,7 +4,7 @@ import type { ProductLine } from "@/contexts/ProductLineContext";
 
 export type CategoryOption = { id: string; name: string; slug: string };
 
-/** Catalog GSM values for paper variants (USD papers line). */
+/** Catalog GSM values for paper variants (list prices stored in USD; public site shows AUD). */
 export const PAPERS_ADMIN_GSM_OPTIONS = [110, 200, 250, 270, 320, 350] as const;
 
 /** Matches `meta.size_label` on seeded paper products. */

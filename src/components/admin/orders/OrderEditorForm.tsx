@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PlusIcon,
@@ -388,13 +389,23 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
           {isEdit && order && canGenerateInvoice && (
-            <button
-              type="button"
-              onClick={() => setInvoiceOpen(true)}
-              className="admin-btn-primary px-5 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap"
-            >
-              Create / edit invoice
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setInvoiceOpen(true)}
+                className="admin-btn-primary px-5 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap"
+              >
+                Create / edit invoice
+              </button>
+              <Link
+                href={`/admin/orders/${orderId}/invoice-print`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="admin-btn-secondary px-5 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap inline-flex items-center justify-center"
+              >
+                Printable invoice
+              </Link>
+            </>
           )}
           {!isReadOnly && (
             <button

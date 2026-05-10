@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { usdToAud } from "@/lib/currency-usd-aud";
 import { renderQuotationPdf } from "@/lib/pdf";
 import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
 
@@ -27,6 +28,7 @@ export async function GET(
       .eq("quotation_id", id);
 
     const isPapers = quote.product_line === "papers";
+    const aud = (n: number) => (isPapers ? usdToAud(n) : n);
     const pdfBytes = await renderQuotationPdf({
       quote_number: quote.quote_number,
       status: quote.status,
@@ -37,10 +39,10 @@ export async function GET(
         quote.terms_text ||
         (isPapers ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS),
       gst_percent: Number(quote.gst_percent ?? 10),
-      subtotal: Number(quote.subtotal ?? 0),
-      tax: Number(quote.tax ?? 0),
-      total: Number(quote.total ?? 0),
-      currency_label: isPapers ? "USD" : "AUD",
+      subtotal: aud(Number(quote.subtotal ?? 0)),
+      tax: aud(Number(quote.tax ?? 0)),
+      total: aud(Number(quote.total ?? 0)),
+      currency_label: "AUD",
       customer: {
         name: quote.customer?.name ?? "Customer",
         email: quote.customer?.email ?? null,
@@ -56,8 +58,8 @@ export async function GET(
         description: item.description ?? item.custom_notes ?? null,
         dimensions_mm: item.variant?.dimensions ?? null,
         quantity: item.quantity,
-        unit_price: Number(item.unit_price ?? 0),
-        subtotal: Number(item.subtotal ?? 0),
+        unit_price: aud(Number(item.unit_price ?? 0)),
+        subtotal: aud(Number(item.subtotal ?? 0)),
       })),
     });
 

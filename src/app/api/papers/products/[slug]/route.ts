@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { audFromStoredVariant, displayCurrencyForStored } from "@/lib/currency-usd-aud";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,8 +39,14 @@ export async function GET(
         .eq("product_id", product.id),
     ]);
 
-    const variants = variantsRes.data ?? [];
+    const variantsRaw = variantsRes.data ?? [];
     const images = imagesRes.data ?? [];
+
+    const variants = variantsRaw.map((v) => ({
+      ...v,
+      price: audFromStoredVariant(v.price, v.currency),
+      currency: displayCurrencyForStored(v.currency),
+    }));
 
     const prices = variants.map((v) => v.price).filter(Boolean);
     const lowestPrice = prices.length ? Math.min(...prices) : 0;

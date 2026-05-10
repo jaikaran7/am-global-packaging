@@ -67,7 +67,7 @@ const CATEGORIES: { id: CategoryFilter; label: string }[] = [
 
 function formatPrice(n: number) {
   const s = n % 1 === 0 ? String(n) : n.toFixed(2);
-  return `$${s} USD`;
+  return `$${s} AUD`;
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────

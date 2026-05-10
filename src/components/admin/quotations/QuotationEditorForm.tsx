@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -145,9 +145,9 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
     quote?.status ?? ""
   );
 
-  const handleItemChange = (index: number, field: string, value: string | number) => {
+  const handleItemChange = useCallback((index: number, field: string, value: string | number) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
-  };
+  }, []);
 
   const addItem = () => {
     setItems((prev) => [...prev, { product_id: "", variant_id: "", quantity: 1, unit_price: 0 }]);
@@ -516,6 +516,7 @@ export default function QuotationEditorForm({ quoteId }: Readonly<QuotationEdito
                   index={i}
                   item={item}
                   products={products ?? []}
+                  productLine={(quote?.product_line as "papers" | "boxes" | null) ?? activeProductLine}
                   onChange={handleItemChange}
                   onRemove={removeItem}
                   disabled={isLocked}

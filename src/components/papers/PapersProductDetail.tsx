@@ -231,11 +231,11 @@ export default function PapersProductDetail({ slug }: Readonly<Props>) {
                     Price (excl. GST)
                   </span>
                   <span className="text-lg font-bold text-[#1f2421]">
-                    ${unitBase.toFixed(2)} {selectedVariant.currency || "USD"}
+                    ${unitBase.toFixed(2)} {selectedVariant.currency || "AUD"}
                   </span>
                 </div>
                 <p className="text-xs text-[#5a5f5c]">
-                  + {gstPct}% GST → <strong>${withGst.toFixed(2)}</strong> per unit (USD)
+                  + {gstPct}% GST → <strong>${withGst.toFixed(2)}</strong> per unit (AUD)
                 </p>
               </div>
             )}

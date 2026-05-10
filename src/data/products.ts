@@ -371,7 +371,7 @@ export const products: Product[] = [
     shortName: "A4 Box Type 1",
     tagline: "Compact A4 box for documents, small goods, and office shipping",
     description:
-      "A compact A4-format box ideal for documents, small goods, and everyday office shipping. Features tiered pricing for bulk orders — from $0.80 per unit at 500 units to $1.05 at 1,500+ units. The slim profile makes it perfect for lightweight shipments and cost-effective fulfillment.",
+      "A compact A4-format box ideal for documents, small goods, and everyday office shipping. Features tiered pricing for bulk orders — from $0.80 AUD per unit at 500 units to $1.05 AUD at 1,500+ units. The slim profile makes it perfect for lightweight shipments and cost-effective fulfillment.",
     dimensions: "320 × 220 × 240 mm",
     dimensionDetail: { length: 320, width: 220, height: 240 },
     images: [

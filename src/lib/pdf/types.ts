@@ -35,7 +35,7 @@ export type QuoteData = {
   total: number;
   customer: QuoteCustomer;
   items: QuoteItem[];
-  /** Table/PDF column label, e.g. USD for papers, AUD for boxes */
+  /** Table/PDF column label (catalogue PDFs use AUD for all product lines). */
   currency_label?: string;
 };
 
@@ -48,6 +48,8 @@ export type InvoiceLinePdf = {
 
 export type InvoicePdfData = {
   invoice_number: string;
+  /** Order / PO reference shown on PDF */
+  reference_no?: string | null;
   invoice_date: string;
   due_date: string;
   gst_percent: number;
@@ -68,6 +70,8 @@ export type InvoicePdfData = {
     phone: string | null;
     email: string | null;
     gst_note: string | null;
+    /** Public site hostname or URL (e.g. from NEXT_PUBLIC_COMPANY_WEBSITE) */
+    website_url?: string | null;
   };
   bill_to: {
     name: string;

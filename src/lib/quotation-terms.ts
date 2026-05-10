@@ -20,9 +20,9 @@ Trial container quotations are valid for 30 days from the date of issue and are 
 Acceptance:
 Confirmation of the trial container order constitutes acceptance of these Trial Container Terms & Conditions in full.`;
 
-/** Papers quotations: USD base prices + 10% GST; no bank block on quotation PDF (handled in invoice). */
+/** Papers quotations: USD list prices converted to AUD for display + 10% GST; invoice terms unchanged. */
 export const DEFAULT_QUOTE_TERMS_PAPERS = `Pricing:
-All unit prices are quoted in USD and are exclusive of tax unless stated otherwise. GST of 10% is applied to the subtotal (after any discount) for Australian B2B supply as indicated on this quotation.
+All unit prices are quoted in Australian dollars (USD list prices converted using the configured exchange rate) and are exclusive of tax unless stated otherwise. GST of 10% is applied to the subtotal (after any discount) for Australian B2B supply as indicated on this quotation.
 
 Validity:
 This quotation is valid for 30 days from the date of issue.

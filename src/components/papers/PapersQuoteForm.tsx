@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
@@ -18,6 +18,59 @@ import { contactContent } from "@/content/papers-home/contactContent";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
+/** Matches `/api/papers/products` payload (AUD prices irrelevant for quote form). */
+type PaperVariant = {
+  id: string;
+  name: string;
+  size_label: string | null;
+  gsm: number | null;
+};
+
+type PaperProduct = {
+  id: string;
+  slug: string;
+  title: string;
+  short_description: string | null;
+  size_label: string | null;
+  variants: PaperVariant[];
+};
+
+const CUSTOM_SIZE = "__custom_size__";
+const CUSTOM_GSM = "__custom_gsm__";
+
+/** Friendly labels for common catalogue GSM values — falls back to "N GSM". */
+const GSM_LABELS: Record<number, string> = {
+  100: "100 GSM — Light",
+  200: "200 GSM — Medium",
+  250: "250 GSM — Firm",
+  320: "320 GSM — Heavy",
+  350: "350 GSM — Extra Heavy",
+};
+
+function gsmOptionLabel(n: number): string {
+  return GSM_LABELS[n] ?? `${n} GSM`;
+}
+
+/** Unique sizes from variants + optional product-level size. */
+function sizeOptionsForProduct(product: PaperProduct | null): string[] {
+  if (!product) return [];
+  const fromVariants = product.variants
+    .map((v) => v.size_label?.trim())
+    .filter((s): s is string => Boolean(s));
+  const set = new Set(fromVariants);
+  const productLevel = product.size_label?.trim();
+  if (productLevel) set.add(productLevel);
+  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+function gsmValuesForProduct(product: PaperProduct | null): number[] {
+  if (!product) return [];
+  const nums = product.variants
+    .map((v) => v.gsm)
+    .filter((g): g is number => typeof g === "number" && !Number.isNaN(g));
+  return [...new Set(nums)].sort((a, b) => a - b);
+}
+
 async function submitEnquiry(payload: {
   full_name: string;
   company_name?: string | null;
@@ -33,6 +86,8 @@ async function submitEnquiry(payload: {
     custom_name?: string | null;
     custom_spec?: string | null;
     custom_notes?: string | null;
+    product_id?: string | null;
+    variant_id?: string | null;
   }>;
 }) {
   const res = await fetch("/api/enquiries", {
@@ -47,6 +102,20 @@ async function submitEnquiry(payload: {
   return res.json();
 }
 
+async function fetchPaperProducts(searchType: string | null): Promise<PaperProduct[]> {
+  let url = "/api/papers/products";
+  if (searchType === "cotton" || searchType === "marble") {
+    url = `/api/papers/products?type=${encodeURIComponent(searchType)}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error("Could not load paper products.");
+  }
+  const data = await res.json();
+  const items = (data.items ?? []) as PaperProduct[];
+  return items;
+}
+
 const { fields } = quoteContent.form;
 
 export default function PapersQuoteForm() {
@@ -54,33 +123,122 @@ export default function PapersQuoteForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const urlPrefillApplied = useRef<string>("");
+
+  const [products, setProducts] = useState<PaperProduct[]>([]);
+  const [catalogueError, setCatalogueError] = useState("");
+  const [catalogueLoading, setCatalogueLoading] = useState(true);
 
   const [submitStatus, setSubmitStatus] = useState<FormState>("idle");
   const [submitError, setSubmitError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
 
-  const [productType, setProductType] = useState("");
+  /** Selected catalogue product slug */
+  const [selectedSlug, setSelectedSlug] = useState("");
   const [size, setSize] = useState("");
+  const [sizeCustom, setSizeCustom] = useState("");
   const [gsm, setGsm] = useState("");
+  const [gsmCustom, setGsmCustom] = useState("");
 
-  // Pre-fill from URL params (when coming from product detail page)
+  const searchType =
+    searchParams?.get("type") === "cotton" || searchParams?.get("type") === "marble"
+      ? searchParams.get("type")
+      : null;
+
   useEffect(() => {
-    const typeParam = searchParams?.get("type") ?? "";
-    const sizeParam = searchParams?.get("size") ?? "";
-    const gsmParam = searchParams?.get("gsm") ?? "";
-    if (typeParam) setProductType(typeParam);
-    if (sizeParam) {
-      const matched = fields.size.options.find(
-        (o) => o.label.toLowerCase().includes(sizeParam.toLowerCase()) || o.value === sizeParam.toLowerCase().replace(/ /g, "")
-      );
-      if (matched) setSize(matched.value);
+    let cancelled = false;
+    setCatalogueLoading(true);
+    setCatalogueError("");
+    fetchPaperProducts(searchType)
+      .then((items) => {
+        if (!cancelled) setProducts(items);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setCatalogueError(e instanceof Error ? e.message : "Could not load products.");
+          setProducts([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogueLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchType]);
+
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.slug === selectedSlug) ?? null,
+    [products, selectedSlug]
+  );
+
+  const sizeChoices = useMemo(() => sizeOptionsForProduct(selectedProduct), [selectedProduct]);
+  const gsmChoices = useMemo(() => gsmValuesForProduct(selectedProduct), [selectedProduct]);
+
+  const resetPaperFields = useCallback(() => {
+    setSize("");
+    setSizeCustom("");
+    setGsm("");
+    setGsmCustom("");
+  }, []);
+
+  const applyUrlPrefill = useCallback(() => {
+    const slug = searchParams?.get("slug") ?? "";
+    const variantId = searchParams?.get("variant") ?? "";
+    if (!slug) return;
+
+    const key = `${slug}|${variantId}`;
+    if (urlPrefillApplied.current === key) return;
+
+    const p = products.find((x) => x.slug === slug);
+    if (!p) return;
+
+    urlPrefillApplied.current = key;
+    setSelectedSlug(slug);
+
+    if (!variantId) {
+      resetPaperFields();
+      return;
     }
-    if (gsmParam) {
-      const matched = fields.gsm.options.find((o) => o.value === gsmParam);
-      if (matched) setGsm(matched.value);
+
+    const v = p.variants.find((x) => x.id === variantId);
+    if (!v) {
+      resetPaperFields();
+      return;
     }
-  }, [searchParams]);
+
+    const sizes = sizeOptionsForProduct(p);
+    const gsms = gsmValuesForProduct(p);
+    const sl = v.size_label?.trim();
+
+    if (sl && sizes.includes(sl)) {
+      setSize(sl);
+      setSizeCustom("");
+    } else if (sl) {
+      setSize(CUSTOM_SIZE);
+      setSizeCustom(sl);
+    } else {
+      setSize(CUSTOM_SIZE);
+      setSizeCustom("");
+    }
+
+    if (v.gsm != null && gsms.includes(v.gsm)) {
+      setGsm(String(v.gsm));
+      setGsmCustom("");
+    } else if (v.gsm != null) {
+      setGsm(CUSTOM_GSM);
+      setGsmCustom(String(v.gsm));
+    } else {
+      setGsm(CUSTOM_GSM);
+      setGsmCustom("");
+    }
+  }, [products, resetPaperFields, searchParams]);
+
+  useEffect(() => {
+    if (!products.length) return;
+    applyUrlPrefill();
+  }, [products, applyUrlPrefill]);
 
   useEffect(() => {
     if (submitStatus !== "success") return;
@@ -95,6 +253,18 @@ export default function PapersQuoteForm() {
   function validatePhone(value: string): string {
     if (!value) return "";
     return isAustralianPhone(value) ? "" : quoteContent.form.errors.phone;
+  }
+
+  function effectiveSizeLabel(): string {
+    if (size === CUSTOM_SIZE) return sizeCustom.trim();
+    return size;
+  }
+
+  function effectiveGsmLabel(): string {
+    if (gsm === CUSTOM_GSM) return gsmCustom.trim();
+    const n = Number(gsm);
+    if (!Number.isNaN(n)) return gsmOptionLabel(n);
+    return gsm;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -122,7 +292,7 @@ export default function PapersQuoteForm() {
       setPhoneError(phoneValidation);
       return;
     }
-    if (!productType) {
+    if (!selectedSlug || !selectedProduct) {
       setSubmitStatus("error");
       setSubmitError(quoteContent.form.errors.productTypeRequired);
       return;
@@ -132,25 +302,50 @@ export default function PapersQuoteForm() {
       setSubmitError(quoteContent.form.errors.sizeRequired);
       return;
     }
+    if (size === CUSTOM_SIZE && !sizeCustom.trim()) {
+      setSubmitStatus("error");
+      setSubmitError(quoteContent.form.errors.customSizeRequired);
+      return;
+    }
     if (!gsm) {
       setSubmitStatus("error");
       setSubmitError(quoteContent.form.errors.gsmRequired);
       return;
     }
+    if (gsm === CUSTOM_GSM && !gsmCustom.trim()) {
+      setSubmitStatus("error");
+      setSubmitError(quoteContent.form.errors.customGsmRequired);
+      return;
+    }
 
-    const typeLabel = fields.productType.options.find((o) => o.value === productType)?.label ?? productType;
-    const sizeLabel = fields.size.options.find((o) => o.value === size)?.label ?? size;
-    const gsmLabel = fields.gsm.options.find((o) => o.value === gsm)?.label ?? gsm;
+    const szLabel = effectiveSizeLabel();
+    const gsmLabel = effectiveGsmLabel();
+
+    let variantId: string | null = null;
+    if (size !== CUSTOM_SIZE && gsm !== CUSTOM_GSM) {
+      const n = Number(gsm);
+      const match = selectedProduct.variants.find((v) => {
+        if (v.gsm !== n) return false;
+        const vSize =
+          v.size_label?.trim() ||
+          selectedProduct.size_label?.trim() ||
+          "";
+        return vSize === size;
+      });
+      variantId = match?.id ?? null;
+    }
 
     const items = [
       {
-        product_category: typeLabel,
-        product: `${sizeLabel} — ${gsmLabel}`,
+        product_category: selectedProduct.title,
+        product: `${szLabel} — ${gsmLabel}`,
         quantity: quantity ? Number(quantity) || null : null,
         ply_preference: null,
         custom_name: null,
-        custom_spec: null,
+        custom_spec: `Catalogue slug: ${selectedProduct.slug}`,
         custom_notes: requirements || null,
+        product_id: selectedProduct.id,
+        variant_id: variantId,
       },
     ];
 
@@ -168,24 +363,22 @@ export default function PapersQuoteForm() {
       setSubmitStatus("success");
     } catch (err) {
       setSubmitStatus("error");
-      setSubmitError(
-        err instanceof Error ? err.message : quoteContent.form.errors.generic
-      );
+      setSubmitError(err instanceof Error ? err.message : quoteContent.form.errors.generic);
     }
   }
 
+  function onProductChange(slug: string) {
+    setSelectedSlug(slug);
+    resetPaperFields();
+    urlPrefillApplied.current = "";
+  }
+
   return (
-    <section
-      id="contact"
-      className="relative py-20 md:py-32 bg-cream overflow-hidden"
-    >
+    <section id="contact" className="relative py-20 md:py-32 bg-cream overflow-hidden">
       <div className="absolute inset-0 kraft-texture opacity-40" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-kraft/20 to-transparent" />
 
-      <div
-        ref={ref}
-        className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative"
-      >
+      <div ref={ref} className="mx-auto max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 relative">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -205,9 +398,7 @@ export default function PapersQuoteForm() {
             <br />
             <span className="text-forest">{contactContent.hero.headingAccent}</span>
           </h2>
-          <p className="mt-6 text-warm-gray leading-relaxed">
-            {contactContent.hero.description}
-          </p>
+          <p className="mt-6 text-warm-gray leading-relaxed">{contactContent.hero.description}</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16">
@@ -233,15 +424,9 @@ export default function PapersQuoteForm() {
                     <CheckCircle className="w-7 h-7" />
                   </motion.div>
                   <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-charcoal">
-                      {quoteContent.form.success.heading}
-                    </h3>
-                    <p className="mt-3 text-sm md:text-base text-warm-gray">
-                      {quoteContent.form.success.message}
-                    </p>
-                    <p className="mt-2 text-xs text-warm-gray/70">
-                      {quoteContent.form.success.note}
-                    </p>
+                    <h3 className="text-2xl md:text-3xl font-bold text-charcoal">{quoteContent.form.success.heading}</h3>
+                    <p className="mt-3 text-sm md:text-base text-warm-gray">{quoteContent.form.success.message}</p>
+                    <p className="mt-2 text-xs text-warm-gray/70">{quoteContent.form.success.note}</p>
                   </div>
                   <button
                     type="button"
@@ -250,10 +435,10 @@ export default function PapersQuoteForm() {
                       setSuccessVisible(false);
                       setSubmitError("");
                       setPhoneError("");
+                      urlPrefillApplied.current = "";
                       formRef.current?.reset();
-                      setProductType("");
-                      setSize("");
-                      setGsm("");
+                      setSelectedSlug("");
+                      resetPaperFields();
                     }}
                     className="inline-flex items-center gap-2.5 px-6 py-3 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 text-sm"
                   >
@@ -274,6 +459,11 @@ export default function PapersQuoteForm() {
                     {submitStatus === "error" && submitError && (
                       <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
                         {submitError}
+                      </div>
+                    )}
+                    {catalogueError && (
+                      <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+                        {catalogueError}
                       </div>
                     )}
 
@@ -308,9 +498,7 @@ export default function PapersQuoteForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-charcoal tracking-wide">
-                          {fields.email.label} *
-                        </label>
+                        <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.email.label} *</label>
                         <input
                           name="email"
                           type="email"
@@ -321,23 +509,20 @@ export default function PapersQuoteForm() {
                         />
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-charcoal tracking-wide">
-                          {fields.phone.label}
-                        </label>
+                        <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.phone.label}</label>
                         <input
                           name="phone"
                           type="tel"
                           placeholder={fields.phone.placeholder}
                           disabled={submitStatus === "loading"}
-                          onBlur={(e) =>
-                            setPhoneError(validatePhone(e.target.value.trim()))
-                          }
+                          onBlur={(e) => setPhoneError(validatePhone(e.target.value.trim()))}
                           onChange={(e) => {
                             const v = e.target.value.trim();
-                            if (!v) { setPhoneError(""); return; }
-                            if (v.length >= 6 || phoneError) {
-                              setPhoneError(validatePhone(v));
+                            if (!v) {
+                              setPhoneError("");
+                              return;
                             }
+                            if (v.length >= 6 || phoneError) setPhoneError(validatePhone(v));
                           }}
                           className={`px-4 py-3.5 bg-offwhite rounded-xl border text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:ring-2 transition-all disabled:opacity-60 ${
                             phoneError
@@ -345,9 +530,7 @@ export default function PapersQuoteForm() {
                               : "border-kraft/10 focus:border-forest/30 focus:ring-forest/10"
                           }`}
                         />
-                        {phoneError && (
-                          <span className="text-xs text-red-600">{phoneError}</span>
-                        )}
+                        {phoneError && <span className="text-xs text-red-600">{phoneError}</span>}
                       </div>
                     </div>
 
@@ -357,85 +540,122 @@ export default function PapersQuoteForm() {
                         {quoteContent.form.sections.paper}
                       </div>
                       <div className="grid grid-cols-2 gap-4 max-[380px]:grid-cols-1">
-                        {/* Product Type */}
-                        <div className="flex flex-col gap-1.5">
+                        {/* Product */}
+                        <div className="flex flex-col gap-1.5 col-span-2 max-[380px]:col-span-1">
                           <label className="text-xs font-semibold text-charcoal tracking-wide">
                             {fields.productType.label} *
                           </label>
-                          <select
-                            value={productType}
-                            onChange={(e) => setProductType(e.target.value)}
-                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
-                          >
-                            <option value="">{fields.productType.placeholder}</option>
-                            {fields.productType.options.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
+                          <div className="relative">
+                            <select
+                              value={selectedSlug}
+                              onChange={(e) => onProductChange(e.target.value)}
+                              disabled={submitStatus === "loading" || catalogueLoading}
+                              className="w-full px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60 pr-10"
+                            >
+                              <option value="">
+                                {catalogueLoading ? "Loading catalogue…" : fields.productType.placeholder}
                               </option>
-                            ))}
-                          </select>
+                              {products.map((p) => (
+                                <option key={p.slug} value={p.slug}>
+                                  {p.title}
+                                </option>
+                              ))}
+                            </select>
+                            {catalogueLoading && (
+                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-kraft pointer-events-none" />
+                            )}
+                          </div>
                         </div>
 
-                        {/* Size */}
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">
-                            {fields.size.label} *
-                          </label>
-                          <select
-                            value={size}
-                            onChange={(e) => setSize(e.target.value)}
-                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
-                          >
-                            <option value="">{fields.size.placeholder}</option>
-                            {fields.size.options.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
+                        {/* Size, GSM, quantity — single row */}
+                        <div className="col-span-2 max-[380px]:col-span-1 grid grid-cols-3 gap-2 sm:gap-4">
+                          {/* Size */}
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.size.label} *</label>
+                            <select
+                              value={size}
+                              onChange={(e) => {
+                                setSize(e.target.value);
+                                setSizeCustom("");
+                              }}
+                              disabled={!selectedProduct || catalogueLoading || submitStatus === "loading"}
+                              className="w-full min-w-0 px-3 sm:px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
+                            >
+                              <option value="">
+                                {selectedProduct ? fields.size.placeholder : "Select a product first"}
                               </option>
-                            ))}
-                          </select>
-                        </div>
+                              {sizeChoices.map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                              <option value={CUSTOM_SIZE}>{fields.size.customOptionLabel}</option>
+                            </select>
+                            {size === CUSTOM_SIZE && (
+                              <input
+                                type="text"
+                                value={sizeCustom}
+                                onChange={(e) => setSizeCustom(e.target.value)}
+                                placeholder={fields.size.customPlaceholder}
+                                disabled={submitStatus === "loading"}
+                                className="mt-2 px-3 sm:px-4 py-3 bg-white rounded-xl border border-kraft/15 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
+                              />
+                            )}
+                          </div>
 
-                        {/* GSM */}
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">
-                            {fields.gsm.label} *
-                          </label>
-                          <select
-                            value={gsm}
-                            onChange={(e) => setGsm(e.target.value)}
-                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none"
-                          >
-                            <option value="">{fields.gsm.placeholder}</option>
-                            {fields.gsm.options.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
+                          {/* GSM */}
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.gsm.label} *</label>
+                            <select
+                              value={gsm}
+                              onChange={(e) => {
+                                setGsm(e.target.value);
+                                setGsmCustom("");
+                              }}
+                              disabled={!selectedProduct || catalogueLoading || submitStatus === "loading"}
+                              className="w-full min-w-0 px-3 sm:px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all appearance-none disabled:opacity-60"
+                            >
+                              <option value="">
+                                {selectedProduct ? fields.gsm.placeholder : "Select a product first"}
                               </option>
-                            ))}
-                          </select>
-                        </div>
+                              {gsmChoices.map((g) => (
+                                <option key={g} value={String(g)}>
+                                  {gsmOptionLabel(g)}
+                                </option>
+                              ))}
+                              <option value={CUSTOM_GSM}>{fields.gsm.customOptionLabel}</option>
+                            </select>
+                            {gsm === CUSTOM_GSM && (
+                              <input
+                                type="text"
+                                value={gsmCustom}
+                                onChange={(e) => setGsmCustom(e.target.value)}
+                                placeholder={fields.gsm.customPlaceholder}
+                                disabled={submitStatus === "loading"}
+                                className="mt-2 px-3 sm:px-4 py-3 bg-white rounded-xl border border-kraft/15 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all disabled:opacity-60"
+                              />
+                            )}
+                          </div>
 
-                        {/* Quantity */}
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-charcoal tracking-wide">
-                            {fields.quantity.label}
-                          </label>
-                          <input
-                            name="quantity"
-                            type="number"
-                            min={1}
-                            placeholder={fields.quantity.placeholder}
-                            disabled={submitStatus === "loading"}
-                            className="px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60"
-                          />
+                          {/* Quantity */}
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.quantity.label}</label>
+                            <input
+                              name="quantity"
+                              type="number"
+                              min={1}
+                              placeholder={fields.quantity.placeholder}
+                              disabled={submitStatus === "loading"}
+                              className="w-full min-w-0 px-3 sm:px-4 py-3.5 bg-white rounded-xl border border-kraft/10 text-sm text-charcoal placeholder:text-warm-gray/50 focus:outline-none focus:border-forest/30 focus:ring-2 focus:ring-forest/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Requirements */}
                     <div className="flex flex-col gap-2 mb-8">
-                      <label className="text-xs font-semibold text-charcoal tracking-wide">
-                        {fields.requirements.label}
-                      </label>
+                      <label className="text-xs font-semibold text-charcoal tracking-wide">{fields.requirements.label}</label>
                       <textarea
                         name="requirements"
                         rows={4}
@@ -447,7 +667,7 @@ export default function PapersQuoteForm() {
 
                     <button
                       type="submit"
-                      disabled={submitStatus === "loading" || Boolean(phoneError)}
+                      disabled={submitStatus === "loading" || Boolean(phoneError) || catalogueLoading || !products.length}
                       className="group w-full inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-forest text-offwhite font-semibold rounded-full hover:bg-forest-light transition-all duration-300 shadow-lg shadow-forest/20 hover:shadow-xl hover:shadow-forest/30 text-sm disabled:opacity-70 disabled:pointer-events-none"
                     >
                       {submitStatus === "loading" ? (
@@ -464,9 +684,7 @@ export default function PapersQuoteForm() {
                       )}
                     </button>
 
-                    <p className="text-[11px] text-warm-gray text-center mt-4">
-                      {quoteContent.form.responseNote}
-                    </p>
+                    <p className="text-[11px] text-warm-gray text-center mt-4">{quoteContent.form.responseNote}</p>
                   </motion.form>
                 </AnimatePresence>
               )}
@@ -497,12 +715,8 @@ export default function PapersQuoteForm() {
                     <item.icon className="w-5 h-5 text-forest" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-kraft tracking-wider uppercase mb-1">
-                      {item.label}
-                    </div>
-                    <div className="text-sm md:text-base font-bold text-charcoal break-words">
-                      {item.value}
-                    </div>
+                    <div className="text-xs font-semibold text-kraft tracking-wider uppercase mb-1">{item.label}</div>
+                    <div className="text-sm md:text-base font-bold text-charcoal break-words">{item.value}</div>
                     <div className="text-xs text-warm-gray mt-0.5">{item.sub}</div>
                   </div>
                 </motion.div>
@@ -552,12 +766,8 @@ export default function PapersQuoteForm() {
               <div className="text-kraft-light text-xs font-semibold tracking-widest uppercase mb-3">
                 {contactContent.bulkBanner.label}
               </div>
-              <h3 className="text-2xl font-bold text-offwhite mb-2">
-                {contactContent.bulkBanner.heading}
-              </h3>
-              <p className="text-offwhite/60 text-sm leading-relaxed max-w-xl">
-                {contactContent.bulkBanner.description}
-              </p>
+              <h3 className="text-2xl font-bold text-offwhite mb-2">{contactContent.bulkBanner.heading}</h3>
+              <p className="text-offwhite/60 text-sm leading-relaxed max-w-xl">{contactContent.bulkBanner.description}</p>
             </div>
             <a
               href={`mailto:${contactContent.bulkBanner.cta}`}

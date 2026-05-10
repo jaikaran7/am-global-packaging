@@ -345,3 +345,25 @@
   background: rgba(255,255,255,0.85);
   box-shadow: 0 8px 24px rgba(16,18,20,0.06), var(--admin-glass-inset);
 }
+
+/* Browser print / Save as PDF — matches on-screen invoice */
+@media print {
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .invoice-print-document,
+  .invoice-print-document * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

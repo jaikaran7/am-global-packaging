@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { computeInvoiceTotals } from "@/lib/invoice-math";
+import type { CompanySettingsRow } from "@/lib/company-settings-env";
 import { toast } from "sonner";
+import InvoicePreviewPanel from "./InvoicePreviewPanel";
 
 type Line = {
   id?: string;
@@ -38,6 +40,8 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
   const [lines, setLines] = useState<Line[]>([]);
   const [invStatus, setInvStatus] = useState<string>("draft");
   const [currency, setCurrency] = useState("USD");
+  const [company, setCompany] = useState<CompanySettingsRow | null>(null);
+  const [orderNumber, setOrderNumber] = useState("");
 
   const totals = useMemo(() => {
     const lt = lines.map((l) => Math.round(l.unit_price * l.quantity * 100) / 100);
@@ -53,6 +57,8 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
         if (data.error) throw new Error(data.error);
         const cur = data.company?.currency_default ?? "USD";
         setCurrency(cur);
+        setCompany(data.company ?? null);
+        setOrderNumber(data.order?.order_number != null ? String(data.order.order_number) : "");
         if (data.invoice) {
           const inv = data.invoice;
           setInvoiceNumber(inv.invoice_number);
@@ -208,203 +214,71 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
   }
 
   function removeLine(i: number) {
-    setLines((p) => p.filter((_, idx) => idx !== i));
+    setLines((p) => {
+      const next = p.filter((_, idx) => idx !== i);
+      return next.length > 0 ? next : p;
+    });
   }
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/40">
+      <div className="flex max-h-[92vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-4">
           <div>
-            <h2 className="text-lg font-semibold text-[#2b2f33]">Invoice</h2>
-            <p className="text-xs text-[#9aa6b0]">
+            <h2 className="text-lg font-semibold text-[#002B36]">Invoice builder</h2>
+            <p className="text-xs text-[#6b7280]">
               {invoiceNumber} · {currency} · GST {gstPercent}% on (subtotal − discount)
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-sm text-[#9aa6b0] hover:text-[#2b2f33]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm text-[#6b7280] hover:bg-gray-100 hover:text-[#002B36]"
+          >
             Close
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#e8edf0]">
           {loading ? (
-            <p className="text-sm text-[#9aa6b0] text-center py-12">Loading…</p>
+            <p className="py-16 text-center text-sm text-[#6b7280]">Loading…</p>
           ) : (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <label className="text-xs font-medium text-[#6b7280]">
-                  Invoice date
-                  <input
-                    type="date"
-                    className="mt-1 w-full admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                    value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                  />
-                </label>
-                <label className="text-xs font-medium text-[#6b7280]">
-                  Due date
-                  <input
-                    type="date"
-                    className="mt-1 w-full admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </label>
-                <label className="text-xs font-medium text-[#6b7280]">
-                  Discount ({currency})
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    className="mt-1 w-full admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                    value={discount}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
-                  />
-                </label>
-                <label className="text-xs font-medium text-[#6b7280]">
-                  GST %
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className="mt-1 w-full admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                    value={gstPercent}
-                    onChange={(e) => setGstPercent(Number(e.target.value))}
-                  />
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  placeholder="Bill to — Name"
-                  className="admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                  value={billName}
-                  onChange={(e) => setBillName(e.target.value)}
-                />
-                <input
-                  placeholder="Phone"
-                  className="admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                  value={billPhone}
-                  onChange={(e) => setBillPhone(e.target.value)}
-                />
-                <input
-                  placeholder="Email"
-                  className="admin-btn-secondary py-2 px-3 rounded-xl text-sm"
-                  value={billEmail}
-                  onChange={(e) => setBillEmail(e.target.value)}
-                />
-                <textarea
-                  placeholder="Address"
-                  rows={2}
-                  className="admin-btn-secondary py-2 px-3 rounded-xl text-sm resize-none md:col-span-2"
-                  value={billAddress}
-                  onChange={(e) => setBillAddress(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-[#2b2f33]">Line items</span>
-                  <button type="button" onClick={addLine} className="text-xs font-medium text-[#ff7a2d]">
-                    + Add line
-                  </button>
-                </div>
-                <div className="border border-gray-100 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-left text-xs text-[#6b7280]">
-                      <tr>
-                        <th className="px-3 py-2">Description</th>
-                        <th className="px-3 py-2 w-24">Unit</th>
-                        <th className="px-3 py-2 w-20">Qty</th>
-                        <th className="px-3 py-2 w-24">Total</th>
-                        <th className="w-10" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lines.map((line, i) => (
-                        <tr key={i} className="border-t border-gray-50">
-                          <td className="px-3 py-2">
-                            <input
-                              className="w-full admin-btn-secondary py-1.5 px-2 rounded-lg text-xs"
-                              value={line.description}
-                              onChange={(e) => updateLine(i, "description", e.target.value)}
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input
-                              type="number"
-                              step={0.01}
-                              min={0}
-                              className="w-full admin-btn-secondary py-1.5 px-2 rounded-lg text-xs"
-                              value={line.unit_price}
-                              onChange={(e) => updateLine(i, "unit_price", Number(e.target.value))}
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input
-                              type="number"
-                              min={0.0001}
-                              step={0.0001}
-                              className="w-full admin-btn-secondary py-1.5 px-2 rounded-lg text-xs"
-                              value={line.quantity}
-                              onChange={(e) => updateLine(i, "quantity", Number(e.target.value))}
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-xs font-medium">{line.line_total.toFixed(2)}</td>
-                          <td>
-                            <button
-                              type="button"
-                              className="text-red-400 text-xs"
-                              onClick={() => removeLine(i)}
-                            >
-                              ×
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-6 text-sm">
-                <div className="text-right space-y-1">
-                  <div className="flex justify-between gap-12">
-                    <span className="text-[#6b7280]">Subtotal</span>
-                    <span>${totals.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between gap-12">
-                    <span className="text-[#6b7280]">Discount</span>
-                    <span>− ${discount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between gap-12">
-                    <span className="text-[#6b7280]">GST ({gstPercent}%)</span>
-                    <span>${totals.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between gap-12 font-bold text-[#ff7a2d] pt-1 border-t border-gray-100">
-                    <span>Total</span>
-                    <span>${totals.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <label className="block text-xs font-medium text-[#6b7280]">
-                Terms &amp; conditions
-                <textarea
-                  rows={4}
-                  className="mt-1 w-full admin-btn-secondary py-2 px-3 rounded-xl text-sm resize-none"
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                />
-              </label>
-
-              <p className="text-[11px] text-[#9aa6b0]">
-                Invoice status: <strong>{invStatus}</strong>. Saving updates totals (subtotal → discount → GST →
-                total).
+            <div className="mx-auto max-w-[880px] px-3 py-5 sm:px-6 sm:py-7">
+              <InvoicePreviewPanel
+                company={company}
+                currency={currency}
+                invoiceNumber={invoiceNumber}
+                invoiceDate={invoiceDate}
+                dueDate={dueDate}
+                referenceNo={orderNumber}
+                discount={discount}
+                gstPercent={gstPercent}
+                terms={terms}
+                billName={billName}
+                billPhone={billPhone}
+                billEmail={billEmail}
+                billAddress={billAddress}
+                lines={lines}
+                totals={{ subtotal: totals.subtotal, tax: totals.tax, total: totals.total }}
+                onInvoiceDate={setInvoiceDate}
+                onDueDate={setDueDate}
+                onDiscount={setDiscount}
+                onGstPercent={setGstPercent}
+                onTerms={setTerms}
+                onBillName={setBillName}
+                onBillPhone={setBillPhone}
+                onBillEmail={setBillEmail}
+                onBillAddress={setBillAddress}
+                onLineChange={(i, field, value) => updateLine(i, field, value)}
+                onAddLine={addLine}
+                onRemoveLine={removeLine}
+              />
+              <p className="mt-4 text-center text-[11px] text-[#6b7280]">
+                Status: <strong className="text-[#002B36]">{invStatus}</strong>. Save updates line totals and GST.
               </p>
-            </>
+            </div>
           )}
         </div>
 
@@ -422,19 +296,21 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
             disabled={saving || loading}
             onClick={async () => {
               await handleSave("generated");
-              window.open(`/api/admin/orders/${orderId}/invoice/pdf`, "_blank");
+              window.open(`/admin/orders/${orderId}/invoice-print`, "_blank", "noopener,noreferrer");
             }}
             className="admin-btn-secondary px-4 py-2 text-sm rounded-xl"
           >
-            Save &amp; download PDF
+            Save &amp; open printable invoice
           </button>
           <button
             type="button"
             disabled={loading}
-            onClick={() => window.open(`/api/admin/orders/${orderId}/invoice/pdf`, "_blank")}
+            onClick={() =>
+              window.open(`/admin/orders/${orderId}/invoice-print`, "_blank", "noopener,noreferrer")
+            }
             className="admin-btn-secondary px-4 py-2 text-sm rounded-xl"
           >
-            Download PDF
+            Printable invoice (PDF)
           </button>
           <button
             type="button"

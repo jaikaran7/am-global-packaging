@@ -81,5 +81,20 @@ export default function AdminLayout({
     return AUTH_ROUTES.has(pathname)
   }, [pathname])
 
+  const isInvoicePrintRoute = useMemo(() => {
+    if (!pathname) return false
+    return /\/admin\/orders\/[^/]+\/invoice-print\/?$/.test(pathname)
+  }, [pathname])
+
+  if (isInvoicePrintRoute) {
+    return (
+      <QueryProvider>
+        <ProductLineProvider>
+          <div className="min-h-screen bg-[#e8edf0] print:bg-white">{children}</div>
+        </ProductLineProvider>
+      </QueryProvider>
+    )
+  }
+
   return isAuthRoute ? <AuthLayout>{children}</AuthLayout> : <DashboardLayout>{children}</DashboardLayout>
 }

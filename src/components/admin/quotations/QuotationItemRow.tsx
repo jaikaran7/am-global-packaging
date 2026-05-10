@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrashIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { SearchableSelect } from "@/components/ui/select";
 import { formatVariantSelectLabel } from "@/lib/admin/order-item-variant-label";
+import { audFromStoredVariant } from "@/lib/currency-usd-aud";
 
 type Product = { id: string; title: string };
 type Variant = {
@@ -13,11 +14,25 @@ type Variant = {
   price: number;
   stock: number;
   reserved_stock: number;
+  currency?: string | null;
   size_label?: string | null;
   gsm?: number | null;
   ply?: number | null;
   dimensions?: unknown;
 };
+
+function normalizeVariantPrice(raw: unknown): number {
+  if (raw == null || raw === "") return 0;
+  const n = typeof raw === "number" ? raw : Number.parseFloat(String(raw));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Same numbers as quotation PDF/customer-facing papers line (USD → AUD when applicable). */
+function defaultQuotableUnitPrice(v: Variant, productLine: "papers" | "boxes"): number {
+  const base = normalizeVariantPrice(v.price);
+  if (productLine !== "papers") return Math.round(base * 100) / 100;
+  return audFromStoredVariant(base, v.currency ?? "USD");
+}
 
 interface QuotationItemRowProps {
   index: number;
@@ -32,6 +47,8 @@ interface QuotationItemRowProps {
     custom_notes?: string;
   };
   products: Product[];
+  /** Used to default papers catalogue prices from USD storage to AUD. */
+  productLine: "papers" | "boxes";
   onChange: (index: number, field: string, value: string | number) => void;
   onRemove: (index: number) => void;
   disabled?: boolean;
@@ -41,18 +58,25 @@ export default function QuotationItemRow({
   index,
   item,
   products,
+  productLine,
   onChange,
   onRemove,
   disabled,
 }: Readonly<QuotationItemRowProps>) {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const prevVariantIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    prevVariantIdRef.current = null;
+  }, [item.product_id]);
 
   useEffect(() => {
     if (!item.product_id || item.product_id === "custom") {
       setVariants([]);
       return;
     }
+    setVariants([]);
     setLoadingVariants(true);
     fetch(`/api/admin/products/${item.product_id}/variants`)
       .then((r) => r.json())
@@ -60,13 +84,32 @@ export default function QuotationItemRow({
         const list = Array.isArray(data) ? data : data.data ?? [];
         setVariants(list);
         if (list.length === 1 && !item.variant_id) {
-          onChange(index, "variant_id", list[0].id);
-          onChange(index, "unit_price", list[0].price ?? 0);
+          const v0 = list[0] as Variant;
+          const p0 = defaultQuotableUnitPrice(v0, productLine);
+          onChange(index, "variant_id", v0.id);
+          onChange(index, "unit_price", p0);
         }
       })
       .catch(() => setVariants([]))
       .finally(() => setLoadingVariants(false));
-  }, [item.product_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [item.product_id, productLine]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (loadingVariants || disabled) return;
+    if (!item.product_id || item.product_id === "custom" || item.product_id === "") return;
+    if (!item.variant_id || item.variant_id === "custom") return;
+    const v = variants.find((vr) => vr.id === item.variant_id);
+    if (!v) return;
+    const price = defaultQuotableUnitPrice(v, productLine);
+    if (price <= 0) return;
+    const prev = prevVariantIdRef.current;
+    const variantJustChanged = prev !== item.variant_id;
+    prevVariantIdRef.current = item.variant_id;
+    if (!variantJustChanged) return;
+    /** Opening a saved quote: don't replace a stored positive price — only fill gaps (0/missing). */
+    if (prev === null && item.unit_price > 0) return;
+    onChange(index, "unit_price", price);
+  }, [loadingVariants, variants, item.product_id, item.variant_id, item.unit_price, disabled, productLine, index, onChange]);
 
   const selectedVariant = variants.find((v) => v.id === item.variant_id);
   const available = selectedVariant
@@ -134,7 +177,7 @@ export default function QuotationItemRow({
               onChange={(value) => {
                 onChange(index, "variant_id", value);
                 const v = variants.find((vr) => vr.id === value);
-                if (v) onChange(index, "unit_price", v.price ?? 0);
+                if (v) onChange(index, "unit_price", defaultQuotableUnitPrice(v, productLine));
                 if (value === "custom") onChange(index, "unit_price", 0);
               }}
               options={variantOptions}
@@ -191,6 +234,7 @@ export default function QuotationItemRow({
               min={0}
               step={0.01}
               value={item.unit_price}
+              onFocus={(e) => e.currentTarget.select()}
               onChange={(e) => onChange(index, "unit_price", Number(e.target.value))}
               disabled={disabled}
               className={`${compactInputClass} pl-5`}
