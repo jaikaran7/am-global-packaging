@@ -41,9 +41,20 @@ function writeDraft(data: DraftShape) {
   localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
 }
 
-export default function BoxesCheckoutFlow() {
+export type BoxesCheckoutFlowProps = Readonly<{
+  /** Omit full-page framing when embedded (e.g. product detail column). */
+  embedded?: boolean;
+  /** Prefer catalogue slug over `?slug=` (product detail pages). */
+  initialProductSlug?: string;
+}>;
+
+export default function BoxesCheckoutFlow({
+  embedded = false,
+  initialProductSlug,
+}: BoxesCheckoutFlowProps = {}) {
   const searchParams = useSearchParams();
-  const slug = searchParams.get("slug") ?? "";
+  const trimmedInitial = typeof initialProductSlug === "string" ? initialProductSlug.trim() : "";
+  const slug = trimmedInitial || searchParams.get("slug")?.trim() || "";
   const qtyFromUrl = useMemo(() => {
     const n = Number(searchParams.get("quantity") ?? searchParams.get("qty"));
     return Number.isFinite(n) && n > 0 ? n : 0;
@@ -293,7 +304,7 @@ export default function BoxesCheckoutFlow() {
     product.images?.[0] ?? "/assets/products/A4-boxes%20/A4%20box%20close%20.png";
 
   return (
-    <div className="bg-offwhite min-h-[80vh]">
+    <div className={embedded ? "" : "bg-offwhite min-h-[80vh]"}>
       {/* Step rail */}
       <div className="border-b border-kraft/10 bg-white/70 backdrop-blur-sm sticky top-[4.25rem] z-30">
         <div className="mx-auto max-w-[960px] px-6 md:px-10 py-4 flex justify-center md:justify-start">
@@ -315,15 +326,21 @@ export default function BoxesCheckoutFlow() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="mx-auto max-w-[960px] px-6 md:px-10 py-12 md:py-16"
+        className={
+          embedded
+            ? "mx-auto max-w-[960px] px-0 sm:px-1 md:px-2 py-8 md:py-10"
+            : "mx-auto max-w-[960px] px-6 md:px-10 py-12 md:py-16"
+        }
       >
-        <Link
-          href={`/boxes/products/${product.slug}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-warm-gray hover:text-forest transition-colors mb-10"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden />
-          Back to product
-        </Link>
+        {!embedded && (
+          <Link
+            href={`/boxes/products/${product.slug}`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-warm-gray hover:text-forest transition-colors mb-10"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden />
+            Back to product
+          </Link>
+        )}
 
         {/* 1 · Summary */}
         <section aria-labelledby="summary-heading" className="mb-14 md:mb-20">

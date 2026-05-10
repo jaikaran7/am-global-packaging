@@ -248,7 +248,7 @@ export default function InvoicePreviewPanel({
             </h2>
             <div className="mt-2 h-0.5 w-full bg-[#C5A059]" />
             <ul className="mt-5 space-y-2.5">
-              {metaRow("Invoice No.", invoiceNumber || "—")}
+              {metaRow("Invoice No.", invoiceNumber || "—", true)}
               {metaRow(
                 "Invoice Date",
                 editable && onInvoiceDate ? (

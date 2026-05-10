@@ -1,22 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeInvoiceTotals } from "@/lib/invoice-math";
+import { nextInvoiceNumber } from "@/lib/invoice-number";
 import { mergeCompanySettings } from "@/lib/company-settings-env";
 import type { CompanySettingsRow } from "@/lib/company-settings-env";
 import { z } from "zod";
-
-async function nextInvoiceNumber(supabase: ReturnType<typeof createAdminClient>): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `INV-${year}-`;
-  const { data } = await supabase.from("invoices").select("invoice_number").ilike("invoice_number", `${prefix}%`);
-  let max = 0;
-  for (const row of data ?? []) {
-    const parts = String(row.invoice_number).split("-");
-    const n = parseInt(parts[parts.length - 1] ?? "0", 10);
-    if (!Number.isNaN(n)) max = Math.max(max, n);
-  }
-  return `${prefix}${String(max + 1).padStart(4, "0")}`;
-}
 
 function defaultDueDate(fromIsoDate: string): string {
   const d = new Date(fromIsoDate + "T12:00:00");
@@ -118,11 +106,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const cust = order.customer as Record<string, string | null> | null;
     const today = new Date().toISOString().slice(0, 10);
+    const nextNo = await nextInvoiceNumber(supabase);
 
     return NextResponse.json({
       company,
       order,
       invoice: null,
+      next_invoice_number: nextNo,
       suggested: {
         invoice_date: today,
         due_date: defaultDueDate(today),

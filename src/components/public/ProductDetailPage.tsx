@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -9,8 +9,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Package,
-  Truck,
-  ShieldCheck,
   Layers,
   Ruler,
   Printer,
@@ -22,6 +20,8 @@ import {
 } from "lucide-react";
 import type { Product } from "@/data/products";
 import { getRelatedProducts, getCategoryProducts } from "@/data/products";
+import BoxesCheckoutFlow from "@/components/checkout/boxes/BoxesCheckoutFlow";
+import CheckoutSkeleton from "@/components/checkout/boxes/CheckoutSkeleton";
 
 const BOXES_PRODUCTS_BASE = "/boxes/products";
 
@@ -311,8 +311,6 @@ export default function ProductDetailPage({ product: initialProduct }: { product
     : initialProduct;
 
   const [activeView, setActiveView] = useState(0);
-  const [quantity, setQuantity] = useState(product.moq.replace(/\D/g, ""));
-  const [plyPreference, setPlyPreference] = useState(product.plyOptions[0] ?? "");
   const relatedProducts = getRelatedProducts(product.relatedSlugs);
   const viewOptions = product.images
     ? ["Closed", "Open", "Layers", "Stack", "Two Sides"].slice(0, product.images.length)
@@ -592,70 +590,27 @@ export default function ProductDetailPage({ product: initialProduct }: { product
 
                 <div className="h-px bg-kraft/10 my-8" />
 
-                {/* Quote CTA */}
-                <div className="bg-gradient-to-br from-forest to-forest-light rounded-2xl p-4 md:p-8 text-offwhite">
-                  <h3 className="text-lg font-bold mb-4">
-                    Request a Quote for {product.shortName}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 md:gap-4 mb-5 md:mb-6">
-                    <div>
-                      <label className="text-offwhite/50 text-xs mb-1.5 block">
-                        Quantity (units)
-                      </label>
-                      <input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        min={parseInt(product.moq)}
-                        className="w-full px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 border border-white/15 rounded-xl text-offwhite text-sm placeholder:text-offwhite/30 focus:outline-none focus:border-kraft-light/50"
-                        placeholder={`Min. ${product.moq}`}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-offwhite/50 text-xs mb-1.5 block">
-                        Preferred Ply
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={plyPreference}
-                          onChange={(e) => setPlyPreference(e.target.value)}
-                          className="w-full px-3.5 py-2.5 md:px-4 md:py-3 bg-white/10 border border-white/20 rounded-xl text-offwhite text-sm focus:outline-none focus:border-kraft-light/50 appearance-none"
-                        >
-                          {product.plyOptions.map((ply) => (
-                            <option key={ply} value={ply} className="text-charcoal">
-                              {ply}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/60 pointer-events-none" />
-                      </div>
-                    </div>
+                {/* Purchase inquiry — same flow as /boxes/checkout, inlined for this product */}
+                <section
+                  id="purchase-inquiry"
+                  aria-labelledby="purchase-inquiry-heading"
+                  className="rounded-2xl border border-kraft/12 bg-offwhite shadow-sm shadow-kraft/5 overflow-hidden"
+                >
+                  <div className="bg-gradient-to-br from-forest to-forest-light px-4 md:px-6 py-5 text-offwhite">
+                    <h3 id="purchase-inquiry-heading" className="text-lg font-bold">
+                      Purchase inquiry — {product.shortName}
+                    </h3>
+                    <p className="text-offwhite/70 text-sm mt-1.5 leading-relaxed">
+                      Configure quantity and ply below, then add your organisation and delivery details. Estimates are
+                      indicative; our team confirms final pricing.
+                    </p>
                   </div>
-
-                  <Link
-                    href={`/boxes/checkout?${new URLSearchParams({
-                      slug: product.slug,
-                      quantity,
-                      ply: plyPreference,
-                    }).toString()}`}
-                    className="w-full inline-flex items-center justify-center py-2.5 md:py-3 bg-kraft text-white font-semibold rounded-full hover:bg-kraft-light transition-colors shadow-lg shadow-kraft/25 text-sm mb-3 md:mb-4"
-                  >
-                    Request Quote
-                  </Link>
-
-                  <div className="flex items-center justify-center gap-6 text-offwhite/40 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5" />
-                      <span>
-                        {product.availability.split("—")[1]?.trim() || "Fast shipping"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Food-grade certified</span>
-                    </div>
+                  <div className="px-3 sm:px-4 pb-8 pt-4 md:px-6 md:pb-10">
+                    <Suspense fallback={<CheckoutSkeleton />}>
+                      <BoxesCheckoutFlow key={product.slug} embedded initialProductSlug={product.slug} />
+                    </Suspense>
                   </div>
-                </div>
+                </section>
 
                 {/* Direct contact */}
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-6 text-sm text-warm-gray">

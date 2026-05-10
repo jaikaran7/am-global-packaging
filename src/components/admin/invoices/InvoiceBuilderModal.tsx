@@ -105,7 +105,11 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
               variant_id: l.variant_id as string | null,
             }))
           );
-          setInvoiceNumber("(will assign on create)");
+          setInvoiceNumber(
+            typeof data.next_invoice_number === "string" && data.next_invoice_number.trim()
+              ? data.next_invoice_number.trim()
+              : `INV-${new Date().getFullYear()}-0001`
+          );
           setInvStatus("none");
         }
       })

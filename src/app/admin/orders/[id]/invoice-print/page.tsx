@@ -81,7 +81,11 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
               line_total: Number(l.line_total ?? 0),
             }))
           );
-          setInvoiceNumber("(will assign on create)");
+          setInvoiceNumber(
+            typeof data.next_invoice_number === "string" && data.next_invoice_number.trim()
+              ? data.next_invoice_number.trim()
+              : `INV-${new Date().getFullYear()}-0001`
+          );
         }
       })
       .catch((e) => setErr(e instanceof Error ? e.message : "Failed to load invoice"))
