@@ -22,8 +22,10 @@ const HEADER_H = 132;
 const SPLIT_FRAC = 0.55;
 const ROW_H = 23;
 const FOOTER_H = 78;
+/** Space needed below table when last chunk includes totals + payment + terms + footer */
 const FINAL_BLOCK_MIN_Y = FOOTER_H + 218;
-const CONTINUE_BLOCK_MIN_Y = FOOTER_H + 36;
+/** Bottom margin for continuation pages (no footer on that page) — keep modest so rows still fit after full header */
+const CONTINUE_BLOCK_MIN_Y = 56;
 const BORDER_LIGHT = rgb(0.88, 0.9, 0.91);
 
 function getLogoPath(): string {
@@ -233,6 +235,41 @@ function drawSplitHeader(
   }
 
   return headerBottom - 18;
+}
+
+/** One-line bank summary on continuation pages (under full header). */
+function drawContinuationPaymentStrip(
+  page: PDFPage,
+  data: InvoicePdfData,
+  font: PDFFont,
+  topY: number
+): number {
+  const { width } = page.getSize();
+  const h = 28;
+  const bottom = topY - h;
+  const w = width - MARGIN_X * 2;
+  page.drawRectangle({
+    x: MARGIN_X,
+    y: bottom,
+    width: w,
+    height: h,
+    color: INV_GRAY,
+    borderColor: BORDER_LIGHT,
+    borderWidth: 0.55,
+  });
+  const bank = pdfSafeText(data.company.bank_name ?? "").slice(0, 28);
+  const bsb = pdfSafeText(data.company.bsb ?? "").slice(0, 14);
+  const acct = pdfSafeText(data.company.account_number ?? "").slice(0, 16);
+  const nm = pdfSafeText(data.company.name).slice(0, 36);
+  const line = `Payment — ${bank} · BSB ${bsb} · Acc ${acct} · ${nm}`.slice(0, 118);
+  page.drawText(line, {
+    x: MARGIN_X + 10,
+    y: bottom + 8,
+    size: 7.5,
+    font,
+    color: TEXT_ON_WHITE,
+  });
+  return bottom - 10;
 }
 
 function drawBillTo(page: PDFPage, data: InvoicePdfData, font: PDFFont, bold: PDFFont, topY: number): number {
@@ -475,7 +512,7 @@ function drawTableAndTotals(
     let py = y - 38;
     const payRows: [string, string][] = [
       ["Bank Name", data.company.bank_name ?? "-"],
-      ["BSB / Sort Code", data.company.bsb ?? "-"],
+      ["BSB", data.company.bsb ?? "-"],
       ["Account Number", data.company.account_number ?? "-"],
       ["Account Name", pdfSafeText(data.company.name).slice(0, 38)],
     ];
@@ -582,6 +619,23 @@ function drawFooter(page: PDFPage, data: InvoicePdfData, font: PDFFont, bold: PD
   });
 }
 
+async function startContinuationInvoicePage(
+  pdf: PDFDocument,
+  data: InvoicePdfData,
+  font: PDFFont,
+  bold: PDFFont,
+  logo: Awaited<ReturnType<PDFDocument["embedPng"]>> | null,
+  cur: string
+): Promise<{ page: PDFPage; y: number }> {
+  const page = pdf.addPage([A4.width, A4.height]);
+  await drawPageBackground(page);
+  const { height } = page.getSize();
+  let y = height - MARGIN_TOP;
+  y = drawSplitHeader(page, data, font, bold, logo, y, cur);
+  y = drawContinuationPaymentStrip(page, data, font, y);
+  return { page, y };
+}
+
 export async function renderInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -619,17 +673,9 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Uint8Array
     const finalCap = tableRowsThatFit(y, true);
 
     if (midCap < 1 && finalCap < 1) {
-      page = addPage();
-      await drawPageBackground(page);
-      y = height - MARGIN_TOP - 30;
-      page.drawText(`Invoice ${pdfSafeText(data.invoice_number)} (continued)`, {
-        x: MARGIN_X,
-        y,
-        size: 10,
-        font: bold,
-        color: INV_TEAL,
-      });
-      y -= 24;
+      const next = await startContinuationInvoicePage(pdf, data, font, bold, logoImg, cur);
+      page = next.page;
+      y = next.y;
       continue;
     }
 
@@ -645,17 +691,9 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Uint8Array
     lineIdx = lineEnd;
 
     if (lineIdx < allLines.length) {
-      page = addPage();
-      await drawPageBackground(page);
-      y = height - MARGIN_TOP - 30;
-      page.drawText(`Invoice ${pdfSafeText(data.invoice_number)} (continued)`, {
-        x: MARGIN_X,
-        y,
-        size: 10,
-        font: bold,
-        color: INV_TEAL,
-      });
-      y -= 24;
+      const next = await startContinuationInvoicePage(pdf, data, font, bold, logoImg, cur);
+      page = next.page;
+      y = next.y;
     }
   }
 

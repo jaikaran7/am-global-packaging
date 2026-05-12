@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import Image from "next/image";
 import {
   Building2,
@@ -14,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 import type { CompanySettingsRow } from "@/lib/company-settings-env";
+import { resolveInvoiceTermsWithDueDate } from "@/lib/invoice-terms-due";
 
 /** Brand palette aligned with invoice reference + AM Global letterhead */
 export const INV_TEAL = "#002B36";
@@ -160,6 +161,11 @@ export default function InvoicePreviewPanel({
   const bsb = c?.bsb ?? "—";
   const acct = c?.account_number ?? "—";
   const acctName = c?.company_name ?? "—";
+
+  const termsForDisplay = useMemo(
+    () => resolveInvoiceTermsWithDueDate(terms, dueDate, dateDisplayStyle),
+    [terms, dueDate, dateDisplayStyle]
+  );
 
   return (
     <div className="relative mx-auto max-w-[820px] overflow-hidden rounded-xl shadow-[0_12px_40px_rgba(0,43,54,0.12)] ring-1 ring-black/5">
@@ -557,62 +563,67 @@ export default function InvoicePreviewPanel({
             </div>
           </div>
 
-          {/* Payment + Terms */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#faf6ec] via-[#f5f5f5] to-[#eef3f4] pl-4 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.22)] ring-1 ring-[#002B36]/10">
-              <div className="absolute bottom-0 left-0 top-0 w-1 bg-[#002B36]" aria-hidden />
-              <div className="p-4 pl-5">
-                <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#002B36]">
+          {/* Payment + Terms — print engines often use a narrow width; force 2 cols in @media print */}
+          <div className="invoice-print-payment-terms-wrap">
+            <div className="invoice-print-payment-terms grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+            <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-gradient-to-br from-[#faf6ec] via-[#f5f5f5] to-[#eef3f4] pl-4 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.22)] ring-1 ring-[#002B36]/10">
+              <div className="absolute bottom-0 left-0 top-0 z-0 w-1 bg-[#002B36]" aria-hidden />
+              <div className="relative z-10 flex min-h-0 flex-1 flex-col p-4 pl-5">
+                <div className="mb-3 flex shrink-0 items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#002B36]">
                   <Building2 className="h-4 w-4 text-[#C5A059]" aria-hidden />
                   Payment Information
                 </div>
-                <dl className="space-y-2 text-[12px]">
+                <dl className="min-h-0 shrink-0 space-y-2 text-[12px]">
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">Bank Name</dt>
-                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{bank}</dd>
+                    <dd className="max-w-[58%] text-right text-[13px] font-semibold break-words text-[#001a21] tabular-nums">{bank}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-[#002B36]/55">BSB / Sort Code</dt>
-                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{bsb}</dd>
+                    <dt className="text-[#002B36]/55">BSB</dt>
+                    <dd className="max-w-[58%] text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{bsb}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">Account Number</dt>
-                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{acct}</dd>
+                    <dd className="max-w-[58%] text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{acct}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-[#002B36]/55">Account Name</dt>
-                    <dd className="text-right text-[13px] font-semibold text-[#001a21]">{acctName}</dd>
+                    <dt className="shrink-0 text-[#002B36]/55">Account Name</dt>
+                    <dd className="max-w-[58%] text-right text-[13px] font-semibold break-words text-[#001a21]">{acctName}</dd>
                   </div>
                 </dl>
+                <div className="min-h-0 flex-1" aria-hidden />
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-xl bg-[#F5F5F5] pr-4 ring-1 ring-[#002B36]/10">
-              <div className="absolute bottom-0 right-0 top-0 w-1.5 bg-[#C5A059]" aria-hidden />
+            <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-[#F5F5F5] pr-4 ring-1 ring-[#002B36]/10">
+              <div className="absolute bottom-0 right-0 top-0 z-0 w-1.5 bg-[#C5A059]" aria-hidden />
               <div
                 aria-hidden
-                className="pointer-events-none absolute -right-6 bottom-0 top-0 w-32 opacity-[0.06]"
+                className="pointer-events-none absolute -right-6 bottom-0 top-0 z-0 w-32 opacity-[0.06]"
                 style={{
                   background:
                     "radial-gradient(circle at center, #002B36 0%, transparent 70%)",
                 }}
               />
-              <div className="p-4 pr-6">
-                <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#002B36]">
+              <div className="relative z-10 flex min-h-0 flex-1 flex-col p-4 pr-6">
+                <div className="mb-2 flex shrink-0 items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#002B36]">
                   <Shield className="h-4 w-4 text-[#C5A059]" aria-hidden />
                   Terms &amp; Conditions
                 </div>
                 {editable && onTerms ? (
                   <textarea
-                    className={`${inputCls} min-h-[100px] w-full resize-y bg-white/60 text-[12px] leading-relaxed`}
+                    className={`${inputCls} min-h-[100px] w-full flex-1 resize-y bg-white/60 text-[12px] leading-relaxed`}
                     rows={5}
                     value={terms}
                     onChange={(e) => onTerms(e.target.value)}
                   />
                 ) : (
-                  <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-[#002B36]/80">{terms || "—"}</p>
+                  <p className="min-h-0 flex-1 whitespace-pre-wrap text-[12px] leading-relaxed text-[#002B36]/80">
+                    {termsForDisplay || "—"}
+                  </p>
                 )}
               </div>
+            </div>
             </div>
           </div>
         </div>

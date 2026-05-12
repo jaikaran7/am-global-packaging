@@ -4,6 +4,7 @@ import { renderInvoicePdf } from "@/lib/pdf/renderInvoicePdf";
 import { mergeCompanySettings } from "@/lib/company-settings-env";
 import type { CompanySettingsRow } from "@/lib/company-settings-env";
 import type { InvoicePdfData } from "@/lib/pdf/types";
+import { resolveInvoiceTermsWithDueDate } from "@/lib/invoice-terms-due";
 
 export async function GET(
   _req: Request,
@@ -34,18 +35,21 @@ export async function GET(
     const websiteEnv = process.env.NEXT_PUBLIC_COMPANY_WEBSITE?.trim();
     const websiteDisplay = websiteEnv?.replace(/^https?:\/\//i, "") ?? null;
 
+    const rawTerms = (invoice.terms_text ?? company.invoice_terms_default ?? "") as string;
+    const dueSlice = invoice.due_date ? String(invoice.due_date).slice(0, 10) : null;
+
     const pdfData: InvoicePdfData = {
       invoice_number: invoice.invoice_number,
       reference_no: null,
       invoice_date: String(invoice.invoice_date),
-      due_date: invoice.due_date ? String(invoice.due_date).slice(0, 10) : null,
+      due_date: dueSlice,
       gst_percent: gstPct,
       subtotal: Number(invoice.subtotal ?? 0),
       discount_amount: discount,
       taxable_base: Math.max(0, Number(invoice.subtotal ?? 0) - discount),
       tax: Number(invoice.tax_amount ?? 0),
       total: Number(invoice.total_amount ?? 0),
-      terms_text: invoice.terms_text ?? company.invoice_terms_default,
+      terms_text: resolveInvoiceTermsWithDueDate(rawTerms, dueSlice, "dmy"),
       company: {
         name: company.company_name,
         tagline: company.tagline,

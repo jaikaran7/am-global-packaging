@@ -108,6 +108,14 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
     }
   }, [loading, err]);
 
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Invoice";
+    return () => {
+      document.title = prev;
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-[#6b7280]">
@@ -129,7 +137,7 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
 
   return (
     <div className="invoice-print-page px-4 py-6 md:px-8 md:py-8">
-      <div className="no-print mx-auto mb-6 flex max-w-[820px] flex-wrap items-center justify-between gap-3">
+      <div className="no-print mx-auto mb-6 flex max-w-[820px] flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -145,9 +153,6 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
             Back to order
           </Link>
         </div>
-        <p className="text-xs text-[#6b7280]">
-          Use your browser print dialog and choose &quot;Save as PDF&quot; for a file copy. To omit the page address from the PDF, turn off &quot;Headers and footers&quot; in the print dialog.
-        </p>
       </div>
 
       <div className="invoice-print-document mx-auto max-w-[820px]">

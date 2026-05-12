@@ -366,4 +366,20 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  /* Print uses a narrow CSS width; md: breakpoints often collapse to one column — force two columns */
+  .invoice-print-payment-terms {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+    align-items: stretch !important;
+  }
+  .invoice-print-payment-terms > * {
+    min-width: 0;
+    height: 100%;
+    align-self: stretch;
+  }
+  .invoice-print-payment-terms-wrap {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
 }
