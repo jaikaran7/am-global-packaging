@@ -39,9 +39,8 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
   const [billAddress, setBillAddress] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [invStatus, setInvStatus] = useState<string>("draft");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("AUD");
   const [company, setCompany] = useState<CompanySettingsRow | null>(null);
-  const [orderNumber, setOrderNumber] = useState("");
 
   const totals = useMemo(() => {
     const lt = lines.map((l) => Math.round(l.unit_price * l.quantity * 100) / 100);
@@ -55,15 +54,14 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
       .then((r) => r.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
-        const cur = data.company?.currency_default ?? "USD";
+        const cur = data.company?.currency_default ?? "AUD";
         setCurrency(cur);
         setCompany(data.company ?? null);
-        setOrderNumber(data.order?.order_number != null ? String(data.order.order_number) : "");
         if (data.invoice) {
           const inv = data.invoice;
           setInvoiceNumber(inv.invoice_number);
           setInvoiceDate(String(inv.invoice_date).slice(0, 10));
-          setDueDate(String(inv.due_date).slice(0, 10));
+          setDueDate(inv.due_date ? String(inv.due_date).slice(0, 10) : "");
           setDiscount(Number(inv.discount_amount ?? 0));
           setGstPercent(Number(inv.gst_percent ?? 10));
           setTerms(inv.terms_text ?? "");
@@ -87,7 +85,7 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
         } else if (data.suggested) {
           const s = data.suggested;
           setInvoiceDate(s.invoice_date);
-          setDueDate(s.due_date);
+          setDueDate(s.due_date ? String(s.due_date).slice(0, 10) : "");
           setDiscount(s.discount_amount ?? 0);
           setGstPercent(s.gst_percent ?? 10);
           setTerms(s.terms_text ?? "");
@@ -256,7 +254,6 @@ export default function InvoiceBuilderModal({ orderId, open, onClose }: Readonly
                 invoiceNumber={invoiceNumber}
                 invoiceDate={invoiceDate}
                 dueDate={dueDate}
-                referenceNo={orderNumber}
                 discount={discount}
                 gstPercent={gstPercent}
                 terms={terms}

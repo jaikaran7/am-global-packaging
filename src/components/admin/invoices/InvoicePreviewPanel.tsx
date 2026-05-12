@@ -33,7 +33,6 @@ type Props = {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
-  referenceNo: string;
   discount: number;
   gstPercent: number;
   terms: string;
@@ -123,7 +122,6 @@ export default function InvoicePreviewPanel({
   invoiceNumber,
   invoiceDate,
   dueDate,
-  referenceNo,
   discount,
   gstPercent,
   terms,
@@ -148,6 +146,8 @@ export default function InvoicePreviewPanel({
   editable = true,
   dateDisplayStyle = "short-month",
 }: Readonly<Props>) {
+  const displayCurrency =
+    (currency || "AUD").toUpperCase() === "USD" ? "AUD" : (currency || "AUD").toUpperCase();
   const c = company;
   const name = c?.company_name ?? "—";
   const tagline = c?.tagline ?? "";
@@ -173,31 +173,22 @@ export default function InvoicePreviewPanel({
         <header className="flex flex-col border-b border-[#002B36]/10 sm:flex-row">
           <div className="relative flex-1 bg-[#002B36] px-5 py-6 sm:pr-10">
             <div className="flex gap-4">
-              <div
-                className="relative flex h-[76px] w-[92px] shrink-0 items-center justify-center bg-[#001a21]"
-                style={{ clipPath: "polygon(0 0, 100% 0, 88% 100%, 0 100%)" }}
-              >
-                <div
-                  className="relative flex h-[52px] w-[52px] items-center justify-center border-2 border-[#C5A059] bg-[#002B36]"
-                  style={{
-                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  <Image
-                    src="/am-global-logo.png"
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="object-contain opacity-95"
-                  />
-                </div>
+              <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-xl bg-[#001a21] ring-1 ring-[#C5A059]/35">
+                <Image
+                  src="/am-global-logo.png"
+                  alt=""
+                  width={56}
+                  height={56}
+                  className="object-contain"
+                  priority
+                />
               </div>
               <div className="min-w-0 flex-1 pt-1">
                 <h1 className="text-[22px] font-bold leading-tight tracking-tight text-white">{name}</h1>
                 {tagline ? (
                   <p className="mt-1 text-[13px] font-medium text-[#C5A059]">{tagline}</p>
                 ) : null}
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-white/90">
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-white/90">
                   {addr ? (
                     <span className="flex max-w-[220px] items-start gap-1.5">
                       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C5A059]" aria-hidden />
@@ -207,19 +198,38 @@ export default function InvoicePreviewPanel({
                   {web ? (
                     <span className="flex items-center gap-1.5">
                       <Globe className="h-3.5 w-3.5 shrink-0 text-[#C5A059]" aria-hidden />
-                      {web}
+                      {websiteHref(web) ? (
+                        <a
+                          href={websiteHref(web)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white/95 underline decoration-white/30 underline-offset-2 hover:text-white"
+                        >
+                          {web}
+                        </a>
+                      ) : (
+                        web
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex flex-col gap-1.5 text-[11px] text-white/90">
+                  {abn ? (
+                    <span className="flex items-center gap-1.5">
+                      <IdCard className="h-3.5 w-3.5 shrink-0 text-[#C5A059]" aria-hidden />
+                      ABN: {abn}
                     </span>
                   ) : null}
                   {phone ? (
                     <span className="flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5 shrink-0 text-[#C5A059]" aria-hidden />
-                      {phone}
-                    </span>
-                  ) : null}
-                  {abn ? (
-                    <span className="flex items-center gap-1.5">
-                      <IdCard className="h-3.5 w-3.5 shrink-0 text-[#C5A059]" aria-hidden />
-                      ABN: {abn}
+                      {telHref(phone) ? (
+                        <a href={telHref(phone)} className="text-white/95 underline decoration-white/30 underline-offset-2 hover:text-white">
+                          {phone}
+                        </a>
+                      ) : (
+                        phone
+                      )}
                     </span>
                   ) : null}
                   {email ? (
@@ -265,9 +275,9 @@ export default function InvoicePreviewPanel({
                 ),
                 true
               )}
-              {metaRow(
-                "Due Date",
-                editable && onDueDate ? (
+              {editable && onDueDate ? (
+                metaRow(
+                  "Due Date",
                   <span className="inline-flex w-full justify-end">
                     <input
                       type="date"
@@ -275,17 +285,16 @@ export default function InvoicePreviewPanel({
                       value={dueDate}
                       onChange={(e) => onDueDate(e.target.value)}
                     />
-                  </span>
-                ) : (
-                  formatInvoiceDate(dueDate, dateDisplayStyle)
-                ),
-                true
-              )}
-              {metaRow("Reference", referenceNo || "—")}
+                  </span>,
+                  true
+                )
+              ) : dueDate.trim() ? (
+                metaRow("Due Date", formatInvoiceDate(dueDate, dateDisplayStyle), true)
+              ) : null}
               {!(editable && (onGstPercent || onDiscount)) ? (
                 <>
                   {metaRow("GST %", String(gstPercent))}
-                  {metaRow(`Discount (${currency})`, fmtMoney(discount, currency))}
+                  {discount > 0 ? metaRow(`Discount (${displayCurrency})`, fmtMoney(discount, currency)) : null}
                 </>
               ) : null}
             </ul>
@@ -306,7 +315,7 @@ export default function InvoicePreviewPanel({
                 ) : null}
                 {onDiscount ? (
                   <label className="flex items-center justify-between gap-2">
-                    Discount ({currency})
+                    Discount ({displayCurrency})
                     <input
                       type="number"
                       min={0}
@@ -526,12 +535,14 @@ export default function InvoicePreviewPanel({
                     {fmtMoney(totals.subtotal, currency)}
                   </span>
                 </div>
-                <div className="flex justify-between gap-6 text-[#002B36]/75">
-                  <span>Discount</span>
-                  <span className="tabular-nums font-medium text-[#002B36]">
-                    −{fmtMoney(discount, currency)}
-                  </span>
-                </div>
+                {discount > 0 ? (
+                  <div className="flex justify-between gap-6 text-[#002B36]/75">
+                    <span>Discount</span>
+                    <span className="tabular-nums font-medium text-[#002B36]">
+                      −{fmtMoney(discount, currency)}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-6 text-[#002B36]/75">
                   <span>
                     GST ({gstPercent}%)
@@ -540,7 +551,7 @@ export default function InvoicePreviewPanel({
                 </div>
               </div>
               <div className="flex justify-between gap-4 bg-[#002B36] px-4 py-3 text-[13px] font-bold uppercase tracking-wide text-white">
-                <span>Grand Total ({currency})</span>
+                <span>Grand Total ({displayCurrency})</span>
                 <span className="tabular-nums">{fmtMoney(totals.total, currency)}</span>
               </div>
             </div>
@@ -548,7 +559,7 @@ export default function InvoicePreviewPanel({
 
           {/* Payment + Terms */}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="relative overflow-hidden rounded-xl bg-[#F5F5F5] pl-4 ring-1 ring-[#002B36]/10">
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#faf6ec] via-[#f5f5f5] to-[#eef3f4] pl-4 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.22)] ring-1 ring-[#002B36]/10">
               <div className="absolute bottom-0 left-0 top-0 w-1 bg-[#002B36]" aria-hidden />
               <div className="p-4 pl-5">
                 <div className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#002B36]">
@@ -558,19 +569,19 @@ export default function InvoicePreviewPanel({
                 <dl className="space-y-2 text-[12px]">
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">Bank Name</dt>
-                    <dd className="text-right font-medium text-[#002B36]">{bank}</dd>
+                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{bank}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">BSB / Sort Code</dt>
-                    <dd className="text-right font-medium tabular-nums text-[#002B36]">{bsb}</dd>
+                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{bsb}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">Account Number</dt>
-                    <dd className="text-right font-medium tabular-nums text-[#002B36]">{acct}</dd>
+                    <dd className="text-right text-[13px] font-semibold tabular-nums text-[#001a21]">{acct}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[#002B36]/55">Account Name</dt>
-                    <dd className="text-right font-medium text-[#002B36]">{acctName}</dd>
+                    <dd className="text-right text-[13px] font-semibold text-[#001a21]">{acctName}</dd>
                   </div>
                 </dl>
               </div>

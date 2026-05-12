@@ -6,7 +6,7 @@ import { AppConfirmProvider } from "@/contexts/AppConfirmContext";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "AM Global Packaging Solutions | Premium Corrugated Packaging",
+  title: "AM Global Packaging Solutions",
   description: "Leading manufacturer of premium corrugated packaging solutions. Custom boxes, sheets, and bulk supply for global industries.",
   icons: {
     icon: "/favicon.png",

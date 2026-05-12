@@ -118,20 +118,17 @@ function drawSplitHeader(
 
   const logoCX = 48;
   const logoCY = headerBottom + HEADER_H / 2 - 2;
-  const ringD = 56;
-  page.drawCircle({
-    x: logoCX,
-    y: logoCY,
-    size: ringD,
-    color: INV_GOLD,
-  });
-  page.drawCircle({
-    x: logoCX,
-    y: logoCY,
-    size: ringD - 6,
+  const boxR = 8;
+  const boxW = 56;
+  const boxH = 56;
+  page.drawSvgPath(roundedRectPath(boxW, boxH, boxR), {
+    x: logoCX - boxW / 2,
+    y: logoCY - boxH / 2,
     color: INV_TEAL_DEEP,
+    borderColor: INV_GOLD,
+    borderWidth: 0.75,
   });
-  const imgS = 34;
+  const imgS = 40;
   if (logo) {
     page.drawImage(logo, {
       x: logoCX - imgS / 2,
@@ -141,7 +138,7 @@ function drawSplitHeader(
     });
   }
 
-  let tx = logoCX + ringD / 2 + 14;
+  let tx = logoCX + boxW / 2 + 14;
   let ty = topY - 30;
   const nameSize = 14;
   page.drawText(pdfSafeText(data.company.name).slice(0, 44), {
@@ -165,13 +162,13 @@ function drawSplitHeader(
 
   ty -= 8;
   const infoSize = 7.5;
-  const infoParts: string[] = [];
-  if (data.company.address_line) infoParts.push(`- ${data.company.address_line}`);
-  if (data.company.website_url) infoParts.push(`- ${data.company.website_url}`);
-  if (data.company.phone) infoParts.push(`- ${data.company.phone}`);
-  if (data.company.abn) infoParts.push(`- ABN: ${data.company.abn}`);
-  if (data.company.email) infoParts.push(`- ${data.company.email}`);
-  for (const il of infoParts.slice(0, 5)) {
+  const infoLines: string[] = [];
+  if (data.company.address_line) infoLines.push(data.company.address_line);
+  if (data.company.website_url) infoLines.push(data.company.website_url);
+  if (data.company.abn) infoLines.push(`ABN: ${data.company.abn}`);
+  if (data.company.phone) infoLines.push(data.company.phone);
+  if (data.company.email) infoLines.push(data.company.email);
+  for (const il of infoLines.slice(0, 6)) {
     page.drawText(pdfSafeText(il).slice(0, 74), {
       x: tx,
       y: ty,
@@ -206,11 +203,15 @@ function drawSplitHeader(
   const metaRows: [string, string][] = [
     ["Invoice No.", pdfSafeText(data.invoice_number)],
     ["Invoice Date", fmtDateNumeric(data.invoice_date)],
-    ["Due Date", fmtDateNumeric(data.due_date)],
-    ["Reference", pdfSafeText((data.reference_no ?? "").trim() || "-")],
-    ["GST %", String(data.gst_percent)],
-    [`Discount (${cur})`, fmtMoney(data.discount_amount, cur)],
   ];
+  if (data.due_date && String(data.due_date).trim()) {
+    metaRows.push(["Due Date", fmtDateNumeric(data.due_date)]);
+  }
+  metaRows.push(["GST %", String(data.gst_percent)]);
+  const labelCur = cur === "USD" ? "AUD" : cur;
+  if (Number(data.discount_amount) > 0) {
+    metaRows.push([`Discount (${labelCur})`, fmtMoney(data.discount_amount, cur)]);
+  }
   for (const [lab, val] of metaRows) {
     page.drawCircle({ x: dotX, y: iy + 3, size: 4, color: INV_TEAL });
     page.drawText(lab, {
@@ -420,7 +421,9 @@ function drawTableAndTotals(
     };
 
     rowTot("Subtotal", fmtMoney(data.subtotal, cur));
-    rowTot("Discount", `-${fmtMoney(data.discount_amount, cur)}`);
+    if (Number(data.discount_amount) > 0) {
+      rowTot("Discount", `-${fmtMoney(data.discount_amount, cur)}`);
+    }
     rowTot(`GST (${data.gst_percent}%)`, fmtMoney(data.tax, cur));
 
     page.drawRectangle({
@@ -430,7 +433,8 @@ function drawTableAndTotals(
       height: gtH,
       color: INV_TEAL,
     });
-    const gtOneLine = `GRAND TOTAL (${cur})   ${fmtMoney(data.total, cur)}`;
+    const labelCur = cur === "USD" ? "AUD" : cur;
+    const gtOneLine = `GRAND TOTAL (${labelCur})   ${fmtMoney(data.total, cur)}`;
     const gw = bold.widthOfTextAtSize(gtOneLine, 9.5);
     page.drawText(gtOneLine, {
       x: totalsLeft + (totalsW - gw) / 2,
@@ -449,16 +453,16 @@ function drawTableAndTotals(
     page.drawSvgPath(roundedRectPath(half, payH, R_CARD), {
       x: tableLeft,
       y: y - payH,
-      color: INV_GRAY,
-      borderColor: BORDER_LIGHT,
-      borderWidth: 0.6,
+      color: rgb(0.99, 0.97, 0.93),
+      borderColor: rgb(0.82, 0.72, 0.52),
+      borderWidth: 0.85,
     });
     page.drawRectangle({
       x: tableLeft,
       y: y - payH,
       width: 5,
       height: payH,
-      color: INV_GOLD,
+      color: INV_TEAL,
     });
 
     page.drawText("PAYMENT INFORMATION", {
@@ -475,14 +479,17 @@ function drawTableAndTotals(
       ["Account Number", data.company.account_number ?? "-"],
       ["Account Name", pdfSafeText(data.company.name).slice(0, 38)],
     ];
+    const valX = tableLeft + half - 14;
     for (const [k, v] of payRows) {
       page.drawText(k, { x: tableLeft + 16, y: py, size: 8.5, font, color: TEXT_MUTED });
-      page.drawText(pdfSafeText(v).slice(0, 42), {
-        x: tableLeft + 128,
-        y: py,
-        size: 8.5,
+      const vs = pdfSafeText(v).slice(0, 42);
+      const vw = bold.widthOfTextAtSize(vs, 9);
+      page.drawText(vs, {
+        x: valX - vw,
+        y: py - 0.5,
+        size: 9,
         font: bold,
-        color: TEXT_ON_WHITE,
+        color: INV_TEAL,
       });
       py -= 13;
     }
@@ -579,7 +586,7 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Uint8Array
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const cur = data.currency_label || "USD";
+  const cur = data.currency_label || "AUD";
 
   let logoImg: Awaited<ReturnType<PDFDocument["embedPng"]>> | null = null;
   const logoPath = getLogoPath();

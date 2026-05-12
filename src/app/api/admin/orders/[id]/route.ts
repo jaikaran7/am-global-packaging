@@ -116,6 +116,11 @@ export async function PATCH(
       updates.tracking_id = parsed.data.tracking_id || null;
     if (parsed.data?.shipped_date !== undefined)
       updates.shipped_date = parsed.data.shipped_date || null;
+    if (parsed.data?.payment_due_date !== undefined) {
+      const p = parsed.data.payment_due_date;
+      updates.payment_due_date =
+        typeof p === "string" && p.trim() ? p.trim().slice(0, 10) : null;
+    }
 
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase.from("orders").update(updates).eq("id", id);

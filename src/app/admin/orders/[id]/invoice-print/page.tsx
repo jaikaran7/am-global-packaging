@@ -17,7 +17,6 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanySettingsRow | null>(null);
-  const [orderNumber, setOrderNumber] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -29,7 +28,7 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
   const [billEmail, setBillEmail] = useState("");
   const [billAddress, setBillAddress] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("AUD");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,13 +38,12 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
         if (cancelled) return;
         if (data.error) throw new Error(data.error);
         setCompany(data.company ?? null);
-        setOrderNumber(data.order?.order_number != null ? String(data.order.order_number) : "");
-        setCurrency(data.company?.currency_default ?? "USD");
+        setCurrency(data.company?.currency_default ?? "AUD");
         if (data.invoice) {
           const inv = data.invoice;
           setInvoiceNumber(inv.invoice_number);
           setInvoiceDate(String(inv.invoice_date).slice(0, 10));
-          setDueDate(String(inv.due_date).slice(0, 10));
+          setDueDate(inv.due_date ? String(inv.due_date).slice(0, 10) : "");
           setDiscount(Number(inv.discount_amount ?? 0));
           setGstPercent(Number(inv.gst_percent ?? 10));
           setTerms(inv.terms_text ?? "");
@@ -65,7 +63,7 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
         } else if (data.suggested) {
           const s = data.suggested;
           setInvoiceDate(s.invoice_date);
-          setDueDate(s.due_date);
+          setDueDate(s.due_date ? String(s.due_date).slice(0, 10) : "");
           setDiscount(s.discount_amount ?? 0);
           setGstPercent(s.gst_percent ?? 10);
           setTerms(s.terms_text ?? "");
@@ -148,7 +146,7 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
           </Link>
         </div>
         <p className="text-xs text-[#6b7280]">
-          Use your browser print dialog and choose &quot;Save as PDF&quot; for a file copy. Links stay clickable in the PDF.
+          Use your browser print dialog and choose &quot;Save as PDF&quot; for a file copy. To omit the page address from the PDF, turn off &quot;Headers and footers&quot; in the print dialog.
         </p>
       </div>
 
@@ -159,7 +157,6 @@ function InvoicePrintInner({ orderId }: Readonly<{ orderId: string }>) {
           invoiceNumber={invoiceNumber}
           invoiceDate={invoiceDate}
           dueDate={dueDate}
-          referenceNo={orderNumber}
           discount={discount}
           gstPercent={gstPercent}
           terms={terms}

@@ -1,21 +1,21 @@
 /** Fallback when DB row is unavailable (boot / migrations). */
 
 export const COMPANY_ENV_DEFAULTS = {
-  company_name: process.env.COMPANY_LEGAL_NAME ?? "AM Global Parcel Packaging Solutions",
-  legal_name: process.env.COMPANY_LEGAL_NAME ?? "AM Global Parcel Packaging Solutions",
+  company_name: process.env.COMPANY_LEGAL_NAME ?? "AM Global Packaging Solutions",
+  legal_name: process.env.COMPANY_LEGAL_NAME ?? "AM Global Packaging Solutions",
   abn: process.env.COMPANY_ABN ?? "70 503 268 103",
-  bank_name: process.env.COMPANY_BANK_NAME ?? "B&B Bank",
+  bank_name: process.env.COMPANY_BANK_NAME ?? "Commonwealth Bank",
   bsb: process.env.COMPANY_BSB ?? "062-268",
   account_number: process.env.COMPANY_ACCOUNT_NUMBER ?? "10631463",
-  tagline: process.env.COMPANY_TAGLINE ?? "Premium handmade papers & packaging — globally shipped",
+  tagline: process.env.COMPANY_TAGLINE ?? "Handmade papers & corrugated packaging — globally shipped",
   address_line: process.env.COMPANY_ADDRESS ?? "",
-  phone: process.env.COMPANY_PHONE ?? "",
-  email: process.env.COMPANY_EMAIL ?? "",
+  phone: process.env.COMPANY_PHONE ?? "0434 396 360",
+  email: process.env.COMPANY_EMAIL ?? "amglobalpackagingsolutions@gmail.com",
   gst_note: "GST Registered — 10% GST applied",
-  currency_default: "USD",
+  currency_default: "AUD",
   gst_percent_default: 10,
   invoice_terms_default:
-    "Payment is due within 30 days of invoice date. Please include the invoice number in your payment reference. Goods remain the property of AM Global Parcel Packaging Solutions until payment is received in full.",
+    "Payment is due within 30 days of invoice date. Please include the invoice number in your payment reference. Goods remain the property of AM Global Packaging Solutions until payment is received in full.",
 } as const;
 
 export type CompanySettingsRow = {

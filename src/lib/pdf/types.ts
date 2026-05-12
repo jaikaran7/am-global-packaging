@@ -48,10 +48,10 @@ export type InvoiceLinePdf = {
 
 export type InvoicePdfData = {
   invoice_number: string;
-  /** Order / PO reference shown on PDF */
+  /** Order / PO reference (optional; omitted from layout when unused) */
   reference_no?: string | null;
   invoice_date: string;
-  due_date: string;
+  due_date: string | null;
   gst_percent: number;
   subtotal: number;
   discount_amount: number;

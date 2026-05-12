@@ -54,6 +54,7 @@ interface OrderData {
   created_at: string;
   invoice_status?: string | null;
   product_line?: string | null;
+  payment_due_date?: string | null;
   items: Array<{
     id: string;
     product_id: string;
@@ -86,6 +87,7 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
   const [shippingProvider, setShippingProvider] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const [shippedDate, setShippedDate] = useState("");
+  const [paymentDueDate, setPaymentDueDate] = useState("");
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "", company: "", address: "" });
   const [error, setError] = useState("");
@@ -128,17 +130,37 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
     setShippingProvider(order.shipping_provider ?? "");
     setTrackingId(order.tracking_id ?? "");
     setShippedDate(order.shipped_date ?? "");
+    setPaymentDueDate(order.payment_due_date ? String(order.payment_due_date).slice(0, 10) : "");
     if (order.items.length > 0) {
       setItems(
-        order.items.map((i) => ({
-          product_id: i.product_id ?? "",
-          variant_id: i.variant_id ?? "",
-          quantity: i.quantity,
-          unit_price: i.unit_price,
-          custom_name: (i as { custom_name?: string }).custom_name,
-          custom_spec: (i as { custom_spec?: string }).custom_spec,
-          custom_notes: (i as { custom_notes?: string }).custom_notes,
-        }))
+        order.items.map((i) => {
+          const customName = (i as { custom_name?: string | null }).custom_name?.trim() ?? "";
+          const rawP = (i.product_id ?? "") as string;
+          const rawV = (i.variant_id ?? "") as string;
+          /** DB stores custom lines with null ids; UI + invoice use "custom" / custom_name */
+          const isFullCustomLine =
+            rawP === "custom" ||
+            rawV === "custom" ||
+            (!rawP && !rawV && Boolean(customName));
+          const isProductWithNamedCustomVariant =
+            Boolean(rawP && rawP !== "custom" && !rawV && customName);
+          const product_id = isFullCustomLine ? "custom" : rawP;
+          const variant_id = isFullCustomLine
+            ? "custom"
+            : isProductWithNamedCustomVariant
+              ? "custom"
+              : rawV;
+
+          return {
+            product_id,
+            variant_id,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+            custom_name: (i as { custom_name?: string }).custom_name,
+            custom_spec: (i as { custom_spec?: string }).custom_spec,
+            custom_notes: (i as { custom_notes?: string }).custom_notes,
+          };
+        })
       );
     }
   }, [order]);
@@ -207,6 +229,7 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
         shipping_provider: shippingProvider ?? "",
         tracking_id: trackingId ?? "",
         shipped_date: shippedDate ?? "",
+        payment_due_date: paymentDueDate || "",
       };
 
       if (showNewCustomer && newCustomer.name) {
@@ -672,6 +695,21 @@ export default function OrderEditorForm({ orderId }: OrderEditorFormProps) {
                 <span className="font-bold text-lg text-[#ff7a2d]">${total.toFixed(2)}</span>
               </div>
             </div>
+          </div>
+
+          <div className="glass rounded-2xl p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-[#2b2f33]">Invoice due date</h2>
+            <p className="text-xs text-[#9aa6b0] leading-relaxed">
+              Optional. If set, this date appears as the due date on the invoice. There is no automatic one-month due
+              date.
+            </p>
+            <input
+              type="date"
+              value={paymentDueDate}
+              onChange={(e) => setPaymentDueDate(e.target.value)}
+              disabled={isReadOnly}
+              className="admin-btn-secondary w-full py-2 px-3 rounded-xl text-sm"
+            />
           </div>
 
           {/* Notes */}

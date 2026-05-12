@@ -53,6 +53,8 @@ export const orderSchema = z.object({
   shipping_provider: z.string().optional().or(z.literal("")),
   tracking_id: z.string().optional().or(z.literal("")),
   shipped_date: z.string().optional().or(z.literal("")),
+  /** Optional; when set, used as default invoice due date (no automatic +30 days). */
+  payment_due_date: z.string().optional().or(z.literal("")),
   product_line: z.enum(["boxes", "papers"]).optional().default("boxes"),
 });
 

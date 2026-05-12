@@ -6,12 +6,6 @@ import { mergeCompanySettings } from "@/lib/company-settings-env";
 import type { CompanySettingsRow } from "@/lib/company-settings-env";
 import { z } from "zod";
 
-function defaultDueDate(fromIsoDate: string): string {
-  const d = new Date(fromIsoDate + "T12:00:00");
-  d.setDate(d.getDate() + 30);
-  return d.toISOString().slice(0, 10);
-}
-
 function descriptionFromOrderItem(item: {
   product?: { title?: string } | null;
   variant?: { name?: string } | null;
@@ -107,6 +101,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const cust = order.customer as Record<string, string | null> | null;
     const today = new Date().toISOString().slice(0, 10);
     const nextNo = await nextInvoiceNumber(supabase);
+    const payDueRaw = (order as { payment_due_date?: string | null }).payment_due_date;
+    const suggestedDue =
+      payDueRaw && String(payDueRaw).trim() ? String(payDueRaw).slice(0, 10) : null;
 
     return NextResponse.json({
       company,
@@ -115,7 +112,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       next_invoice_number: nextNo,
       suggested: {
         invoice_date: today,
-        due_date: defaultDueDate(today),
+        due_date: suggestedDue,
         discount_amount: 0,
         gst_percent: company.gst_percent_default,
         terms_text: company.invoice_terms_default,
@@ -167,7 +164,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     const invNo = await nextInvoiceNumber(supabase);
     const today = new Date().toISOString().slice(0, 10);
-    const due = defaultDueDate(today);
+    const payDueRaw = (order as { payment_due_date?: string | null }).payment_due_date;
+    const due =
+      payDueRaw && String(payDueRaw).trim() ? String(payDueRaw).slice(0, 10) : null;
 
     const cust = order.customer as Record<string, string | null> | null;
 
@@ -289,7 +288,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
 
     const invoiceDate = parsed.data.invoice_date ?? new Date().toISOString().slice(0, 10);
-    const dueDate = parsed.data.due_date ?? defaultDueDate(invoiceDate);
+    const rawDue = parsed.data.due_date;
+    const dueDate =
+      rawDue === undefined || rawDue === null || (typeof rawDue === "string" && rawDue.trim() === "")
+        ? null
+        : String(rawDue).trim().slice(0, 10);
 
     const status = parsed.data.status ?? "draft";
     const invUpdate = {

@@ -127,6 +127,11 @@ export async function POST(req: Request) {
       customerId = newCust.id;
     }
 
+    const payDue =
+      typeof parsed.data.payment_due_date === "string" && parsed.data.payment_due_date.trim()
+        ? parsed.data.payment_due_date.trim().slice(0, 10)
+        : null;
+
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert([{
@@ -135,6 +140,7 @@ export async function POST(req: Request) {
         notes: parsed.data.notes || null,
         tax: parsed.data.tax ?? 0,
         product_line: parsed.data.product_line ?? "boxes",
+        payment_due_date: payDue,
       }])
       .select()
       .single();

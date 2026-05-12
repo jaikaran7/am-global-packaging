@@ -36,9 +36,9 @@ export async function GET(
 
     const pdfData: InvoicePdfData = {
       invoice_number: invoice.invoice_number,
-      reference_no: order?.order_number != null ? String(order.order_number) : null,
+      reference_no: null,
       invoice_date: String(invoice.invoice_date),
-      due_date: String(invoice.due_date),
+      due_date: invoice.due_date ? String(invoice.due_date).slice(0, 10) : null,
       gst_percent: gstPct,
       subtotal: Number(invoice.subtotal ?? 0),
       discount_amount: discount,
@@ -71,7 +71,7 @@ export async function GET(
         quantity: Number(l.quantity),
         line_total: Number(l.line_total),
       })),
-      currency_label: company.currency_default ?? "USD",
+      currency_label: company.currency_default ?? "AUD",
     };
 
     const pdfBytes = await renderInvoicePdf(pdfData);
