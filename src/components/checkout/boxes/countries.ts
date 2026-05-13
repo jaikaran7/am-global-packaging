@@ -1,0 +1,22 @@
+/** Australia first; extend as needed for B2B coverage. */
+export const CHECKOUT_COUNTRIES = [
+  "Australia",
+  "Bangladesh",
+  "China",
+  "Fiji",
+  "India",
+  "Indonesia",
+  "Japan",
+  "Malaysia",
+  "Nepal",
+  "New Zealand",
+  "Singapore",
+  "South Korea",
+  "Sri Lanka",
+  "Thailand",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Vietnam",
+  "Other",
+] as const;
