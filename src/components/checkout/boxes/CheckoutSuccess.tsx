@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { CheckCircle2, Download, ArrowRight, LifeBuoy, Package } from "lucide-react";
-const BOX_PRODUCTS_BASE = "/boxes/products";
+const DEFAULT_CONTINUE_HREF = "/boxes/products";
 const MAIL_SUPPORT = "enquiries@amglobalpackagingsolutions.com";
 
 type Props = Readonly<{
@@ -13,6 +13,9 @@ type Props = Readonly<{
   variantSummary: string;
   totalIncGst: number;
   onDownloadPdf: () => Promise<void>;
+  /** Product catalogue to return to after success (default: corrugated products). */
+  continueBrowsingHref?: string;
+  continueBrowsingLabel?: string;
 }>;
 
 export default function CheckoutSuccess({
@@ -22,6 +25,8 @@ export default function CheckoutSuccess({
   variantSummary,
   totalIncGst,
   onDownloadPdf,
+  continueBrowsingHref = DEFAULT_CONTINUE_HREF,
+  continueBrowsingLabel = "Continue browsing",
 }: Props) {
   return (
     <motion.div
@@ -71,11 +76,11 @@ export default function CheckoutSuccess({
           Download inquiry PDF
         </button>
         <Link
-          href={BOX_PRODUCTS_BASE}
+          href={continueBrowsingHref}
           className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-forest text-offwhite text-sm font-semibold hover:bg-forest-light transition-colors shadow-lg shadow-forest/18"
         >
           <Package className="w-4 h-4" aria-hidden />
-          Continue browsing
+          {continueBrowsingLabel}
           <ArrowRight className="w-4 h-4" aria-hidden />
         </Link>
       </div>

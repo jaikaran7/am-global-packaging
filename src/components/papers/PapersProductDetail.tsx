@@ -14,6 +14,7 @@ type ApiVariant = {
   currency: string;
   tax_rate_percent: number | null;
   stock: number;
+  is_available?: boolean;
   size_label: string | null;
 };
 
@@ -126,6 +127,11 @@ export default function PapersProductDetail({ slug }: Readonly<Props>) {
   const gstPct = selectedVariant?.tax_rate_percent ?? 10;
   const unitBase = selectedVariant?.price ?? 0;
   const withGst = Math.round(unitBase * (1 + gstPct / 100) * 100) / 100;
+
+  const canCheckout =
+    selectedVariant != null &&
+    (selectedVariant.is_available !== false) &&
+    selectedVariant.stock > 0;
 
   if (loading) {
     return (
@@ -323,6 +329,24 @@ export default function PapersProductDetail({ slug }: Readonly<Props>) {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3">
+              {canCheckout && selectedVariant ? (
+                <Link
+                  href={`/papers/checkout?slug=${encodeURIComponent(product.slug)}&variant=${encodeURIComponent(selectedVariant.id)}`}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold transition-colors shadow-sm bg-[#7d6a4c] text-white hover:bg-[#6a5a42]"
+                  title="Purchase inquiry — checkout"
+                >
+                  {productDetailContent.actions.checkout}
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <span
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-[#c9c4bb] text-white/90 cursor-not-allowed select-none"
+                  title="Unavailable for checkout"
+                >
+                  {productDetailContent.actions.checkout}
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              )}
               <Link
                 href={
                   selectedVariant

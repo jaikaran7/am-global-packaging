@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -20,8 +20,6 @@ import {
 } from "lucide-react";
 import type { Product } from "@/data/products";
 import { getRelatedProducts, getCategoryProducts } from "@/data/products";
-import BoxesCheckoutFlow from "@/components/checkout/boxes/BoxesCheckoutFlow";
-import CheckoutSkeleton from "@/components/checkout/boxes/CheckoutSkeleton";
 
 const BOXES_PRODUCTS_BASE = "/boxes/products";
 
@@ -590,7 +588,6 @@ export default function ProductDetailPage({ product: initialProduct }: { product
 
                 <div className="h-px bg-kraft/10 my-8" />
 
-                {/* Purchase inquiry — same flow as /boxes/checkout, inlined for this product */}
                 <section
                   id="purchase-inquiry"
                   aria-labelledby="purchase-inquiry-heading"
@@ -601,14 +598,21 @@ export default function ProductDetailPage({ product: initialProduct }: { product
                       Purchase inquiry — {product.shortName}
                     </h3>
                     <p className="text-offwhite/70 text-sm mt-1.5 leading-relaxed">
-                      Configure quantity and ply below, then add your organisation and delivery details. Estimates are
-                      indicative; our team confirms final pricing.
+                      Continue to the dedicated checkout page to choose ply, quantity, and delivery details. Estimates
+                      are indicative; our team confirms final pricing.
                     </p>
                   </div>
-                  <div className="px-3 sm:px-4 pb-8 pt-4 md:px-6 md:pb-10">
-                    <Suspense fallback={<CheckoutSkeleton />}>
-                      <BoxesCheckoutFlow key={product.slug} embedded initialProductSlug={product.slug} />
-                    </Suspense>
+                  <div className="px-4 sm:px-6 py-8 md:py-10 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <Link
+                      href={`/boxes/checkout?slug=${encodeURIComponent(product.slug)}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-offwhite px-8 py-3.5 text-sm font-semibold text-forest hover:bg-kraft-light/30 transition-colors shadow-md"
+                    >
+                      Go to checkout
+                      <ArrowRight className="w-4 h-4" aria-hidden />
+                    </Link>
+                    <p className="text-sm text-warm-gray max-w-md">
+                      You will leave this page and can return here anytime from the product catalogue.
+                    </p>
                   </div>
                 </section>
 

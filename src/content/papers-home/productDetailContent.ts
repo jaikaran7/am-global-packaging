@@ -29,6 +29,7 @@ export const productDetailContent = {
   },
 
   actions: {
+    checkout: "Checkout",
     requestQuote: "Request a Quote",
     viewAllPapers: "View All Papers",
     backToProducts: "Back to Papers",

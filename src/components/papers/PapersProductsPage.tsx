@@ -219,16 +219,24 @@ function PaperProductCard({
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </Link>
 
-          {/* Buy Now — payment-ready stub, disabled until gateway is wired */}
-          <button
-            type="button"
-            disabled
-            title="Buy Now — Coming Soon"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-kraft/10 text-kraft/50 text-xs font-semibold rounded-lg cursor-not-allowed select-none"
-          >
-            <ShoppingCart className="w-3.5 h-3.5" />
-            Buy Now
-          </button>
+          {isOutOfStock ? (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-kraft/10 text-kraft/50 text-xs font-semibold rounded-lg cursor-not-allowed select-none"
+              title="Out of stock"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              Checkout
+            </span>
+          ) : (
+            <Link
+              href={`/papers/checkout?slug=${encodeURIComponent(product.slug)}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-offwhite text-xs font-semibold rounded-lg hover:bg-forest-light transition-colors shadow-sm shadow-forest/15"
+              title="Checkout — purchase inquiry"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              Checkout
+            </Link>
+          )}
         </div>
       </div>
     </div>
