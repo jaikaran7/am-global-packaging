@@ -427,7 +427,7 @@ export default function PapersProductDetail({ slug }: Readonly<Props>) {
                       </span>
                     </div>
                     <p className="text-xs text-warm-gray mt-2">
-                      + {gstPct}% GST -> <strong>${withGst.toFixed(2)}</strong> per unit (AUD)
+                      + {gstPct}% GST → <strong>${withGst.toFixed(2)}</strong> per unit (AUD)
                     </p>
                   </div>
                 )}
