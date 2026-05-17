@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { usdToAud } from "@/lib/currency-usd-aud";
 import { renderQuotationPdf } from "@/lib/pdf";
+import { computeQuotationTotals } from "@/lib/invoice-math";
 import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
 
 export async function GET(
@@ -28,7 +28,24 @@ export async function GET(
       .eq("quotation_id", id);
 
     const isPapers = quote.product_line === "papers";
-    const aud = (n: number) => (isPapers ? usdToAud(n) : n);
+    const gstPercent = Number(quote.gst_percent ?? 10);
+
+    // Prices in quotation_items are already AUD (UI converts catalogue USD at edit time).
+    const mappedItems = (items ?? []).map((item) => ({
+      product_title: item.product?.title ?? item.custom_name ?? "Custom",
+      variant_name: item.variant?.name ?? item.custom_spec ?? "Custom Spec",
+      description: item.description ?? item.custom_notes ?? null,
+      dimensions_mm: item.variant?.dimensions ?? null,
+      quantity: item.quantity,
+      unit_price: Number(item.unit_price ?? 0),
+      subtotal: Number(item.subtotal ?? 0),
+    }));
+
+    const { subtotal, tax, total } = computeQuotationTotals(
+      mappedItems.map((i) => i.subtotal),
+      gstPercent
+    );
+
     const pdfBytes = await renderQuotationPdf({
       quote_number: quote.quote_number,
       status: quote.status,
@@ -38,10 +55,10 @@ export async function GET(
       terms_text:
         quote.terms_text ||
         (isPapers ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS),
-      gst_percent: Number(quote.gst_percent ?? 10),
-      subtotal: aud(Number(quote.subtotal ?? 0)),
-      tax: aud(Number(quote.tax ?? 0)),
-      total: aud(Number(quote.total ?? 0)),
+      gst_percent: gstPercent,
+      subtotal,
+      tax,
+      total,
       currency_label: "AUD",
       customer: {
         name: quote.customer?.name ?? "Customer",
@@ -52,15 +69,7 @@ export async function GET(
         contact_person: (quote.customer as { contact_person?: string })?.contact_person ?? null,
         account_number: (quote.customer as { account_number?: string })?.account_number ?? null,
       },
-      items: (items ?? []).map((item) => ({
-        product_title: item.product?.title ?? item.custom_name ?? "Custom",
-        variant_name: item.variant?.name ?? item.custom_spec ?? "Custom Spec",
-        description: item.description ?? item.custom_notes ?? null,
-        dimensions_mm: item.variant?.dimensions ?? null,
-        quantity: item.quantity,
-        unit_price: aud(Number(item.unit_price ?? 0)),
-        subtotal: aud(Number(item.subtotal ?? 0)),
-      })),
+      items: mappedItems,
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {

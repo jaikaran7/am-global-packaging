@@ -1,3 +1,14 @@
+/** GST on line subtotals; total = subtotal + tax (quotations have no discount). */
+export function computeQuotationTotals(
+  lineSubtotals: number[],
+  gstPercent: number
+): { subtotal: number; tax: number; total: number } {
+  const subtotal = Math.round(lineSubtotals.reduce((a, b) => a + b, 0) * 100) / 100;
+  const tax = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
+  const total = Math.round((subtotal + tax) * 100) / 100;
+  return { subtotal, tax, total };
+}
+
 /** GST on (subtotal − discount); total = subtotal − discount + tax */
 
 export function computeInvoiceTotals(
