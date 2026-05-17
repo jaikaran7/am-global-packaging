@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { renderQuotationPdf } from "@/lib/pdf";
-import { DEFAULT_QUOTE_TERMS } from "@/lib/quotation-terms";
+import { computeQuotationTotals } from "@/lib/invoice-math";
+import { DEFAULT_QUOTE_TERMS, DEFAULT_QUOTE_TERMS_PAPERS } from "@/lib/quotation-terms";
 
 export async function PATCH(
   _req: Request,
@@ -30,17 +31,36 @@ export async function PATCH(
       .select("*, product:products(id,title), variant:product_variants(id,name,dimensions)")
       .eq("quotation_id", id);
 
+    const isPapers = quote.product_line === "papers";
+    const gstPercent = Number(quote.gst_percent ?? 10);
+    const mappedItems = (items ?? []).map((item) => ({
+      product_title: item.product?.title ?? item.custom_name ?? "Custom",
+      variant_name: item.variant?.name ?? item.custom_spec ?? "Custom Spec",
+      description: item.description ?? item.custom_notes ?? null,
+      dimensions_mm: item.variant?.dimensions ?? null,
+      quantity: item.quantity,
+      unit_price: Number(item.unit_price ?? 0),
+      subtotal: Number(item.subtotal ?? 0),
+    }));
+    const { subtotal, tax, total } = computeQuotationTotals(
+      mappedItems.map((i) => i.subtotal),
+      gstPercent
+    );
+
     const pdfBytes = await renderQuotationPdf({
       quote_number: quote.quote_number,
       status: quote.status,
       created_at: quote.created_at,
       valid_until: quote.valid_until,
       notes: quote.notes,
-      terms_text: quote.terms_text || DEFAULT_QUOTE_TERMS,
-      gst_percent: Number(quote.gst_percent ?? 10),
-      subtotal: Number(quote.subtotal ?? 0),
-      tax: Number(quote.tax ?? 0),
-      total: Number(quote.total ?? 0),
+      terms_text:
+        quote.terms_text ||
+        (isPapers ? DEFAULT_QUOTE_TERMS_PAPERS : DEFAULT_QUOTE_TERMS),
+      gst_percent: gstPercent,
+      subtotal,
+      tax,
+      total,
+      currency_label: "AUD",
       customer: {
         name: quote.customer?.name ?? "Customer",
         email: quote.customer?.email ?? null,
@@ -48,15 +68,7 @@ export async function PATCH(
         company: quote.customer?.company ?? null,
         address: quote.customer?.address ?? null,
       },
-      items: (items ?? []).map((item) => ({
-        product_title: item.product?.title ?? item.custom_name ?? "Custom",
-        variant_name: item.variant?.name ?? item.custom_spec ?? "Custom Spec",
-        description: item.description ?? item.custom_notes ?? null,
-        dimensions_mm: item.variant?.dimensions ?? null,
-        quantity: item.quantity,
-        unit_price: Number(item.unit_price ?? 0),
-        subtotal: Number(item.subtotal ?? 0),
-      })),
+      items: mappedItems,
     });
 
     if (!process.env.RESEND_API_KEY) {
